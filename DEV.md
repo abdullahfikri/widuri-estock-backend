@@ -1,0 +1,84 @@
+# Entity
+- Employee
+  - Employee Address
+- Supplier
+  - Supplier Address
+- Incoming Products
+  - IncomingItemsDetail
+- Product
+  - Product Variant
+    - Variant Attribute
+- Category
+# Entity Attribute
+- Employees
+  - id
+  - first_name
+  - last_name
+  - no_telp
+  - email
+  - photo
+  - date_in
+  - date_out
+  - role
+- Suppliers
+  - id
+  - company_name
+  - no_telp
+  - email
+  - keynote/information
+- Addresses
+  - id
+  - street
+  - village
+  - district
+  - city
+  - province
+  - country
+  - postalcode
+- employee_addresses
+  - address_id
+  - employee_id
+- suppliers_addresses
+  - address_id
+  - supplier_id
+- incoming_products
+  - id
+  - date
+  - supplier_id
+  - employee_id
+  - total_product
+  - note
+- incoming_items_details
+  - id
+  - incoming_product_id
+  - product_id
+  - price_per_unit
+  - quantity
+  - sub_total
+- categories
+  - id
+  - category_name
+  - description
+- products
+  - id
+  - name
+  - description
+  - category_id
+  - has_variant (flag)
+  - stock (use if it has_variant = false)
+  - price (use if it has_variant = false)
+- product_variants
+  - id
+  - product_id
+  - sku
+  - stock
+  - price
+- variant_attribute
+  - id
+  - variant_id
+  - attribute_key
+  - attribute_value
+
+# ERD
+![](/img/erd.png)
+
