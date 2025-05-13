@@ -1,6 +1,9 @@
+# ERD
+![](/img/erd.png)
+
 # Entity
-- Employee
-  - Employee Address
+- User
+  - User Address
 - Supplier
   - Supplier Address
 - Incoming Products
@@ -8,22 +11,26 @@
 - Product
   - Product Variant
     - Variant Attribute
+  - Product Photos
 - Category
 # Entity Attribute
-- Employees
-  - id
+- User
+  - username
+  - password
   - first_name
   - last_name
-  - no_telp
+  - phone
   - email
   - photo
   - date_in
   - date_out
   - role
+  - token
+  - token_expired_at
 - Suppliers
   - id
-  - company_name
-  - no_telp
+  - supplier_name
+  - phone
   - email
   - keynote/information
 - Addresses
@@ -34,10 +41,10 @@
   - city
   - province
   - country
-  - postalcode
-- employee_addresses
+  - postal_code
+- user_addresses
   - address_id
-  - employee_id
+  - user_username
 - suppliers_addresses
   - address_id
   - supplier_id
@@ -45,7 +52,7 @@
   - id
   - date
   - supplier_id
-  - employee_id
+  - user_username
   - total_product
   - note
 - incoming_items_details
@@ -54,7 +61,7 @@
   - product_id
   - price_per_unit
   - quantity
-  - sub_total
+  - total_price
 - categories
   - id
   - category_name
@@ -78,7 +85,4 @@
   - variant_id
   - attribute_key
   - attribute_value
-
-# ERD
-![](/img/erd.png)
 

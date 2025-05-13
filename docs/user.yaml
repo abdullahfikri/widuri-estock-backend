@@ -1,0 +1,492 @@
+openapi: 3.0.0
+info:
+  title: User API Specification
+  description: User API Specification
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080/api'
+paths:
+  /auth/login:
+    post:
+      summary: "Login to a user"
+      requestBody:
+        required: true
+        description: "Request Body User"
+        content:
+         application/json:
+           schema:
+             type: object
+             required:
+               - username
+               - password
+             properties:
+               username:
+                 type: string
+                 minLength: 5
+               password:
+                 type: string
+                 minLength: 8
+           example:
+             username: admin
+             password: admin
+      responses:
+        200:
+          description: "Success Login"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+                        description: "Auth Token"
+                      expiredAt:
+                        type: integer
+                        description: "Expired time of auth token in millisecond"
+        400:
+          description: "Bad Request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneralError"
+              example:
+                errors: "Username or password must not blank"
+        401:
+          description: "Unauthenticate User"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneralError"
+              example:
+                errors: "Username or password wrong"
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+  /auth/logout:
+    delete:
+      summary: "Logout a user and delete the token from the database"
+      parameters:
+        - $ref: "#/components/parameters/X-API-TOKEN"
+      responses:
+        200:
+          $ref: "#/components/responses/GeneralSuccessResponse"
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+  /users:
+    post:
+      summary: "Create a user from appropriate admin"
+      parameters:
+        - $ref: "#/components/parameters/X-API-TOKEN"
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/UserCreateRequestSchema"
+      responses:
+        201:
+          $ref: "#/components/responses/GeneralSuccessResponse"
+        400:
+          description: "Failed created user, client error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneralError"
+              example:
+                errors: "Username must not blank, password must not blank, ??"
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+    get:
+      summary: "Get list of users"
+      parameters:
+        - $ref: "#/components/parameters/X-API-TOKEN"
+        - in: query
+          name: username
+          description: "Search users by username"
+          schema:
+            type: string
+        - in: query
+          name: name
+          description: "Search users by first name or last name"
+          schema:
+            type: string
+        - in: query
+          name: phone
+          description: "Search users by phone number"
+          schema:
+            type: string
+        - in: query
+          name: email
+          description: "Search users by email address"
+          schema:
+            type: string
+        - in: query
+          name: role
+          description: "Search users by role"
+          schema:
+            type: string
+        - in: query
+          name: page
+          description: "Current page number"
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: size
+          description: "Maximum data users per page"
+          schema:
+            type: integer
+            default: 10
+      responses:
+        200:
+          description: "Success to fetch data users"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      - $ref: "#/components/schemas/UserResponseSchema"
+                  paging:
+                    type: object
+                    properties:
+                      currentPage:
+                        type: integer
+                      totalPage:
+                        type: integer
+                      size:
+                        type: integer
+              examples:
+                GetUsers:
+                  value:
+                    data:
+                      - username: "john321"
+                        firstName: "John"
+                        lastName: "Doe"
+                        phone: "62810000000"
+                        email: "john@example.com"
+                        photo: "0101011011001010100010101010..."
+                        role: "Admin Warehouse"
+                    paging:
+                      currentPage: 0
+                      totalPage: 10
+                      sizePerPage: 10
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+
+  /users/{username}:
+    get:
+      summary: "Get the users"
+      parameters:
+        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/USERNAME-PATH"
+      responses:
+        200:
+          $ref: "#/components/responses/SuccessGetOrUpdateUserResponse"
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        404:
+          $ref: "#/components/responses/UserNotFoundErrorResponse"
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+    patch:
+      # TODO: add feature to disable users
+      summary: "Edit a user depend of username"
+      parameters:
+        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/USERNAME-PATH"
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/UserUpdateRequestSchema"
+            examples:
+              UserUpdate:
+                $ref:  "#/components/examples/UserUpdateRequestExample"
+      responses:
+        200:
+          $ref: "#/components/responses/SuccessGetOrUpdateUserResponse"
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        404:
+          $ref: "#/components/responses/UserNotFoundErrorResponse"
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+
+  /user/current:
+    get:
+      summary: "Get Current User"
+      parameters:
+        - $ref: "#/components/parameters/X-API-TOKEN"
+      responses:
+        200:
+          $ref: "#/components/responses/SuccessGetOrUpdateUserResponse"
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+    patch:
+      summary: "Update user profile"
+      parameters:
+        - $ref: "#/components/parameters/X-API-TOKEN"
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - password
+                - firstName
+                - phone
+                - email
+              type: object
+              properties:
+                password:
+                  type: string
+                  minLength: 8
+                  maxLength: 100
+                firstName:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                lastName:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                phone:
+                  type: string
+                  minLength: 8
+                  maxLength: 20
+                email:
+                  type: string
+                photo:
+                  type: string
+                  format: binary
+      responses:
+        200:
+          $ref: "#/components/responses/SuccessGetOrUpdateUserResponse"
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        404:
+          $ref: "#/components/responses/UserNotFoundErrorResponse"
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+
+# TODO: Adding reset password ENDPOINT
+
+components:
+  schemas:
+    UserCreateRequestSchema:
+      required:
+        - username
+        - password
+        - firstName
+        - phone
+        - email
+        - role
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 5
+          maxLength: 100
+        password:
+          type: string
+          minLength: 8
+          maxLength: 100
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        phone:
+          type: string
+          minLength: 8
+          maxLength: 20
+        email:
+          type: string
+        photo:
+          type: string
+          format: binary
+        role:
+          type: string
+    UserUpdateRequestSchema:
+      required:
+        - password
+        - firstName
+        - phone
+        - email
+        - role
+      type: object
+      properties:
+        password:
+          type: string
+          minLength: 8
+          maxLength: 100
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        phone:
+          type: string
+          minLength: 8
+          maxLength: 20
+        email:
+          type: string
+        photo:
+          type: string
+          format: binary
+        role:
+          type: string
+    UserResponseSchema:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 5
+          maxLength: 100
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        phone:
+          type: string
+          minLength: 8
+          maxLength: 20
+        email:
+          type: string
+        photo:
+          type: string
+          format: binary
+        role:
+          type: string
+    GeneralError:
+      type: object
+      properties:
+        errors:
+          type: string
+  examples:
+    UserUpdateRequestExample:
+      value: 
+        password: "secretpassword123"
+        firstName: "John"
+        lastName: "Doe"
+        phone: "62810000000"
+        email: "john@example.com"
+        photo: "0101011011001010100010101010..."
+        role: "Admin Gudang"
+    UserResponseExample:
+      value:
+        username: "john321"
+        firstName: "John"
+        lastName: "Doe"
+        phone: "62810000000"
+        email: "john@example.com"
+        photo: "0101011011001010100010101010..."
+        role: "Admin Gudang"
+  parameters:
+    X-API-TOKEN:
+      name: "X-API-TOKEN"
+      in: "header"
+      required: true
+      description: "auth token"
+      schema:
+        type: string
+      example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
+    USERNAME-PATH:
+      name: "username"
+      in: path
+      required: true
+      schema:
+        type: string
+      example: john321
+  responses:
+    GeneralSuccessResponse:
+      description: "Success"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: string
+          example:
+            data: "OK"
+    SuccessGetOrUpdateUserResponse:
+      description: "Success get/update a user with username"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: "#/components/schemas/UserResponseSchema"
+          example:
+            data:
+              username: "john321"
+              firstName: "John"
+              lastName: "Doe"
+              phone: "62810000000"
+              email: "john@example.com"
+              photo: "0101011011001010100010101010..."
+              role: "Admin Gudang"
+    UnauthenticatedErrorResponse:
+      description: "Unauthenticated request"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/GeneralError"
+          example:
+            errors: "Unauthenticated request"
+    UserNotFoundErrorResponse:
+      description: "User is not found"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/GeneralError"
+          example:
+            errors: "User is not found!"
+    UnauthorizedErrorResponse:
+      description: "User Forbidden to make request to this endpoint"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/GeneralError"
+          example:
+            errors: "Unauthorized request"
+    ServerErrorResponse:
+      description: "Server error"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/GeneralError"
+          example:
+            errors: "Server unavailable, try again later"
+  

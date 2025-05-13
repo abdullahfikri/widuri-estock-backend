@@ -1,0 +1,655 @@
+openapi: 3.0.0
+info:
+  title: Incoming Product API Spesification
+  description: Incoming Product API Spesification
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080/api'
+paths:
+  /incoming-products:
+    post:
+      summary: "Create Incoming Product"
+      parameters:
+        - $ref: "#/components/parameters/X-API-TOKEN"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IncomingProducts"
+            example:
+              date: "2025-11-25-14:32"
+              supplierId: 3221
+              totalProduct: 1
+              note: "Product is on good condition..."
+              incomingItemsDetail:
+                - productId: 3451
+                  pricePerUnit: 120000
+                  quantity: 25
+                  totalPrice: 3000000
+      responses:
+        201:
+          $ref: "#/components/responses/GeneralSuccessResponse"
+        400:
+          $ref: "#/components/responses/BadRequestIncomingProductResponse"
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        404:
+          $ref: "#/components/responses/SupplierNotFoundErrorResponse"
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+    get:
+      summary: "Retrieve incoming product all records or within a specific date range"
+      parameters:
+        - $ref: "#/components/parameters/X-API-TOKEN"
+        - in: query
+          name: start_date
+          description: "Start of the date range"
+          schema:
+            type: string
+            format: "YYYY-MM-DD"
+          example: "2024-01-01"
+        - in: query
+          name: end_date
+          description: "End of the date range"
+          schema:
+            type: string
+            format: "YYYY-MM-DD"
+          example: "2024-05-01"
+        - in: query
+          name: page
+          description: "Current page number"
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: size
+          description: "Maximum data users per page"
+          schema:
+            type: integer
+            default: 10
+      responses:
+        200:
+          description: "Success retrieve history of incoming product record"
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    type: array
+                    items:
+                      properties:
+                        id:
+                          type: string
+                        date:
+                          type: string
+                        supplier:
+                          type: string
+                        username:
+                          type: string
+                        totalProduct:
+                          type: number
+                        note:
+                          type: string
+                  paging:
+                    type: object
+                    properties:
+                      currentPage:
+                        type: integer
+                      totalPage:
+                        type: integer
+                      size:
+                        type: integer
+              examples:
+                IncomingProducts:
+                  value:
+                    data:
+                      - id: 111
+                        date: "2025-11-25-20:00"
+                        supplierId: 321
+                        userUsername: "admin-warehouse123"
+                        totalProduct: 1
+                        note: "Product is not in good condition"
+                        incomingItemsDetail:
+                          - incomingProductsId: 111
+                            productId: 3451
+                            pricePerUnit: 120000
+                            quantity: 25
+                            totalPrice: 3000000
+                    paging:
+                      currentPage: 0
+                      totalPage: 10
+                      sizePerPage: 10
+        400:
+          description: "Bad parameter request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneralErrorSchema"
+              example:
+                errors: "date is invalid, "
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+
+  /incoming-products/{incomingProductsId}:
+    get:
+      summary: "Retrieve the incoming a product record"
+      parameters:
+        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/INCOMING-PRODUCTS-ID"
+      responses:
+        200:
+          description: "Success retrieve the data"
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    $ref: "#/components/schemas/IncomingProducts"
+              examples:
+                IncomingProducts:
+                  $ref: "#/components/examples/IncomingProductsResponse"
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        404:
+          $ref: "#/components/responses/IncomingProductsNotFoundResponse"
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+    put:
+      summary: "Update the incoming product record"
+      parameters:
+        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/INCOMING-PRODUCTS-ID"
+      requestBody: 
+        content: 
+          application/json:
+            schema: 
+              $ref: "#/components/schemas/IncomingProducts"
+            example:
+              id: 111
+              date: "2025-11-25-20:00"
+              supplierId: 321
+              totalProduct: 1
+              note: "Product is not in good condition"
+              incomingItemsDetail:
+                - incomingProductsId: 111
+                  productId: 3451
+                  pricePerUnit: 120000
+                  quantity: 25
+                  totalPrice: 3000000
+      responses:
+        200:
+          description: "Success updated incoming product record"
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    $ref: "#/components/schemas/IncomingProducts"
+              examples:
+                IncomingProducts:
+                  $ref: "#/components/examples/IncomingProductsResponse"
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        404:
+          description: "Not Found Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneralErrorSchema"
+              examples:
+                ProductNotFound:
+                  value:
+                    errors: "Incoming Product is not found."
+                SupplierNotFound:
+                  value:
+                    errors: "Supplier is not found."
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+    delete:
+      summary: "Delete the incoming product record"
+      parameters:
+        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/INCOMING-PRODUCTS-ID"
+      responses:
+        200:
+          $ref: "#/components/responses/GeneralSuccessResponse"
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        404:
+          $ref: "#/components/responses/IncomingProductsNotFoundResponse"
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+  /suppliers:
+    post:
+      summary: "Create a Supplier record"
+      parameters:
+        - $ref: "#/components/parameters/X-API-TOKEN"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SupplierRequestSchema"
+            examples:
+              Supplier:
+                $ref: "#/components/examples/SupplierExample"
+      responses:
+        201:
+          $ref: "#/components/responses/GeneralSuccessResponse"
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+    get:
+      summary: "Retrieve the Supplier record"
+      parameters:
+        - $ref: "#/components/parameters/X-API-TOKEN"
+        - in: query
+          name: page
+          description: "Current page number"
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: size
+          description: "Maximum data users per page"
+          schema:
+            type: integer
+            default: 10
+      responses:
+        200:
+          description: "Success retrieve the supplier record"
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    type: array
+                    items:
+                      properties:
+                        id:
+                          type: integer
+                        supplierName:
+                          type: string
+                        phone:
+                          type: string
+                        email:
+                          type: string
+                        information:
+                          type: string
+                  paging:
+                    type: object
+                    properties:
+                      currentPage:
+                        type: integer
+                      totalPage:
+                        type: integer
+                      size:
+                        type: integer
+              example:
+                data:
+                  - id: 123
+                    supplierName: "PT Indah Kait"
+                    phone: "62877721"
+                    email: "adminjohn@indah-kait.com"
+                    information: "Supplier for fishing hooks"
+                paging:
+                  currentPage: 0
+                  totalPage: 10
+                  sizePerPage: 10
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+  /suppliers/{supplierId}:
+    put:
+      summary: "Update a supplier record"
+      parameters:
+        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/SUPPLIER-ID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SupplierRequestSchema"
+            examples:
+              Supplier:
+                $ref: "#/components/examples/SupplierExample"
+      responses:
+        200:
+          description: "Success update a supplier record"
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    properties:
+                      id:
+                        type: integer
+                      supplierName:
+                        type: string
+                      phone:
+                        type: string
+                      email:
+                        type: string
+                      information:
+                        type: string
+                      addresses:
+                        items:
+                          properties:
+                            street:
+                              type: string
+                            village:
+                              type: string
+                            district:
+                              type: string
+                            city:
+                              type: string
+                            province:
+                              type: string
+                            postalCode:
+                              type: string
+              example:
+                data:
+                  id: 123
+                  supplierName: "PT Indah Kait"
+                  phone: "62877721"
+                  email: "adminjohn@indah-kait.com"
+                  information: "Supplier for fishing hooks"
+                  addresses:
+                    - street: "JL example"
+                      village: "example 123"
+                      district: "example district"
+                      city: "Jakarta"
+                      province: "DKI Jakarta"
+                      postalCode: "12312EXAMPLE"
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        404:
+          $ref: "#/components/responses/SupplierNotFoundErrorResponse"
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+    get:
+      summary: "Retrieve a supplier record"
+      parameters:
+        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/SUPPLIER-ID"
+      responses:
+        200:
+          description: "Success retrieve a supplier detail record"
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    properties:
+                      id:
+                        type: integer
+                      supplierName:
+                        type: string
+                      phone:
+                        type: string
+                      email:
+                        type: string
+                      information:
+                        type: string
+                      addresses:
+                        items:
+                          properties:
+                            id:
+                              type: integer
+                            street:
+                              type: string
+                            village:
+                              type: string
+                            district:
+                              type: string
+                            city:
+                              type: string
+                            province:
+                              type: string
+                            postalCode:
+                              type: string
+              example:
+                data:
+                  id: 123
+                  supplierName: "PT Indah Kait"
+                  phone: "62877721"
+                  email: "adminjohn@indah-kait.com"
+                  information: "Supplier for fishing hooks"
+                  addresses:
+                    - id: 3213
+                      street: "JL example"
+                      village: "example 123"
+                      district: "example district"
+                      city: "Jakarta"
+                      province: "DKI Jakarta"
+                      postalCode: "12312EXAMPLE"
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        404:
+          $ref: "#/components/responses/SupplierNotFoundErrorResponse"
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+    delete:
+      summary: "Delete a supplier record"
+      parameters:
+        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/SUPPLIER-ID"
+      responses:
+        200:
+          $ref: "#/components/responses/GeneralSuccessResponse"
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        404:
+          $ref: "#/components/responses/SupplierNotFoundErrorResponse"
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+
+
+
+
+
+
+components:
+  schemas:
+    IncomingProducts:
+      properties:
+        id:
+          type: integer
+        date:
+          type: string
+        supplierId:
+          type: integer
+        userUsername:
+          type: integer
+        totalProduct:
+          type: integer
+        note:
+          type: string
+        incomingItemsDetail:
+          type: array
+          items:
+            $ref: "#/components/schemas/IncomingItemsDetail"
+    IncomingItemsDetail:
+      properties:
+        incomingProductsId:
+          type: integer
+        productId:
+          type: integer
+        pricePerUnit:
+          type: integer
+        quantity:
+          type: integer
+        totalPrice:
+          type: integer
+    SupplierRequestSchema:
+      properties:
+        supplierName:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        information:
+          type: string
+        addresses:
+          items:
+            properties:
+              street:
+                type: string
+              village:
+                type: string
+              district:
+                type: string
+              city:
+                type: string
+              province:
+                type: string
+              postalCode:
+                type: string
+    GeneralErrorSchema:
+      type: object
+      properties:
+        errors:
+          type: string
+  parameters:
+    X-API-TOKEN:
+      name: "X-API-TOKEN"
+      in: "header"
+      required: true
+      description: "auth token"
+      schema:
+        type: string
+      example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
+    INCOMING-PRODUCTS-ID:
+      name: "incomingProductsId"
+      in: path
+      required: true
+      schema:
+        type: string
+        format: number
+        example: 1321
+    SUPPLIER-ID:
+      name: "supplierId"
+      in: path
+      required: true
+      schema:
+        type: string
+        format: number
+        example: 1232
+  examples:
+    IncomingProductsResponse:
+      value:
+        data:
+          id: 111
+          date: "2025-11-25-20:00"
+          supplierId: 321
+          userUsername: "admin-warehouse123"
+          totalProduct: 1
+          note: "Product is not in good condition"
+          incomingItemsDetail:
+            - incomingProductsId: 111
+              productId: 3451
+              pricePerUnit: 120000
+              quantity: 25
+              totalPrice: 3000000
+    SupplierExample:
+      value:
+        supplierName: "PT Indah Kait"
+        phone: "62877721"
+        email: "adminjohn@indah-kait.com"
+        information: "Supplier for fishing hooks"
+        addresses:
+          - street: "JL example"
+            village: "example 123"
+            district: "example district"
+            city: "Jakarta"
+            province: "DKI Jakarta"
+            postalCode: "12312EXAMPLE"
+  responses:
+    GeneralSuccessResponse:
+      description: "Success"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: string
+          example:
+            data: "OK"
+    BadRequestIncomingProductResponse:
+      description: "Bad Request"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/GeneralErrorSchema"
+          examples:
+            ValidationBadRequest:
+              value:
+                errors: "date must not blank, supplierId must not blank..."
+    UnauthenticatedErrorResponse:
+      description: "Unauthenticated request"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/GeneralErrorSchema"
+          example:
+            errors: "Unauthenticated request"
+    UnauthorizedErrorResponse:
+      description: "User Forbidden to make request to this endpoint"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/GeneralErrorSchema"
+          example:
+            errors: "Unauthorized request"
+    IncomingProductsNotFoundResponse:
+      description: "Incoming Product is not found"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/GeneralErrorSchema"
+          example:
+            errors: "Incoming Product record is not found."
+    SupplierNotFoundErrorResponse:
+      description: "Not Found Error"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/GeneralErrorSchema"
+          examples:
+            SupplierNotFound:
+              value:
+                errors: "Supplier is not found."
+    ServerErrorResponse:
+      description: "Server error"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/GeneralErrorSchema"
+          example:
+            errors: "Server unavailable, try again later"

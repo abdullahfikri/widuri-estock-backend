@@ -1,0 +1,746 @@
+openapi: 3.0.0
+info:
+  title: Product API Spec
+  description: Product API Spec
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080/api'
+paths:
+  /categories:
+    post:
+      summary: "Create Category Product"
+      parameters:
+        - $ref: "#/components/parameters/X-API-TOKEN"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                categoryName:
+                  type: string
+                description:
+                  type: string
+            example:
+              categoryName: "Mata Kail"
+              description: "Hook atau mata kail"
+      responses:
+        201:
+          $ref: "#/components/responses/GeneralSuccessResponse"
+        400:
+          description: "Bad Request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneralErrorSchema"
+              examples:
+                ValidationBadRequest:
+                  value:
+                    errors: "categoryName must not blank, description must not blank..."
+                CategoryDuplicateError:
+                  value:
+                    errors: "Category name is already exists."
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+    get:
+      parameters:
+        - $ref: "#/components/parameters/X-API-TOKEN"
+      summary: "Get list of categories"
+      responses:
+        200:
+          description: "Success get list of categories"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      properties:
+                        id:
+                          type: integer
+                        categoryName:
+                          type: string
+                        description:
+                          type: string
+              example:
+                data:
+                  - id: 1
+                    categoryName: "Fishing Hook"
+                    description: "Category for all of Fishing Hook type"
+                  - id: 2
+                    categoryName: "Fishing Rod"
+                    description: "Category for all of Fishing Rod type"
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+  /products:
+    post:
+      parameters:
+        - $ref: "#/components/parameters/X-API-TOKEN"
+      summary: "Create an products"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductSchema"
+            examples:
+              ProductsWithVariantAnd-1VariantAttribute:
+                value:
+                  name: "Fishing Rod 150 cm Fiber"
+                  description: "The best Fishing Rod for middle fish in the lake/river"
+                  categoryId: 2
+                  hasVariant: true,
+                  variants:
+                    - sku: "fishing-rod-150-cm-fiber-black"
+                      stock: 20
+                      price: 120000
+                      attribute:
+                        - attributeKey: "color"
+                          attributeValue: "Black"
+                    - sku: "fishing-rod-150-cm-fiber-premium-silver"
+                      stock: 5
+                      price: 150000
+                      attribute:
+                        - attributeKey: "color"
+                          attributeValue: "Premium Silver"
+                    - sku: "fishing-rod-150-cm-fiber-white"
+                      stock: 20
+                      price: 120000
+                      attribute:
+                        - attributeKey: "color"
+                          attributeValue: "White"
+              ProductsWithVariant-And2VariantAttribute-AndPhoto:
+                value:
+                  name: "Daichi Premium Hook"
+                  description: "The premium Hook for the environment in the lake/river..."
+                  categoryId: 1
+                  hasVariant: true,
+                  variants:
+                    - sku: "daichi-premium-hook-black-1"
+                      stock: 100
+                      price: 10000
+                      attribute:
+                        - attributeKey: "color"
+                          attributeValue: "Black"
+                        - attributeKey: "size"
+                          attributeValue: "1"
+                    - sku: "daichi-premium-hook-black-2"
+                      stock: 100
+                      price: 10000
+                      attribute:
+                        - attributeKey: "color"
+                          attributeValue: "Black"
+                        - attributeKey: "size"
+                          attributeValue: "2"
+                    - sku: "daichi-premium-hook-black-3"
+                      stock: 150
+                      price: 10000
+                      attribute:
+                        - attributeKey: "color"
+                          attributeValue: "Black"
+                        - attributeKey: "size"
+                          attributeValue: "3"
+                    - sku: "daichi-premium-hook-black-white-1"
+                      stock: 50
+                      price: 11000
+                      attribute:
+                        - attributeKey: "color"
+                          attributeValue: "White"
+                        - attributeKey: "size"
+                          attributeValue: "1"
+                    - sku: "daichi-premium-hook-black-white-2"
+                      stock: 50
+                      price: 10000
+                      attribute:
+                        - attributeKey: "color"
+                          attributeValue: "White"
+                        - attributeKey: "size"
+                          attributeValue: "2"
+                  photos:
+                    - photo: 0101000010010...
+                    - photo: 0101000010010...
+              ProductsWithNoVariant:
+                value:
+                  name: "Premium Fishing Rod 200 cm Fiber"
+                  description: "The premium Fishing Rod for the Open Sea"
+                  categoryId: 2
+                  hasVariant: false,
+                  stock: 5
+                  price: 300000
+                  photos:
+                    - photo: 0101000010010...
+                    - photo: 0101000010010...
+      responses:
+        201:
+          $ref: "#/components/responses/GeneralSuccessResponse"
+        400:
+          $ref: "#/components/responses/BadRequestProductResponse"
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        404:
+          description: "Not Found Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneralErrorSchema"
+              example:
+                errors: "Category is not found"
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+    get:
+      summary: "Get products with pagination"
+      parameters:
+        - $ref: "#/components/parameters/X-API-TOKEN"
+        - in: query
+          name: page
+          description: "Current page number"
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: size
+          description: "Maximum data product per page"
+          schema:
+            type: integer
+            default: 20
+      responses:
+        200:
+          description: "success get the products"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                        description:
+                          type: string
+                        categoryId:
+                          type: number
+                        photo:
+                          type: string
+                          format: binary
+                  paging:
+                    type: object
+                    properties:
+                      currentPage:
+                        type: integer
+                      totalPage:
+                        type: integer
+                      size:
+                        type: integer
+                        description: "The maximum size product per page, not total data product receive."
+              example:
+                data:
+                  - id: 1321
+                    name: "Golden Fishing Rod"
+                    description: "Some description for the Golden Fishing Rod"
+                    categoryId: 2
+                    photo: "0101010000010..."
+                  - id: 1322
+                    name: "Fishing Hook"
+                    description: "Some description for the Fishing Hook"
+                    categoryId: 1
+                    photo: "0101010000010..."
+                paging:
+                  currentPage: 5
+                  totalPage: 20
+                  size: 20
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+  /products/{productId}:
+    get:
+      summary: "Get more detail of one products"
+      parameters:
+        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/PRODUCT-ID"
+      responses:
+        200:
+          description: "Success get detail of the products"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/ProductSchema"
+              examples:
+                ProductsWithVariantAnd-1VariantAttribute:
+                  $ref: "#/components/examples/ProductsWithVariantAnd-1VariantAttribute"
+                ProductsWithVariant-And2VariantAttribute-AndPhoto:
+                  $ref: "#/components/examples/ProductsWithVariant-And2VariantAttribute-AndPhoto"
+                ProductsWithNoVariant:
+                  $ref: "#/components/examples/ProductsWithNoVariant"
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        404:
+          $ref: "#/components/responses/ProductNotFoundErrorResponse"
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+    put:
+      summary: "Update the products"
+      parameters:
+        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/PRODUCT-ID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductSchema"
+            examples:
+              ProductsWithVariantAnd-1VariantAttribute:
+                value:
+                  id: 1231
+                  name: "Fishing Rod 150 cm Fiber"
+                  description: "The best Fishing Rod for middle fish in the lake/river"
+                  categoryId: 2
+                  hasVariant: true,
+                  variants:
+                    - id: 2132
+                      productId: 1231
+                      sku: "fishing-rod-150-cm-fiber-black"
+                      stock: 20
+                      price: 120000
+                      attribute:
+                        - id: 3213
+                          variantId: 2132
+                          attributeValue: "Black"
+                    - id: 3221
+                      productId: 1231
+                      sku: "fishing-rod-150-cm-fiber-premium-silver"
+                      stock: 5
+                      price: 150000
+                      attribute:
+                        - id: 3213
+                          variantId: 3221
+                          attributeKey: "color"
+                          attributeValue: "Premium Silver"
+                    - id: 2131
+                      productId: 1231
+                      sku: "fishing-rod-150-cm-fiber-white"
+                      stock: 20
+                      price: 120000
+                      attribute:
+                        - id: 1112
+                          variantId: 2131
+                          attributeKey: "color"
+                          attributeValue: "White"
+              ProductsWithVariant-And2VariantAttribute-AndPhoto:
+                value:
+                  id: 1231
+                  name: "Daichi Premium Hook"
+                  description: "The premium Hook for the environment in the lake/river..."
+                  categoryId: 1
+                  hasVariant: true,
+                  variants:
+                    - id: 3211
+                      productId: 1231
+                      sku: "daichi-premium-hook-black-1"
+                      stock: 100
+                      price: 10000
+                      attribute:
+                        - id: 21312
+                          variantId: 3211
+                          attributeKey: "color"
+                          attributeValue: "Black"
+                        - id: 32131
+                          variantId: 3211
+                          attributeKey: "size"
+                          attributeValue: "1"
+                    - id: 4514
+                      productId: 1231
+                      sku: "daichi-premium-hook-black-2"
+                      stock: 100
+                      price: 10000
+                      attribute:
+                        - id: 3213
+                          variantId: 4514
+                          attributeKey: "color"
+                          attributeValue: "Black"
+                        - id: 32111
+                          variantId: 4514
+                          attributeKey: "size"
+                          attributeValue: "2"
+                    - id: 3512
+                      productId: 1231
+                      sku: "daichi-premium-hook-black-white-1"
+                      stock: 50
+                      price: 11000
+                      attribute:
+                        - id: 32114
+                          variantId: 3512
+                          attributeKey: "color"
+                          attributeValue: "White"
+                        - id: 32115
+                          variantId: 3512
+                          attributeKey: "size"
+                          attributeValue: "1"
+                    - id: 41321
+                      productId: 1231
+                      sku: "daichi-premium-hook-black-white-2"
+                      stock: 50
+                      price: 10000
+                      attribute:
+                        - id: 32116
+                          variantId: 41321
+                          attributeKey: "color"
+                          attributeValue: "White"
+                        - id: 32117
+                          variantId: 41321
+                          attributeKey: "size"
+                          attributeValue: "2"
+                  photos:
+                    - photo: 0101000010010...
+                    - photo: 0101000010010...
+              ProductsWithNoVariant:
+                value:
+                  id: 1235
+                  name: "Premium Fishing Rod 200 cm Fiber"
+                  description: "The premium Fishing Rod for the Open Sea"
+                  categoryId: 2
+                  hasVariant: false,
+                  stock: 5
+                  price: 300000
+                  photos:
+                    - photo: 0101000010010...
+                    - photo: 0101000010010...
+      responses:
+        200:
+          description: "Success update a product"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/ProductSchema"
+              examples:
+                ProductsWithVariantAnd-1VariantAttribute:
+                  $ref: "#/components/examples/ProductsWithVariantAnd-1VariantAttribute"
+                ProductsWithVariant-And2VariantAttribute-AndPhoto:
+                  $ref: "#/components/examples/ProductsWithVariant-And2VariantAttribute-AndPhoto"
+                ProductsWithNoVariant:
+                  $ref: "#/components/examples/ProductsWithNoVariant"
+        400:
+          $ref: "#/components/responses/BadRequestProductResponse"
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        404:
+          description: "Not Found Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneralErrorSchema"
+              examples:
+                ProductNotFound:
+                  value:
+                    errors: "Product is not found"
+                CategoryNotFound:
+                  value:
+                    errors: "Category is not found"
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+    delete:
+      summary: "Delete a product"
+      parameters:
+        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/PRODUCT-ID"
+      responses:
+        200:
+          $ref: "#/components/responses/GeneralSuccessResponse"
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        404:
+          $ref: "#/components/responses/ProductNotFoundErrorResponse"
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+# TODO: SEARCH PRODUCT
+components:
+  schemas:
+    ProductSchema:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        categoryId:
+          type: number
+        photos:
+          type: array
+          items:
+            properties:
+              id:
+                type: integer
+              product_id:
+                type: integer
+              photo:
+                type: string
+                format: binary
+        hasVariant:
+          type: boolean
+        stock:
+          type: number
+        price:
+          type: number
+        variants:
+          type: array
+          items:
+            $ref: "#/components/schemas/VariantSchema"
+    VariantSchema:
+      type: object
+      properties:
+        id:
+          type: integer
+        productId:
+          type: integer
+        sku:
+          type: string
+        stock:
+          type: integer
+        price:
+          type: integer
+        attribute:
+          type: array
+          items:
+            $ref: "#/components/schemas/AttributeVariantSchema"
+    AttributeVariantSchema:
+      type: object
+      properties:
+        id:
+          type: integer
+        variantId:
+          type: integer
+        attributeKey:
+          type: string
+        attributeValue:
+          type: string
+    GeneralErrorSchema:
+      type: object
+      properties:
+        errors:
+          type: string
+  parameters:
+    X-API-TOKEN:
+      name: "X-API-TOKEN"
+      in: "header"
+      required: true
+      description: "auth token"
+      schema:
+        type: string
+      example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
+    PRODUCT-ID:
+      name: "productId"
+      in: path
+      required: true
+      schema:
+        type: string
+        format: number
+        example: 1321
+  examples:
+    ProductsWithVariantAnd-1VariantAttribute:
+      value:
+        data:
+          id: 1231
+          name: "Fishing Rod 150 cm Fiber"
+          description: "The best Fishing Rod for middle fish in the lake/river"
+          categoryId: 2
+          hasVariant: true,
+          variants:
+            - id: 2132
+              productId: 1231
+              sku: "fishing-rod-150-cm-fiber-black"
+              stock: 20
+              price: 120000
+              attribute:
+                - id: 3213
+                  variantId: 2132
+                  attributeValue: "Black"
+            - id: 3221
+              productId: 1231
+              sku: "fishing-rod-150-cm-fiber-premium-silver"
+              stock: 5
+              price: 150000
+              attribute:
+                - id: 3213
+                  variantId: 3221
+                  attributeKey: "color"
+                  attributeValue: "Premium Silver"
+            - id: 2131
+              productId: 1231
+              sku: "fishing-rod-150-cm-fiber-white"
+              stock: 20
+              price: 120000
+              attribute:
+                - id: 1112
+                  variantId: 2131
+                  attributeKey: "color"
+                  attributeValue: "White"
+    ProductsWithVariant-And2VariantAttribute-AndPhoto:
+      value:
+        data:
+          id: 1231
+          name: "Daichi Premium Hook"
+          description: "The premium Hook for the environment in the lake/river..."
+          categoryId: 1
+          hasVariant: true,
+          variants:
+            - id: 3211
+              productId: 1231
+              sku: "daichi-premium-hook-black-1"
+              stock: 100
+              price: 10000
+              attribute:
+                - id: 21312
+                  variantId: 3211
+                  attributeKey: "color"
+                  attributeValue: "Black"
+                - id: 32131
+                  variantId: 3211
+                  attributeKey: "size"
+                  attributeValue: "1"
+            - id: 4514
+              productId: 1231
+              sku: "daichi-premium-hook-black-2"
+              stock: 100
+              price: 10000
+              attribute:
+                - id: 3213
+                  variantId: 4514
+                  attributeKey: "color"
+                  attributeValue: "Black"
+                - id: 32111
+                  variantId: 4514
+                  attributeKey: "size"
+                  attributeValue: "2"
+            - id: 3512
+              productId: 1231
+              sku: "daichi-premium-hook-black-white-1"
+              stock: 50
+              price: 11000
+              attribute:
+                - id: 32114
+                  variantId: 3512
+                  attributeKey: "color"
+                  attributeValue: "White"
+                - id: 32115
+                  variantId: 3512
+                  attributeKey: "size"
+                  attributeValue: "1"
+            - id: 41321
+              productId: 1231
+              sku: "daichi-premium-hook-black-white-2"
+              stock: 50
+              price: 10000
+              attribute:
+                - id: 32116
+                  variantId: 41321
+                  attributeKey: "color"
+                  attributeValue: "White"
+                - id: 32117
+                  variantId: 41321
+                  attributeKey: "size"
+                  attributeValue: "2"
+          photos:
+            - photo: 0101000010010...
+            - photo: 0101000010010...
+    ProductsWithNoVariant:
+      value:
+        data:
+          id: 1235
+          name: "Premium Fishing Rod 200 cm Fiber"
+          description: "The premium Fishing Rod for the Open Sea"
+          categoryId: 2
+          hasVariant: false,
+          stock: 5
+          price: 300000
+          photos:
+            - photo: 0101000010010...
+            - photo: 0101000010010...
+  responses:
+    GeneralSuccessResponse:
+      description: "Success"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: string
+          example:
+            data: "OK"
+    BadRequestProductResponse:
+      description: "Bad Request"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/GeneralErrorSchema"
+          examples:
+            ValidationBadRequest:
+              value:
+                errors: "name must not blank, description must not blank..."
+            ProductNameIsDuplicate:
+              value:
+                errors: "Product name is already exists."
+    UnauthenticatedErrorResponse:
+      description: "Unauthenticated request"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/GeneralErrorSchema"
+          example:
+            errors: "Unauthenticated request"
+    UnauthorizedErrorResponse:
+      description: "User Forbidden to make request to this endpoint"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/GeneralErrorSchema"
+          example:
+            errors: "Unauthorized request"
+    ProductNotFoundErrorResponse:
+      description: "Not Found Error"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/GeneralErrorSchema"
+          example:
+            errors: "Product is not found"
+    ServerErrorResponse:
+      description: "Server error"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/GeneralErrorSchema"
+          example:
+            errors: "Server unavailable, try again later"
+  
