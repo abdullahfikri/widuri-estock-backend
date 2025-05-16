@@ -88,7 +88,7 @@ paths:
               $ref: "#/components/schemas/UserCreateRequestSchema"
       responses:
         201:
-          $ref: "#/components/responses/GeneralSuccessResponse"
+          $ref: "#/components/responses/SuccessCreateOrGetOrUpdateUserResponse"
         400:
           description: "Failed created user, client error"
           content:
@@ -155,7 +155,7 @@ paths:
                   data:
                     type: array
                     items:
-                      - $ref: "#/components/schemas/UserResponseSchema"
+                      $ref: "#/components/schemas/UserResponseSchema"
                   paging:
                     type: object
                     properties:
@@ -195,7 +195,7 @@ paths:
         - $ref: "#/components/parameters/USERNAME-PATH"
       responses:
         200:
-          $ref: "#/components/responses/SuccessGetOrUpdateUserResponse"
+          $ref: "#/components/responses/SuccessCreateOrGetOrUpdateUserResponse"
         401:
           $ref: "#/components/responses/UnauthenticatedErrorResponse"
         403:
@@ -220,7 +220,7 @@ paths:
                 $ref:  "#/components/examples/UserUpdateRequestExample"
       responses:
         200:
-          $ref: "#/components/responses/SuccessGetOrUpdateUserResponse"
+          $ref: "#/components/responses/SuccessCreateOrGetOrUpdateUserResponse"
         401:
           $ref: "#/components/responses/UnauthenticatedErrorResponse"
         403:
@@ -237,7 +237,7 @@ paths:
         - $ref: "#/components/parameters/X-API-TOKEN"
       responses:
         200:
-          $ref: "#/components/responses/SuccessGetOrUpdateUserResponse"
+          $ref: "#/components/responses/SuccessCreateOrGetOrUpdateUserResponse"
         401:
           $ref: "#/components/responses/UnauthenticatedErrorResponse"
         500:
@@ -280,7 +280,7 @@ paths:
                   format: binary
       responses:
         200:
-          $ref: "#/components/responses/SuccessGetOrUpdateUserResponse"
+          $ref: "#/components/responses/SuccessCreateOrGetOrUpdateUserResponse"
         401:
           $ref: "#/components/responses/UnauthenticatedErrorResponse"
         404:
@@ -329,6 +329,9 @@ components:
           format: binary
         role:
           type: string
+        address:
+          $ref: "#/components/schemas/UserAddressSchema"
+
     UserUpdateRequestSchema:
       required:
         - password
@@ -387,6 +390,35 @@ components:
           format: binary
         role:
           type: string
+        addresses:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserAddressSchema"
+    UserAddressSchema:
+      type: object
+      required:
+        - street
+        - city
+        - province
+        - country
+      properties:
+        id:
+          type: integer
+        street:
+          type: string
+        village:
+          type: string
+        district:
+          type: string
+        city:
+          type: string
+        province:
+          type: string
+        country:
+          type: string
+        postalCode:
+          type: string
+
     GeneralError:
       type: object
       properties:
@@ -439,7 +471,7 @@ components:
                 type: string
           example:
             data: "OK"
-    SuccessGetOrUpdateUserResponse:
+    SuccessCreateOrGetOrUpdateUserResponse:
       description: "Success get/update a user with username"
       content:
         application/json:
@@ -457,6 +489,15 @@ components:
               email: "john@example.com"
               photo: "0101011011001010100010101010..."
               role: "Admin Gudang"
+              addresses:
+                - id: 123
+                  street: "JL Examp"
+                  village: "Kel. Examp"
+                  district: "Kec. Examp"
+                  city: "Metro City"
+                  province: "Mars Province"
+                  country: "Wakanda"
+                  postalCode: "0000000"
     UnauthenticatedErrorResponse:
       description: "Unauthenticated request"
       content:

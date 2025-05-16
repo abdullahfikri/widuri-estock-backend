@@ -10,7 +10,6 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
-import java.util.Set;
 
 @Getter
 @Setter
@@ -41,6 +40,7 @@ public class Address {
     @Column(name = "updated_at")
     private Instant updatedAt;
 
-    @ManyToMany(mappedBy = "addresses")
-    private Set<User> users;
+    @ManyToOne
+    @JoinColumn(name = "user_id", referencedColumnName = "username")
+    private User user;
 }

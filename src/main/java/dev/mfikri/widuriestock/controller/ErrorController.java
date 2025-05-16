@@ -1,6 +1,6 @@
 package dev.mfikri.widuriestock.controller;
 
-import dev.mfikri.widuriestock.model.user.WebResponse;
+import dev.mfikri.widuriestock.model.WebResponse;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;

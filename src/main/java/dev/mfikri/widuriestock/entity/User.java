@@ -57,12 +57,6 @@ public class User {
     @Column(name = "updated_at")
     private Instant updatedAt;
 
-    @ManyToMany
-    @JoinTable(
-            name = "user_addresses",
-            joinColumns = @JoinColumn(name = "user_username", referencedColumnName = "username"),
-            inverseJoinColumns = @JoinColumn(name = "address_id", referencedColumnName = "id")
-
-    )
+    @OneToMany(mappedBy = "user")
     private Set<Address> addresses;
 }

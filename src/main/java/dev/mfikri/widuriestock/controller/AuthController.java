@@ -3,7 +3,7 @@ package dev.mfikri.widuriestock.controller;
 import dev.mfikri.widuriestock.entity.User;
 import dev.mfikri.widuriestock.model.user.TokenResponse;
 import dev.mfikri.widuriestock.model.user.UserLoginRequest;
-import dev.mfikri.widuriestock.model.user.WebResponse;
+import dev.mfikri.widuriestock.model.WebResponse;
 import dev.mfikri.widuriestock.service.AuthService;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;

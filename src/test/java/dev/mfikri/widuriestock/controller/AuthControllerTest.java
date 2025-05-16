@@ -6,7 +6,7 @@ import dev.mfikri.widuriestock.entity.Role;
 import dev.mfikri.widuriestock.entity.User;
 import dev.mfikri.widuriestock.model.user.TokenResponse;
 import dev.mfikri.widuriestock.model.user.UserLoginRequest;
-import dev.mfikri.widuriestock.model.user.WebResponse;
+import dev.mfikri.widuriestock.model.WebResponse;
 import dev.mfikri.widuriestock.repository.UserRepository;
 import dev.mfikri.widuriestock.util.BCrypt;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,10 +18,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.springframework.test.web.servlet.MockMvcBuilder.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -45,7 +43,7 @@ class AuthControllerTest {
         user.setPassword(BCrypt.hashpw("admin_warehouse", BCrypt.gensalt()));
         user.setFirstName("John Doe");
         user.setPhone("+6283213121");
-        user.setRole(Role.ADMIN_WAREHOUSE.toString());
+        user.setRole("OWNER");
 
         userRepository.save(user);
     }

@@ -6,9 +6,9 @@ CREATE TABLE users (
     email VARCHAR(100),
     phone VARCHAR(100) NOT NULL,
     photo VARCHAR(255),
+    role VARCHAR(100) NOT NULL ,
     date_in TIMESTAMP,
     date_out TIMESTAMP,
-    role VARCHAR(100) NOT NULL ,
     token VARCHAR(100),
     token_expired_at BIGINT,
     created_at TIMESTAMP,
@@ -29,17 +29,16 @@ CREATE TABLE addresses (
     primary key (id)
 ) engine = InnoDB;
 
-CREATE TABLE user_addresses (
-    address_id INT NOT NULL ,
-    user_username VARCHAR(100) NOT NULL ,
-    primary key (address_id, user_username),
-    foreign key fk_users__user_addresses (user_username) REFERENCES users(username),
-    foreign key fk_addresses__user_addresses (address_id) REFERENCES addresses(id)
-) ENGINE = InnoDB;
+# CREATE TABLE user_addresses (
+#     address_id INT NOT NULL ,
+#     user_username VARCHAR(100) NOT NULL ,
+#     primary key (address_id, user_username),
+#     foreign key fk_users__user_addresses (user_username) REFERENCES users(username),
+#     foreign key fk_addresses__user_addresses (address_id) REFERENCES addresses(id)
+# ) ENGINE = InnoDB;
 
 SELECT * FROM users;
 SELECT * FROM addresses;
-SELECT * FROM user_addresses;
 
 
 ALTER TABLE addresses
@@ -47,3 +46,19 @@ ALTER TABLE addresses
 
 ALTER TABLE addresses
     ADD COLUMN updated_at TIMESTAMP;
+
+# DROP TABLE user_addresses;
+
+ALTER TABLE addresses
+    ADD COLUMN user_id VARCHAR(100);
+
+ALTER TABLE addresses
+    ADD CONSTRAINT fk_user_addresses
+    FOREIGN KEY (user_id) REFERENCES users (username);
+#
+# ALTER TABLE addresses
+#     ADD COLUMN supplier_id INT;
+#
+# ALTER TABLE addresses
+#     ADD CONSTRAINT fk_user_addresses
+#         FOREIGN KEY (supplier_id) REFERENCES suppliers (id);
