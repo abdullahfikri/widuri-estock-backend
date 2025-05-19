@@ -31,14 +31,14 @@ public class UserArgumentResolver implements HandlerMethodArgumentResolver {
         HttpServletRequest servletRequest = (HttpServletRequest) webRequest.getNativeRequest();
         String token = servletRequest.getHeader("X-API-TOKEN");
         if (token == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthenticated request");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthenticated request.");
         }
 
         User user = userRepository.findFirstByToken(token)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthenticated request"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthenticated request."));
 
         if (user.getTokenExpiredAt() < System.currentTimeMillis()) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthenticated request");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthenticated request.");
         }
 
         return user;

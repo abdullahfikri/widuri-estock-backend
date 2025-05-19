@@ -2,15 +2,19 @@ package dev.mfikri.widuriestock.service;
 
 import dev.mfikri.widuriestock.entity.Address;
 import dev.mfikri.widuriestock.entity.User;
-import dev.mfikri.widuriestock.model.user.AddressModel;
-import dev.mfikri.widuriestock.model.user.UserCreateRequest;
-import dev.mfikri.widuriestock.model.user.UserResponse;
-import dev.mfikri.widuriestock.model.user.UserUpdateRequest;
+import dev.mfikri.widuriestock.model.user.*;
 import dev.mfikri.widuriestock.repository.AddressRepository;
 import dev.mfikri.widuriestock.repository.UserRepository;
 import dev.mfikri.widuriestock.util.BCrypt;
 import dev.mfikri.widuriestock.util.ImageUtil;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,9 +24,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -93,13 +95,14 @@ public class UserServiceImpl implements UserService {
         if (username.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username must not blank.");
         }
+
         User user = findUserByUsername(username);
         return toUserResponse(user);
     }
 
     @Override
     @Transactional
-    public UserResponse update(UserUpdateRequest request) {
+    public UserResponse update(UserUpdateRequest request, boolean current) {
         validationService.validate(request);
 
         User user = findUserByUsername(request.getUsername());
@@ -124,18 +127,64 @@ public class UserServiceImpl implements UserService {
             user.setEmail(request.getEmail());
         }
 
-        if (!request.getPhoto().isEmpty()) {
+        if (request.getPhoto() != null && !request.getPhoto().isEmpty()) {
             Path path = uploadPhoto(request.getPhoto(), request.getUsername());
             user.setPhoto(path.toString());
         }
 
-        if (Objects.nonNull(request.getRole())){
+        if (!current == Objects.nonNull(request.getRole())){
             user.setRole(request.getRole());;
         }
 
         userRepository.save(user);
 
         return toUserResponse(user);
+    }
+
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<UserSearchResponse> searchUser(UserSearchFilterRequest filterRequest) {
+        validationService.validate(filterRequest);
+
+        Specification<User> specification = (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (filterRequest.getUsername() != null) {
+                predicates.add(criteriaBuilder.like(root.get("username"), "%" + filterRequest.getUsername() + "%"));
+            }
+
+            if (filterRequest.getName() != null) {
+                predicates.add(criteriaBuilder.or(
+                   criteriaBuilder.like(root.get("firstName"), "%" + filterRequest.getName() + "%"),
+                   criteriaBuilder.like(root.get("lastName"), "%" + filterRequest.getName() + "%")
+                ));
+            }
+
+            if (filterRequest.getPhone() != null) {
+                predicates.add(criteriaBuilder.like(root.get("phone"), "%" + filterRequest.getPhone() + "%"));
+            }
+
+            if (filterRequest.getEmail() != null) {
+                predicates.add(criteriaBuilder.like(root.get("email"), "%" + filterRequest.getEmail() + "%"));
+            }
+
+            if (filterRequest.getRole() != null) {
+                predicates.add(criteriaBuilder.like(root.get("role") , "%" + filterRequest.getRole() + "%"));
+            }
+            if (predicates.isEmpty()) {
+                predicates.add(criteriaBuilder.like(root.get("username"), "%%"));
+            }
+            return query.where(predicates.toArray(new Predicate[]{})).getRestriction();
+        };
+
+        Pageable pageable= PageRequest.of(filterRequest.getPage(), filterRequest.getSize());
+
+        Page<User> userPage = userRepository.findAll(specification, pageable);
+
+        List<UserSearchResponse> users = userPage.getContent().stream().map(this::toUserSearchResponse).toList();
+
+        return new PageImpl<>(users, pageable, userPage.getTotalElements());
     }
 
     private Path uploadPhoto (MultipartFile photo, String username) {
@@ -188,4 +237,16 @@ public class UserServiceImpl implements UserService {
                 .postalCode(address.getPostalCode())
                 .build();
     }
+
+    private UserSearchResponse toUserSearchResponse (User user) {
+        return UserSearchResponse.builder()
+                .username(user.getUsername())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .phone(user.getPhone())
+                .email(user.getEmail())
+                .photo(user.getPhoto())
+                .role(user.getRole())
+                .build();
+    };
 }
