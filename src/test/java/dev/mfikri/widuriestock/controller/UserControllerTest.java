@@ -8,6 +8,7 @@ import dev.mfikri.widuriestock.entity.User;
 import dev.mfikri.widuriestock.model.WebResponse;
 import dev.mfikri.widuriestock.model.user.AddressModel;
 import dev.mfikri.widuriestock.model.user.UserResponse;
+import dev.mfikri.widuriestock.model.user.UserSearchResponse;
 import dev.mfikri.widuriestock.repository.AddressRepository;
 import dev.mfikri.widuriestock.repository.UserRepository;
 import dev.mfikri.widuriestock.util.BCrypt;
@@ -25,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
+import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -555,4 +557,428 @@ class UserControllerTest {
             assertEquals(Role.ADMIN_SELLER.toString(), userUpdated.getRole());
         });
     }
+
+    @Test
+    void getUserCurrentFailedTokenNotSend() throws Exception{
+        mockMvc.perform(
+                get("/api/users/current")
+                        .accept(MediaType.APPLICATION_JSON)
+        ).andExpectAll(
+                status().isUnauthorized()
+        ).andDo(result -> {
+            WebResponse<UserResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getData());
+            assertNotNull(response.getErrors());
+
+            assertEquals("Unauthenticated request.", response.getErrors());
+        });
+    }
+
+    @Test
+    void getUserCurrentSuccess() throws Exception{
+        mockMvc.perform(
+                get("/api/users/current")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("X-API-TOKEN", "TOKENTEST")
+        ).andExpectAll(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<UserResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getErrors());
+            assertNotNull(response.getData());
+
+            assertEquals("admin", response.getData().getUsername());
+            assertEquals("John Doe", response.getData().getFirstName());
+            assertNull(response.getData().getLastName());
+            assertEquals("+6283213121", response.getData().getPhone());
+            assertEquals("OWNER", response.getData().getRole());
+
+            assertTrue(userRepository.existsById(response.getData().getUsername()));
+        });
+    }
+
+
+    @Test
+    void updateUserCurrentFailedValidation() throws Exception {
+        User user = new User();
+        user.setUsername("adminwarehouse");
+        user.setPassword("adminwarehouse123");
+        user.setFirstName("adminwarehouse123");
+        user.setPhone("6200312300");
+        user.setEmail("john@doe.com");
+        user.setToken("ADMN_WRHS");
+        user.setTokenExpiredAt(System.currentTimeMillis() + (1000L * 60));
+        user.setRole(Role.ADMIN_WAREHOUSE.toString());
+
+        userRepository.save(user);
+        Address address = new Address();
+        address.setStreet("Street 123");
+        address.setVillage("Village Test");
+        address.setDistrict("District Test");
+        address.setCity("City Test");
+        address.setProvince("Province Test");
+        address.setCountry("Country Test");
+        address.setPostalCode("0000321");
+        address.setUser(user);
+        addressRepository.save(address);
+
+        mockMvc.perform(
+                patch("/api/users/current")
+                        .contentType(MediaType.MULTIPART_FORM_DATA_VALUE)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("X-API-TOKEN", "ADMN_WRHS")
+                        .param("password", "123a")
+                        .param("email", "johndo123.com")
+        ).andExpectAll(
+                status().isBadRequest()
+        ).andDo(result -> {
+            WebResponse<UserResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+            assertNull(response.getData());
+            assertNotNull(response.getErrors());
+            log.info(response.getErrors());
+        });
+    }
+
+    @Test
+    void updateUserCurrentFailedTokenNotSend() throws Exception {
+
+        mockMvc.perform(
+                patch("/api/users/current")
+                        .contentType(MediaType.MULTIPART_FORM_DATA_VALUE)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .param("password", "abcd1234")
+                        .param("email", "johndo123@example.com")
+        ).andExpectAll(
+                status().isUnauthorized()
+        ).andDo(result -> {
+            WebResponse<UserResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+            assertNull(response.getData());
+            assertNotNull(response.getErrors());
+            assertEquals("Unauthenticated request.", response.getErrors());
+        });
+    }
+
+    @Test
+    void updateUserCurrentSuccess() throws Exception {
+        User user = new User();
+        user.setUsername("adminwarehouse");
+        user.setPassword("adminwarehouse123");
+        user.setFirstName("adminwarehouse123");
+        user.setPhone("6200312300");
+        user.setEmail("john@doe.com");
+        user.setRole(Role.ADMIN_WAREHOUSE.toString());
+        user.setToken("ADMN_WRHS");
+        user.setTokenExpiredAt(System.currentTimeMillis() + (1000L * 60));
+        userRepository.save(user);
+        Address address = new Address();
+        address.setStreet("Street 123");
+        address.setVillage("Village Test");
+        address.setDistrict("District Test");
+        address.setCity("City Test");
+        address.setProvince("Province Test");
+        address.setCountry("Country Test");
+        address.setPostalCode("0000321");
+        address.setUser(user);
+        addressRepository.save(address);
+
+        mockMvc.perform(
+                multipart(HttpMethod.PATCH, "/api/users/current")
+                        .contentType(MediaType.MULTIPART_FORM_DATA_VALUE)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("X-API-TOKEN", "ADMN_WRHS")
+                        .param("password", "abcd1234")
+                        .param("firstName", "John Update")
+                        .param("lastName", "Doe Update")
+                        .param("phone", "623123123")
+                        .param("email", "johndo123@example.com")
+                        .param("role", Role.ADMIN_SELLER.toString())
+
+        ).andExpectAll(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<UserResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+            assertNull(response.getErrors());
+            assertNotNull(response.getData());
+
+            assertEquals(user.getUsername(), response.getData().getUsername());
+            assertEquals("John Update", response.getData().getFirstName());
+            assertEquals("Doe Update", response.getData().getLastName());
+            assertEquals("623123123", response.getData().getPhone());
+            assertEquals("johndo123@example.com", response.getData().getEmail());
+            assertEquals(Role.ADMIN_WAREHOUSE.toString(), response.getData().getRole());
+            assertEquals(1, response.getData().getAddresses().size());
+
+            User userUpdated = userRepository.findById(user.getUsername()).orElse(null);
+            assertNotNull(userUpdated);
+
+            assertTrue(BCrypt.checkpw("abcd1234", userUpdated.getPassword()));
+            assertEquals("johndo123@example.com", userUpdated.getEmail());
+            assertEquals("John Update", userUpdated.getFirstName());
+            assertEquals("Doe Update", userUpdated.getLastName());
+            assertEquals("623123123", userUpdated.getPhone());
+            assertEquals("johndo123@example.com", userUpdated.getEmail());
+            assertEquals(Role.ADMIN_WAREHOUSE.toString(), userUpdated.getRole());
+        });
+    }
+
+
+    @Test
+    void searchAll() throws Exception {
+        for (int i = 0; i < 100; i++) {
+            User user = new User();
+            user.setUsername("adminwarehouse" + i);
+            user.setPassword("adminwarehouse123");
+            user.setFirstName("adminwarehouse " + i);
+            user.setPhone("6200312300");
+            user.setEmail("john"+ i +"@doe.com");
+            user.setRole(Role.ADMIN_WAREHOUSE.toString());
+            userRepository.save(user);
+        }
+
+        mockMvc.perform(
+                get("/api/users")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("X-API-TOKEN", "TOKENTEST")
+        ).andExpectAll(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<List<UserSearchResponse>> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getErrors());
+            assertNotNull(response.getData());
+            assertNotNull(response.getPaging());
+            assertEquals(10, response.getData().size());
+            assertEquals(0, response.getPaging().getCurrentPage());
+            assertEquals(11, response.getPaging().getTotalPage()); // 100 adminwarehouse + 1 owner = 101
+            assertEquals(10, response.getPaging().getSizePerPage());
+        });
+    }
+
+    @Test
+    void searchByUsername() throws Exception {
+        for (int i = 0; i < 100; i++) {
+            User user = new User();
+            user.setUsername("adminwarehouse" + i);
+            user.setPassword("adminwarehouse123");
+            user.setFirstName("adminwarehouse " + i);
+            user.setPhone("6200312300" + i);
+            user.setEmail("john"+ i +"@doe.com");
+            user.setRole(Role.ADMIN_WAREHOUSE.toString());
+            userRepository.save(user);
+        }
+
+        mockMvc.perform(
+                get("/api/users")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("X-API-TOKEN", "TOKENTEST")
+                        .param("username", "warehouse1") // 1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19. Total = 11 Items
+        ).andExpectAll(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<List<UserSearchResponse>> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getErrors());
+            assertNotNull(response.getData());
+            assertNotNull(response.getPaging());
+            assertEquals(10, response.getData().size());
+            assertEquals(0, response.getPaging().getCurrentPage());
+            assertEquals(2, response.getPaging().getTotalPage());
+            assertEquals(10, response.getPaging().getSizePerPage());
+        });
+    }
+
+    @Test
+    void searchByName() throws Exception{
+        for (int i = 0; i < 100; i++) {
+            User user = new User();
+            user.setUsername("adminwarehouse" + i);
+            user.setPassword("adminwarehouse123");
+            user.setFirstName("adminwarehouse " + i);
+            user.setPhone("6200312300" + i);
+            user.setEmail("john"+ i +"@doe.com");
+            user.setRole(Role.ADMIN_WAREHOUSE.toString());
+            userRepository.save(user);
+        }
+
+        mockMvc.perform(
+                get("/api/users")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("X-API-TOKEN", "TOKENTEST")
+                        .param("name", "warehouse 1") // 1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19. Total = 11 Items
+        ).andExpectAll(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<List<UserSearchResponse>> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getErrors());
+            assertNotNull(response.getData());
+            assertNotNull(response.getPaging());
+            assertEquals(10, response.getData().size());
+            assertEquals(0, response.getPaging().getCurrentPage());
+            assertEquals(2, response.getPaging().getTotalPage());
+            assertEquals(10, response.getPaging().getSizePerPage());
+        });
+    }
+
+    @Test
+    void searchByEmailAndPhone() throws Exception{
+        // email
+        for (int i = 0; i < 100; i++) {
+            User user = new User();
+            user.setUsername("adminwarehouse" + i);
+            user.setPassword("adminwarehouse123");
+            user.setFirstName("adminwarehouse " + i);
+            user.setPhone("6200312300" + i);
+            user.setEmail("john"+ i +"@doe.com");
+            user.setRole(Role.ADMIN_WAREHOUSE.toString());
+            userRepository.save(user);
+        }
+
+        mockMvc.perform(
+                get("/api/users")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("X-API-TOKEN", "TOKENTEST")
+                        .param("email", "john1") // 1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19. Total = 11 Items
+        ).andExpectAll(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<List<UserSearchResponse>> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getErrors());
+            assertNotNull(response.getData());
+            assertNotNull(response.getPaging());
+            assertEquals(10, response.getData().size());
+            assertEquals(0, response.getPaging().getCurrentPage());
+            assertEquals(2, response.getPaging().getTotalPage());
+            assertEquals(10, response.getPaging().getSizePerPage());
+        });
+
+        // phone
+
+        mockMvc.perform(
+                get("/api/users")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("X-API-TOKEN", "TOKENTEST")
+                        .param("phone", "62003123001") // 1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19. Total = 11 Items
+        ).andExpectAll(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<List<UserSearchResponse>> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getErrors());
+            assertNotNull(response.getData());
+            assertNotNull(response.getPaging());
+            assertEquals(10, response.getData().size());
+            assertEquals(0, response.getPaging().getCurrentPage());
+            assertEquals(2, response.getPaging().getTotalPage());
+            assertEquals(10, response.getPaging().getSizePerPage());
+        });
+
+        // combine
+
+        mockMvc.perform(
+                get("/api/users")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("X-API-TOKEN", "TOKENTEST")
+                        .param("email", "john1") // 1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19. Total = 11 Items
+                        .param("phone", "620031230010") // 10. Total = 1 Items
+        ).andExpectAll(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<List<UserSearchResponse>> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getErrors());
+            assertNotNull(response.getData());
+            assertNotNull(response.getPaging());
+            assertEquals(1, response.getData().size());
+            assertEquals(0, response.getPaging().getCurrentPage());
+            assertEquals(1, response.getPaging().getTotalPage());
+            assertEquals(10, response.getPaging().getSizePerPage());
+        });
+    }
+
+    @Test
+    void searchByRole() throws Exception{
+        for (int i = 0; i < 100; i++) {
+            User user = new User();
+            user.setUsername("adminwarehouse" + i);
+            user.setPassword("adminwarehouse123");
+            user.setFirstName("adminwarehouse " + i);
+            user.setPhone("6200312300" + i);
+            user.setEmail("john"+ i +"@doe.com");
+            user.setRole(Role.ADMIN_WAREHOUSE.toString());
+            userRepository.save(user);
+        }
+
+        mockMvc.perform(
+                get("/api/users")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("X-API-TOKEN", "TOKENTEST")
+                        .param("role", Role.ADMIN_WAREHOUSE.toString()) //  Total = 100 Items
+        ).andExpectAll(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<List<UserSearchResponse>> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getErrors());
+            assertNotNull(response.getData());
+            assertNotNull(response.getPaging());
+            assertEquals(10, response.getData().size());
+            assertEquals(0, response.getPaging().getCurrentPage());
+            assertEquals(10, response.getPaging().getTotalPage());
+            assertEquals(10, response.getPaging().getSizePerPage());
+        });
+    }
+
+    @Test
+    void searchCombine() throws Exception{
+
+        for (int i = 0; i < 100; i++) {
+            User user = new User();
+            user.setUsername("adminwarehouse" + i);
+            user.setPassword("adminwarehouse123");
+            user.setFirstName("adminwarehouse " + i);
+            user.setPhone("6200312300" + i);
+            user.setEmail("john"+ i +"@doe.com");
+            user.setRole(Role.ADMIN_WAREHOUSE.toString());
+            userRepository.save(user);
+        }
+
+        mockMvc.perform(
+                get("/api/users")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("X-API-TOKEN", "TOKENTEST")
+                        .param("role", Role.ADMIN_WAREHOUSE.toString()) //  Total = 100 Items
+                        .param("email", "john1") // 1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19. Total = 11 Items
+                        .param("phone", "620031230010") // 10. Total = 1 Items
+        ).andExpectAll(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<List<UserSearchResponse>> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getErrors());
+            assertNotNull(response.getData());
+            assertNotNull(response.getPaging());
+            assertEquals(1, response.getData().size());
+            assertEquals(0, response.getPaging().getCurrentPage());
+            assertEquals(1, response.getPaging().getTotalPage());
+            assertEquals(10, response.getPaging().getSizePerPage());
+        });
+    }
+
 }

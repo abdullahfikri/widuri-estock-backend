@@ -1,9 +1,8 @@
 package dev.mfikri.widuriestock.service;
 
-import dev.mfikri.widuriestock.entity.User;
-import dev.mfikri.widuriestock.model.user.UserCreateRequest;
-import dev.mfikri.widuriestock.model.user.UserResponse;
-import dev.mfikri.widuriestock.model.user.UserUpdateRequest;
+import dev.mfikri.widuriestock.model.user.*;
+import org.springframework.data.domain.Page;
+
 
 public interface UserService {
 
@@ -11,5 +10,7 @@ public interface UserService {
 
     UserResponse get (String username);
 
-    UserResponse update (UserUpdateRequest request);
+    UserResponse update (UserUpdateRequest request, boolean current);
+
+    Page<UserSearchResponse> searchUser (UserSearchFilterRequest filterRequest);
 }

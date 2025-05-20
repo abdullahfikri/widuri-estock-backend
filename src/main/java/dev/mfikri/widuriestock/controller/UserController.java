@@ -2,13 +2,14 @@ package dev.mfikri.widuriestock.controller;
 
 import dev.mfikri.widuriestock.entity.User;
 import dev.mfikri.widuriestock.model.WebResponse;
-import dev.mfikri.widuriestock.model.user.UserCreateRequest;
-import dev.mfikri.widuriestock.model.user.UserResponse;
-import dev.mfikri.widuriestock.model.user.UserUpdateRequest;
+import dev.mfikri.widuriestock.model.user.*;
 import dev.mfikri.widuriestock.service.UserService;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping(path = "/api/users")
@@ -33,6 +34,41 @@ public class UserController {
                 .build();
     }
 
+    @GetMapping(path = "",
+        produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public WebResponse<List<UserSearchResponse>> search (User user,
+                                                         @RequestParam(value = "username", required = false) String username,
+                                                         @RequestParam(value = "name", required = false) String name,
+                                                         @RequestParam(value = "phone", required = false) String phone,
+                                                         @RequestParam(value = "email", required = false) String email,
+                                                         @RequestParam(value = "role", required = false) String role,
+                                                         @RequestParam(value = "page", required = false, defaultValue = "0") Integer page,
+                                                         @RequestParam(value = "size", required = false, defaultValue = "10") Integer size
+    ) {
+
+        UserSearchFilterRequest filterRequest = UserSearchFilterRequest.builder()
+                .username(username)
+                .name(name)
+                .phone(phone)
+                .email(email)
+                .role(role)
+                .page(page)
+                .size(size)
+                .build();
+
+        Page<UserSearchResponse> responsePage = userService.searchUser(filterRequest);
+
+        return WebResponse.<List<UserSearchResponse>>builder()
+                .data(responsePage.getContent())
+                .paging(PagingResponse.builder()
+                        .currentPage(responsePage.getNumber())
+                        .totalPage(responsePage.getTotalPages())
+                        .sizePerPage(responsePage.getSize())
+                        .build())
+                .build();
+    }
+
     @GetMapping(path = "/{username}",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
@@ -51,11 +87,39 @@ public class UserController {
     public WebResponse<UserResponse> update (@ModelAttribute UserUpdateRequest request, User user, @PathVariable String username) {
         request.setUsername(username);
 
-        UserResponse response = userService.update(request);
+        UserResponse response = userService.update(request, false);
 
         return WebResponse.<UserResponse>builder()
                 .data(response)
                 .build();
     }
+
+
+    @GetMapping(path = "/current",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public WebResponse<UserResponse> getCurrent (User user) {
+        UserResponse response = userService.get(user.getUsername());
+
+        return WebResponse.<UserResponse>builder()
+                .data(response)
+                .build();
+    }
+
+    @PatchMapping(path = "/current",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public WebResponse<UserResponse> updateCurrent (@ModelAttribute UserUpdateRequest request, User user) {
+        request.setUsername(user.getUsername());
+
+        UserResponse response = userService.update(request, true);
+
+        return WebResponse.<UserResponse>builder()
+                .data(response)
+                .build();
+    }
+
+
 
 }
