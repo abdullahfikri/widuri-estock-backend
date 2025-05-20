@@ -330,18 +330,6 @@ paths:
       parameters:
         - $ref: "#/components/parameters/X-API-TOKEN"
         - $ref: "#/components/parameters/USERNAME-PATH"
-        - in: query
-          name: page
-          description: "Current page number"
-          schema:
-            type: integer
-            default: 0
-        - in: query
-          name: size
-          description: "Maximum data users per page"
-          schema:
-            type: integer
-            default: 10
       responses:
         200:
           description: "Success"
@@ -353,8 +341,6 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/UserAddressSchema"
-                  paging:
-                    $ref: "#/components/schemas/PagingSchema"
         401:
           $ref: "#/components/responses/UnauthenticatedErrorResponse"
         403:
@@ -398,6 +384,33 @@ paths:
           $ref: "#/components/responses/AddressResponse"
         400:
           $ref: "#/components/responses/AddressBadRequestErrorResponse"
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        404:
+          $ref: "#/components/responses/UserAndAddressNotFoundErrorResponse"
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+    delete:
+      tags:
+        - "Addresses"
+      summary: "Delete an address record from a user"
+      parameters:
+        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/USERNAME-PATH"
+        - $ref: "#/components/parameters/ADDRESS-ID-PATH"
+      responses:
+        200:
+          description: "Success Delete an address"
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    type: string
+              example:
+                data: OK
         401:
           $ref: "#/components/responses/UnauthenticatedErrorResponse"
         403:
@@ -517,6 +530,7 @@ components:
         - city
         - province
         - country
+        - postalCode
       properties:
         id:
           type: integer
@@ -692,15 +706,15 @@ components:
           example:
             errors: "Unauthenticated request"
     UserNotFoundErrorResponse:
-      description: "User is not found"
+      description: "User is not found."
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/GeneralErrorSchema"
           example:
-            errors: "User is not found!"
+            errors: "User is not found."
     UserAndAddressNotFoundErrorResponse:
-      description: "User is not found"
+      description: "User is not found."
       content:
         application/json:
           schema:
@@ -708,10 +722,10 @@ components:
           examples:
             User not found:
               value:
-                errors: "User is not found!"
+                errors: "User is not found."
             Address not found:
               value:
-                errors: "Address is not found!"
+                errors: "Address is not found."
     UnauthorizedErrorResponse:
       description: "User Forbidden to make request to this endpoint"
       content:

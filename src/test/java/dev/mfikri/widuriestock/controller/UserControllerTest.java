@@ -6,7 +6,7 @@ import dev.mfikri.widuriestock.entity.Address;
 import dev.mfikri.widuriestock.entity.Role;
 import dev.mfikri.widuriestock.entity.User;
 import dev.mfikri.widuriestock.model.WebResponse;
-import dev.mfikri.widuriestock.model.user.AddressModel;
+import dev.mfikri.widuriestock.model.user.AddressResponse;
 import dev.mfikri.widuriestock.model.user.UserResponse;
 import dev.mfikri.widuriestock.model.user.UserSearchResponse;
 import dev.mfikri.widuriestock.repository.AddressRepository;
@@ -22,18 +22,14 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 import java.util.List;
-import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.springframework.test.web.servlet.MockMvcBuilder.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.*;
 
 @Slf4j
 @SpringBootTest
@@ -326,19 +322,19 @@ class UserControllerTest {
             assertEquals(params.getFirst("phone"), response.getData().getPhone());
             assertEquals(params.getFirst("email"), response.getData().getEmail());
             assertEquals(params.getFirst("role"), response.getData().getRole());
-            AddressModel addressModel = response.getData().getAddresses().stream().findFirst().orElse(null);
-            assertNotNull(addressModel);
-            assertNotNull(addressModel.getId());
-            assertEquals(params.getFirst("address.street"), addressModel.getStreet());
-            assertEquals(params.getFirst("address.village"), addressModel.getVillage());
-            assertEquals(params.getFirst("address.district"), addressModel.getDistrict());
-            assertEquals(params.getFirst("address.city"), addressModel.getCity());
-            assertEquals(params.getFirst("address.province"), addressModel.getProvince());
-            assertEquals(params.getFirst("address.country"), addressModel.getCountry());
-            assertEquals(params.getFirst("address.postalCode"), addressModel.getPostalCode());
+            AddressResponse addressResponse = response.getData().getAddresses().stream().findFirst().orElse(null);
+            assertNotNull(addressResponse);
+            assertNotNull(addressResponse.getId());
+            assertEquals(params.getFirst("address.street"), addressResponse.getStreet());
+            assertEquals(params.getFirst("address.village"), addressResponse.getVillage());
+            assertEquals(params.getFirst("address.district"), addressResponse.getDistrict());
+            assertEquals(params.getFirst("address.city"), addressResponse.getCity());
+            assertEquals(params.getFirst("address.province"), addressResponse.getProvince());
+            assertEquals(params.getFirst("address.country"), addressResponse.getCountry());
+            assertEquals(params.getFirst("address.postalCode"), addressResponse.getPostalCode());
 
             assertTrue(userRepository.existsById(response.getData().getUsername()));
-            assertTrue(userRepository.existsByAddressesId(addressModel.getId()));
+            assertTrue(userRepository.existsByAddressesId(addressResponse.getId()));
         });
     }
 
@@ -417,20 +413,21 @@ class UserControllerTest {
             assertEquals(user.getPhone(), response.getData().getPhone());
             assertEquals(user.getEmail(), response.getData().getEmail());
             assertEquals(user.getRole(), response.getData().getRole());
-            AddressModel addressModel = response.getData().getAddresses().stream().findFirst().orElse(null);
-            assertNotNull(addressModel);
-            assertNotNull(addressModel.getId());
+            AddressResponse addressResponse = response.getData().getAddresses().stream().findFirst().orElse(null);
+            assertNotNull(addressResponse);
+            assertNotNull(addressResponse.getId());
 
-            assertEquals(address.getStreet(), addressModel.getStreet());
-            assertEquals(address.getVillage(), addressModel.getVillage());
-            assertEquals(address.getDistrict(), addressModel.getDistrict());
-            assertEquals(address.getCity(), addressModel.getCity());
-            assertEquals(address.getProvince(), addressModel.getProvince());
-            assertEquals(address.getCountry(), addressModel.getCountry());
-            assertEquals(address.getPostalCode(), addressModel.getPostalCode());
+            assertEquals(address.getStreet(), addressResponse.getStreet());
+            assertEquals(address.getVillage(), addressResponse.getVillage());
+            assertEquals(address.getDistrict(), addressResponse.getDistrict());
+            assertEquals(address.getCity(), addressResponse.getCity());
+            assertEquals(address.getProvince(), addressResponse.getProvince());
+            assertEquals(address.getCountry(), addressResponse.getCountry());
+            assertEquals(address.getPostalCode(), addressResponse.getPostalCode());
+            assertEquals(user.getUsername(), addressResponse.getUsernameId());
 
             assertTrue(userRepository.existsById(response.getData().getUsername()));
-            assertTrue(userRepository.existsByAddressesId(addressModel.getId()));
+            assertTrue(userRepository.existsByAddressesId(addressResponse.getId()));
         });
     }
 

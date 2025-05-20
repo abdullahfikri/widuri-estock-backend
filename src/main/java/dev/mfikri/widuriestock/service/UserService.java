@@ -6,11 +6,11 @@ import org.springframework.data.domain.Page;
 
 public interface UserService {
 
-    UserResponse create (UserCreateRequest request);
+    UserResponse create(UserCreateRequest request);
 
-    UserResponse get (String username);
+    UserResponse get(String username);
 
-    UserResponse update (UserUpdateRequest request, boolean current);
+    UserResponse update(UserUpdateRequest request, boolean current);
 
-    Page<UserSearchResponse> searchUser (UserSearchFilterRequest filterRequest);
+    Page<UserSearchResponse> searchUser(UserSearchFilterRequest filterRequest);
 }

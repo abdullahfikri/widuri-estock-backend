@@ -19,5 +19,5 @@ public class UserResponse {
     private String email;
     private String photo;
     private String role;
-    private Set<AddressModel> addresses;
+    private Set<AddressResponse> addresses;
 }
