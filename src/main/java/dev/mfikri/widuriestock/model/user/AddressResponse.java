@@ -1,13 +1,12 @@
 package dev.mfikri.widuriestock.model.user;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class AddressModel {
+public class AddressResponse {
     private Integer id;
     private String street;
     private String village;
@@ -16,4 +15,5 @@ public class AddressModel {
     private String province;
     private String country;
     private String postalCode;
+    private String usernameId;
 }

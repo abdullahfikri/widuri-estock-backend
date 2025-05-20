@@ -8,7 +8,6 @@ import dev.mfikri.widuriestock.repository.UserRepository;
 import dev.mfikri.widuriestock.util.BCrypt;
 import dev.mfikri.widuriestock.util.ImageUtil;
 import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -96,7 +95,7 @@ public class UserServiceImpl implements UserService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username must not blank.");
         }
 
-        User user = findUserByUsername(username);
+        User user = findUserByUsernameOrThrows(username);
         return toUserResponse(user);
     }
 
@@ -105,7 +104,7 @@ public class UserServiceImpl implements UserService {
     public UserResponse update(UserUpdateRequest request, boolean current) {
         validationService.validate(request);
 
-        User user = findUserByUsername(request.getUsername());
+        User user = findUserByUsernameOrThrows(request.getUsername());
 
         if (Objects.nonNull(request.getPassword())) {
             user.setPassword(BCrypt.hashpw(request.getPassword(), BCrypt.gensalt()));
@@ -187,7 +186,7 @@ public class UserServiceImpl implements UserService {
         return new PageImpl<>(users, pageable, userPage.getTotalElements());
     }
 
-    private Path uploadPhoto (MultipartFile photo, String username) {
+    private Path uploadPhoto(MultipartFile photo, String username) {
         String contentType = photo.getContentType();
         if (contentType == null || !ImageUtil.isImage(contentType)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Image photo is not valid");
@@ -203,14 +202,14 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-    private User findUserByUsername (String username) {
+    private User findUserByUsernameOrThrows(String username) {
         return userRepository.findById(username.trim()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,  "User is not found."));
     }
 
-    private UserResponse toUserResponse (User user) {
-        Set<AddressModel> addressModels = new HashSet<>();
+    private UserResponse toUserResponse(User user) {
+        Set<AddressResponse> addressResponses = new HashSet<>();
         if (user.getAddresses() != null) {
-            addressModels = user.getAddresses().stream().map(this::toAddressModel).collect(Collectors.toSet());
+            addressResponses = user.getAddresses().stream().map(AddressServiceImpl::toAddressResponse).collect(Collectors.toSet());
         }
 
         return UserResponse.builder()
@@ -221,24 +220,11 @@ public class UserServiceImpl implements UserService {
                 .email(user.getEmail())
                 .photo(user.getPhoto())
                 .role(user.getRole())
-                .addresses(addressModels)
+                .addresses(addressResponses)
                 .build();
     }
 
-    private AddressModel toAddressModel (Address address) {
-        return AddressModel.builder()
-                .id(address.getId())
-                .street(address.getStreet())
-                .village(address.getVillage())
-                .district(address.getDistrict())
-                .city(address.getCity())
-                .province(address.getProvince())
-                .country(address.getCountry())
-                .postalCode(address.getPostalCode())
-                .build();
-    }
-
-    private UserSearchResponse toUserSearchResponse (User user) {
+    private UserSearchResponse toUserSearchResponse(User user) {
         return UserSearchResponse.builder()
                 .username(user.getUsername())
                 .firstName(user.getFirstName())

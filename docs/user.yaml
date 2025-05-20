@@ -8,6 +8,8 @@ servers:
 paths:
   /auth/login:
     post:
+      tags:
+        - "Auth"
       summary: "Login to a user"
       requestBody:
         required: true
@@ -51,7 +53,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GeneralError"
+                $ref: "#/components/schemas/GeneralErrorSchema"
               example:
                 errors: "Username or password must not blank"
         401:
@@ -59,13 +61,15 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GeneralError"
+                $ref: "#/components/schemas/GeneralErrorSchema"
               example:
                 errors: "Username or password wrong"
         500:
           $ref: "#/components/responses/ServerErrorResponse"
   /auth/logout:
     delete:
+      tags:
+        - "Auth"
       summary: "Logout a user and delete the token from the database"
       parameters:
         - $ref: "#/components/parameters/X-API-TOKEN"
@@ -78,6 +82,8 @@ paths:
           $ref: "#/components/responses/ServerErrorResponse"
   /users:
     post:
+      tags:
+        - "Users"
       summary: "Create a user from appropriate admin"
       parameters:
         - $ref: "#/components/parameters/X-API-TOKEN"
@@ -94,7 +100,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GeneralError"
+                $ref: "#/components/schemas/GeneralErrorSchema"
               example:
                 errors: "Username must not blank, password must not blank, ??"
         401:
@@ -104,6 +110,8 @@ paths:
         500:
           $ref: "#/components/responses/ServerErrorResponse"
     get:
+      tags:
+        - "Users"
       summary: "Get list of users"
       parameters:
         - $ref: "#/components/parameters/X-API-TOKEN"
@@ -157,14 +165,7 @@ paths:
                     items:
                       $ref: "#/components/schemas/UserResponseSchema"
                   paging:
-                    type: object
-                    properties:
-                      currentPage:
-                        type: integer
-                      totalPage:
-                        type: integer
-                      size:
-                        type: integer
+                    $ref: "#/components/schemas/PagingSchema"
               examples:
                 GetUsers:
                   value:
@@ -189,6 +190,8 @@ paths:
 
   /users/{username}:
     get:
+      tags:
+        - "Users"
       summary: "Get the users"
       parameters:
         - $ref: "#/components/parameters/X-API-TOKEN"
@@ -205,6 +208,8 @@ paths:
         500:
           $ref: "#/components/responses/ServerErrorResponse"
     patch:
+      tags:
+        - "Users"
       # TODO: add feature to disable users
       summary: "Edit a user depend of username"
       parameters:
@@ -230,8 +235,10 @@ paths:
         500:
           $ref: "#/components/responses/ServerErrorResponse"
 
-  /user/current:
+  /users/current:
     get:
+      tags:
+        - "Users"
       summary: "Get Current User"
       parameters:
         - $ref: "#/components/parameters/X-API-TOKEN"
@@ -243,6 +250,8 @@ paths:
         500:
           $ref: "#/components/responses/ServerErrorResponse"
     patch:
+      tags:
+        - "Users"
       summary: "Update user profile"
       parameters:
         - $ref: "#/components/parameters/X-API-TOKEN"
@@ -290,6 +299,126 @@ paths:
 
 # TODO: Adding reset password ENDPOINT
 
+# ADDRESS
+  /users/{username}/addresses:
+    post:
+      tags:
+        - "Addresses"
+      summary: "Create user address"
+      parameters:
+        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/USERNAME-PATH"
+      requestBody:
+        $ref: "#/components/requestBodies/AddressRequestBody"
+      responses:
+        201:
+          $ref: "#/components/responses/AddressResponse"
+        400:
+          $ref: "#/components/responses/AddressBadRequestErrorResponse"
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        404:
+          $ref: "#/components/responses/UserNotFoundErrorResponse"
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+    get:
+      tags:
+        - "Addresses"
+      summary: "Get list of address users"
+      parameters:
+        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/USERNAME-PATH"
+      responses:
+        200:
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/UserAddressSchema"
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        404:
+          $ref: "#/components/responses/UserNotFoundErrorResponse"
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+  /users/{username}/addresses/{addressId}:
+    get:
+      tags:
+        - "Addresses"
+      summary: "Get an address record from a user"
+      parameters:
+        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/USERNAME-PATH"
+        - $ref: "#/components/parameters/ADDRESS-ID-PATH"
+      responses:
+        200:
+          $ref: "#/components/responses/AddressResponse"
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        404:
+          $ref: "#/components/responses/UserAndAddressNotFoundErrorResponse"
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+    put:
+      tags:
+        - "Addresses"
+      summary: "Update an address record from a user"
+      parameters:
+        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/USERNAME-PATH"
+        - $ref: "#/components/parameters/ADDRESS-ID-PATH"
+      requestBody:
+        $ref: "#/components/requestBodies/AddressRequestBody"
+      responses:
+        200:
+          $ref: "#/components/responses/AddressResponse"
+        400:
+          $ref: "#/components/responses/AddressBadRequestErrorResponse"
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        404:
+          $ref: "#/components/responses/UserAndAddressNotFoundErrorResponse"
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+    delete:
+      tags:
+        - "Addresses"
+      summary: "Delete an address record from a user"
+      parameters:
+        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/USERNAME-PATH"
+        - $ref: "#/components/parameters/ADDRESS-ID-PATH"
+      responses:
+        200:
+          description: "Success Delete an address"
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    type: string
+              example:
+                data: OK
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        404:
+          $ref: "#/components/responses/UserAndAddressNotFoundErrorResponse"
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
 components:
   schemas:
     UserCreateRequestSchema:
@@ -401,6 +530,7 @@ components:
         - city
         - province
         - country
+        - postalCode
       properties:
         id:
           type: integer
@@ -418,8 +548,20 @@ components:
           type: string
         postalCode:
           type: string
-
-    GeneralError:
+        usernameId:
+          type: string
+    PagingSchema:
+      type: object
+      properties:
+        currentPage:
+          type: integer
+        totalPage:
+          type: integer
+          default: 10
+        size:
+          type: integer
+          default: 10
+    GeneralErrorSchema:
       type: object
       properties:
         errors:
@@ -443,6 +585,28 @@ components:
         email: "john@example.com"
         photo: "0101011011001010100010101010..."
         role: "Admin Gudang"
+
+    AddressWithoutIdExample:
+      value:
+        street: "JLN Diponegoro"
+        village: "Kel. Air Baru"
+        district: "Kec. Pantai Indah"
+        city: "Kota Meikarta"
+        province: "DKI Jakarta"
+        country: "Indonesia"
+        postalCode: "123123"
+    AddressResponseExample:
+      value:
+        data:
+          id: 1234
+          street: "JLN Diponegoro"
+          village: "Kel. Air Baru"
+          district: "Kec. Pantai Indah"
+          city: "Kota Meikarta"
+          province: "DKI Jakarta"
+          country: "Indonesia"
+          postalCode: "123123"
+          usernameId: "john321"
   parameters:
     X-API-TOKEN:
       name: "X-API-TOKEN"
@@ -459,6 +623,22 @@ components:
       schema:
         type: string
       example: john321
+    ADDRESS-ID-PATH:
+      name: "addressId"
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 1234
+  requestBodies:
+    AddressRequestBody:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/UserAddressSchema"
+          examples:
+            Address:
+              $ref: "#/components/examples/AddressWithoutIdExample"
   responses:
     GeneralSuccessResponse:
       description: "Success"
@@ -498,28 +678,60 @@ components:
                   province: "Mars Province"
                   country: "Wakanda"
                   postalCode: "0000000"
+    AddressResponse:
+      description: "Success"
+      content:
+        application/json:
+          schema:
+            properties:
+              data:
+                $ref: "#/components/schemas/UserAddressSchema"
+          examples:
+            Address Response:
+              $ref: "#/components/examples/AddressResponseExample"
+    AddressBadRequestErrorResponse:
+      description: "Failed created address, client error"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/GeneralErrorSchema"
+          example:
+            errors: "Street must not blank, city must not blank, province must not blank, ..."
     UnauthenticatedErrorResponse:
       description: "Unauthenticated request"
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/GeneralError"
+            $ref: "#/components/schemas/GeneralErrorSchema"
           example:
             errors: "Unauthenticated request"
     UserNotFoundErrorResponse:
-      description: "User is not found"
+      description: "User is not found."
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/GeneralError"
+            $ref: "#/components/schemas/GeneralErrorSchema"
           example:
-            errors: "User is not found!"
+            errors: "User is not found."
+    UserAndAddressNotFoundErrorResponse:
+      description: "User is not found."
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/GeneralErrorSchema"
+          examples:
+            User not found:
+              value:
+                errors: "User is not found."
+            Address not found:
+              value:
+                errors: "Address is not found."
     UnauthorizedErrorResponse:
       description: "User Forbidden to make request to this endpoint"
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/GeneralError"
+            $ref: "#/components/schemas/GeneralErrorSchema"
           example:
             errors: "Unauthorized request"
     ServerErrorResponse:
@@ -527,7 +739,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/GeneralError"
+            $ref: "#/components/schemas/GeneralErrorSchema"
           example:
             errors: "Server unavailable, try again later"
   
