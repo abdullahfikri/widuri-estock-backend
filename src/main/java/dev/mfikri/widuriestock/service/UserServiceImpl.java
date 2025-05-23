@@ -54,6 +54,7 @@ public class UserServiceImpl implements UserService {
 
         User user = new User();
         user.setUsername(request.getUsername());
+        // todo: add "{bcrypt}"+ prefix
         user.setPassword(BCrypt.hashpw(request.getPassword(), BCrypt.gensalt()));
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());

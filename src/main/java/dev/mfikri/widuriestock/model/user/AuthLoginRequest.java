@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class UserLoginRequest {
+public class AuthLoginRequest {
     @NotBlank
     @Size(max = 100, min = 5)
     private String username;

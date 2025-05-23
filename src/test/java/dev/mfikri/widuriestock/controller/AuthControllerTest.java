@@ -2,10 +2,9 @@ package dev.mfikri.widuriestock.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import dev.mfikri.widuriestock.entity.Role;
 import dev.mfikri.widuriestock.entity.User;
-import dev.mfikri.widuriestock.model.user.TokenResponse;
-import dev.mfikri.widuriestock.model.user.UserLoginRequest;
+import dev.mfikri.widuriestock.model.user.AuthTokenResponse;
+import dev.mfikri.widuriestock.model.user.AuthLoginRequest;
 import dev.mfikri.widuriestock.model.WebResponse;
 import dev.mfikri.widuriestock.repository.UserRepository;
 import dev.mfikri.widuriestock.util.BCrypt;
@@ -50,7 +49,7 @@ class AuthControllerTest {
 
     @Test
     void loginFailedValidation() throws Exception {
-        UserLoginRequest request =  new UserLoginRequest();
+        AuthLoginRequest request =  new AuthLoginRequest();
         request.setUsername("");
         request.setPassword("");
 
@@ -72,7 +71,7 @@ class AuthControllerTest {
 
     @Test
     void loginFailedWrongIdOrPassword() throws Exception {
-        UserLoginRequest request =  new UserLoginRequest();
+        AuthLoginRequest request =  new AuthLoginRequest();
 
         // username wrong
         request.setUsername("wronguser");
@@ -117,7 +116,7 @@ class AuthControllerTest {
 
     @Test
     void loginSuccess() throws Exception {
-        UserLoginRequest request =  new UserLoginRequest();
+        AuthLoginRequest request =  new AuthLoginRequest();
         request.setUsername("admin");
         request.setPassword("admin_warehouse");
 
@@ -129,7 +128,7 @@ class AuthControllerTest {
         ).andExpectAll(
                 status().isOk()
         ).andDo(result -> {
-            WebResponse<TokenResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            WebResponse<AuthTokenResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
 
             assertNull(response.getErrors());

@@ -39,6 +39,7 @@ CREATE TABLE addresses (
 
 SELECT * FROM users;
 SELECT * FROM addresses;
+INSERT INTO users (username, password, first_name, phone, role) VALUES ('testing', 'testing', 'john', '623213123', 'ADM_WAREHOUSE');
 
 
 ALTER TABLE addresses
@@ -62,3 +63,4 @@ ALTER TABLE addresses
 # ALTER TABLE addresses
 #     ADD CONSTRAINT fk_user_addresses
 #         FOREIGN KEY (supplier_id) REFERENCES suppliers (id);
+
