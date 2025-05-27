@@ -15,11 +15,9 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/auth")
 public class AuthController {
 //    private final AuthenticationProvider authenticationProvider;
-    private final AuthenticationManager authenticationManager;
     private final AuthService authService;
 
-    public AuthController( AuthenticationManager authenticationManager, AuthService authService) {
-        this.authenticationManager = authenticationManager;
+    public AuthController(AuthService authService) {
         this.authService = authService;
     }
 
@@ -28,9 +26,6 @@ public class AuthController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public WebResponse<AuthTokenResponse> login (@RequestBody AuthLoginRequest request) {
-//        Authentication authenticationRequest = UsernamePasswordAuthenticationToken.unauthenticated(request.getUsername(), request.getPassword());
-//
-//        Authentication authenticate = authenticationManager.authenticate(authenticationRequest);
         AuthTokenResponse response = authService.login(request);
 
         return WebResponse.<AuthTokenResponse>builder()
@@ -38,13 +33,13 @@ public class AuthController {
                 .build();
     }
 
-    @DeleteMapping(path = "/logout",
-            produces = MediaType.APPLICATION_JSON_VALUE
-    )
-    public WebResponse<String> logout (User user) {
-        authService.logout(user);
-        return WebResponse.<String>builder()
-                .data("OK")
-                .build();
-    }
+//    @DeleteMapping(path = "/logout",
+//            produces = MediaType.APPLICATION_JSON_VALUE
+//    )
+//    public WebResponse<String> logout (User user) {
+//        authService.logout(user);
+//        return WebResponse.<String>builder()
+//                .data("OK")
+//                .build();
+//    }
 }

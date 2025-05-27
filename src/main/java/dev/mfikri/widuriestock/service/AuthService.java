@@ -6,5 +6,5 @@ import dev.mfikri.widuriestock.model.user.AuthLoginRequest;
 
 public interface AuthService {
     AuthTokenResponse login(AuthLoginRequest request);
-    void logout(User user);
+//    void logout(User user);
 }

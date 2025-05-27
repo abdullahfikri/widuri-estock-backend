@@ -8,6 +8,7 @@ import dev.mfikri.widuriestock.model.user.AuthLoginRequest;
 import dev.mfikri.widuriestock.model.WebResponse;
 import dev.mfikri.widuriestock.repository.UserRepository;
 import dev.mfikri.widuriestock.util.BCrypt;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+@Slf4j
 @SpringBootTest
 @AutoConfigureMockMvc
 class AuthControllerTest {
@@ -134,104 +136,100 @@ class AuthControllerTest {
             assertNull(response.getErrors());
             assertNotNull(response.getData());
             assertNotNull(response.getData().getToken());
+            assertNotNull(response.getData().getCreatedAt());
             assertNotNull(response.getData().getExpiredAt());
 
-            User user = userRepository.findById("admin").orElse(null);
-            assertNotNull(user);
-            assertNotNull(user.getToken());
-            assertNotNull(user.getTokenExpiredAt());
-            assertEquals(user.getToken(), response.getData().getToken());
-            assertEquals(user.getTokenExpiredAt(), response.getData().getExpiredAt());
+            log.info(response.getData().getToken());
         });
     }
 
-    @Test
-    void logoutFailedByNotPassingToken() throws Exception {
-        mockMvc.perform(
-                delete("/api/auth/logout")
-                        .accept(MediaType.APPLICATION_JSON)
-        ).andExpectAll(
-                status().isUnauthorized()
-        ).andDo(result -> {
-            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
-            });
-
-            assertNull(response.getData());
-            assertNotNull(response.getErrors());
-            assertEquals("Unauthenticated request", response.getErrors());
-        });
-    }
-
-    @Test
-    void logoutFailedByWrongToken() throws Exception {
-        User user = userRepository.findById("admin").orElse(null);
-        assertNotNull(user);
-        user.setToken("TOKENTEST");
-        user.setTokenExpiredAt(System.currentTimeMillis() + (1000L * 60));
-        userRepository.save(user);
-
-        mockMvc.perform(
-                delete("/api/auth/logout")
-                        .accept(MediaType.APPLICATION_JSON)
-                        .header("X-API-TOKEN", "WRONGTOKEN")
-        ).andExpectAll(
-                status().isUnauthorized()
-        ).andDo(result -> {
-            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
-            });
-
-            assertNull(response.getData());
-            assertNotNull(response.getErrors());
-            assertEquals("Unauthenticated request", response.getErrors());
-        });
-    }
-
-    @Test
-    void logoutFailedByExpiredToken() throws Exception {
-        User user = userRepository.findById("admin").orElse(null);
-        assertNotNull(user);
-        user.setToken("TOKENTEST");
-        // set expired time to minus 1 minute to current time
-        user.setTokenExpiredAt(System.currentTimeMillis() - (1000L * 60));
-        userRepository.save(user);
-
-        mockMvc.perform(
-                delete("/api/auth/logout")
-                        .accept(MediaType.APPLICATION_JSON)
-                        .header("X-API-TOKEN", "TOKENTEST")
-        ).andExpectAll(
-                status().isUnauthorized()
-        ).andDo(result -> {
-            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
-            });
-
-            assertNull(response.getData());
-            assertNotNull(response.getErrors());
-            assertEquals("Unauthenticated request", response.getErrors());
-        });
-    }
-
-    @Test
-    void logoutSuccess() throws Exception {
-        User user = userRepository.findById("admin").orElse(null);
-        assertNotNull(user);
-        user.setToken("TOKENTEST");
-        user.setTokenExpiredAt(System.currentTimeMillis() + (1000L * 60));
-        userRepository.save(user);
-
-        mockMvc.perform(
-                delete("/api/auth/logout")
-                        .accept(MediaType.APPLICATION_JSON)
-                        .header("X-API-TOKEN", "TOKENTEST")
-        ).andExpectAll(
-                status().isOk()
-        ).andDo(result -> {
-            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
-            });
-
-            assertNull(response.getErrors());
-            assertNotNull(response.getData());
-            assertEquals("OK", response.getData());
-        });
-    }
+//    @Test
+//    void logoutFailedByNotPassingToken() throws Exception {
+//        mockMvc.perform(
+//                delete("/api/auth/logout")
+//                        .accept(MediaType.APPLICATION_JSON)
+//        ).andExpectAll(
+//                status().isUnauthorized()
+//        ).andDo(result -> {
+//            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+//            });
+//
+//            assertNull(response.getData());
+//            assertNotNull(response.getErrors());
+//            assertEquals("Unauthenticated request", response.getErrors());
+//        });
+//    }
+//
+//    @Test
+//    void logoutFailedByWrongToken() throws Exception {
+//        User user = userRepository.findById("admin").orElse(null);
+//        assertNotNull(user);
+//        user.setToken("TOKENTEST");
+//        user.setTokenExpiredAt(System.currentTimeMillis() + (1000L * 60));
+//        userRepository.save(user);
+//
+//        mockMvc.perform(
+//                delete("/api/auth/logout")
+//                        .accept(MediaType.APPLICATION_JSON)
+//                        .header("X-API-TOKEN", "WRONGTOKEN")
+//        ).andExpectAll(
+//                status().isUnauthorized()
+//        ).andDo(result -> {
+//            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+//            });
+//
+//            assertNull(response.getData());
+//            assertNotNull(response.getErrors());
+//            assertEquals("Unauthenticated request", response.getErrors());
+//        });
+//    }
+//
+//    @Test
+//    void logoutFailedByExpiredToken() throws Exception {
+//        User user = userRepository.findById("admin").orElse(null);
+//        assertNotNull(user);
+//        user.setToken("TOKENTEST");
+//        // set expired time to minus 1 minute to current time
+//        user.setTokenExpiredAt(System.currentTimeMillis() - (1000L * 60));
+//        userRepository.save(user);
+//
+//        mockMvc.perform(
+//                delete("/api/auth/logout")
+//                        .accept(MediaType.APPLICATION_JSON)
+//                        .header("X-API-TOKEN", "TOKENTEST")
+//        ).andExpectAll(
+//                status().isUnauthorized()
+//        ).andDo(result -> {
+//            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+//            });
+//
+//            assertNull(response.getData());
+//            assertNotNull(response.getErrors());
+//            assertEquals("Unauthenticated request", response.getErrors());
+//        });
+//    }
+//
+//    @Test
+//    void logoutSuccess() throws Exception {
+//        User user = userRepository.findById("admin").orElse(null);
+//        assertNotNull(user);
+//        user.setToken("TOKENTEST");
+//        user.setTokenExpiredAt(System.currentTimeMillis() + (1000L * 60));
+//        userRepository.save(user);
+//
+//        mockMvc.perform(
+//                delete("/api/auth/logout")
+//                        .accept(MediaType.APPLICATION_JSON)
+//                        .header("X-API-TOKEN", "TOKENTEST")
+//        ).andExpectAll(
+//                status().isOk()
+//        ).andDo(result -> {
+//            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+//            });
+//
+//            assertNull(response.getErrors());
+//            assertNotNull(response.getData());
+//            assertEquals("OK", response.getData());
+//        });
+//    }
 }
