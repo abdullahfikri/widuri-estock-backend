@@ -1,6 +1,8 @@
 package dev.mfikri.widuriestock.filter;
 
+import dev.mfikri.widuriestock.exception.JwtAuthenticationException;
 import dev.mfikri.widuriestock.util.JwtUtil;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,7 +24,7 @@ import java.io.IOException;
 
 @Component
 @Slf4j
-public class JwtAuthFilter extends OncePerRequestFilter {
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final SecurityContextHolderStrategy securityContextHolderStrategy = SecurityContextHolder.getContextHolderStrategy();
 
     private final UserDetailsService userDetailsService;
@@ -31,7 +33,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final String AUTH_HEADER = "Authorization";
     private final String AUTH_TYPE = "Bearer";
 
-    public JwtAuthFilter(UserDetailsService userDetailsService, JwtUtil jwtUtil) {
+    public JwtAuthenticationFilter(UserDetailsService userDetailsService, JwtUtil jwtUtil) {
         this.userDetailsService = userDetailsService;
         this.jwtUtil = jwtUtil;
     }
@@ -39,21 +41,22 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         final String token = extractAuthorizationHeader(request);
-        log.info(token);
         if (token == null) {
             filterChain.doFilter(request, response);
             return;
         }
+        // log.info("invoke");
+        try {
+            final String tokenUsername = jwtUtil.extractUsername(token);
+            // log.info(tokenUsername);
 
-        final String tokenUsername = jwtUtil.extractUsername(token);
+            if (tokenUsername != null && securityContextHolderStrategy.getContext().getAuthentication() == null) {
+                UserDetails userDetails;
 
-        if (tokenUsername != null && securityContextHolderStrategy.getContext().getAuthentication() == null) {
-            UserDetails userDetails;
 
-            try {
                 userDetails = userDetailsService.loadUserByUsername(tokenUsername);
                 if (!jwtUtil.isTokenValid(token, userDetails.getUsername())) {
-                    throw new UsernameNotFoundException("Failed to authenticate with access token");
+                    throw new UsernameNotFoundException("Failed to authenticate with access token A");
                 }
 
                 final SecurityContext securityContext = this.securityContextHolderStrategy.createEmptyContext();
@@ -61,10 +64,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 securityContext.setAuthentication(authenticationToken);
                 this.securityContextHolderStrategy.setContext(securityContext);
-            } catch (UsernameNotFoundException e) {
-                // throw token failed
-                throw new BadCredentialsException("Failed to authenticate with access token");
+
             }
+        } catch (UsernameNotFoundException | JwtException e) {
+            throw new JwtAuthenticationException("Invalid Access Token", e.getCause());
         }
 
         filterChain.doFilter(request, response);

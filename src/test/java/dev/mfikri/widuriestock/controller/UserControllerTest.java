@@ -12,6 +12,7 @@ import dev.mfikri.widuriestock.model.user.UserSearchResponse;
 import dev.mfikri.widuriestock.repository.AddressRepository;
 import dev.mfikri.widuriestock.repository.UserRepository;
 import dev.mfikri.widuriestock.util.BCrypt;
+import dev.mfikri.widuriestock.util.JwtUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,6 +23,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
@@ -48,6 +50,12 @@ class UserControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private JwtUtil jwtUtil;
+    Integer jwtTtl = 300000;
+
+    String authorizationToken = "";
+
     @BeforeEach
     void setUp() {
         addressRepository.deleteAll();
@@ -55,13 +63,13 @@ class UserControllerTest {
 
         User user = new User();
         user.setUsername("admin");
-        user.setPassword(BCrypt.hashpw("admin_warehouse", BCrypt.gensalt()));
+        user.setPassword("{bcrypt}" + BCrypt.hashpw("admin_warehouse", BCrypt.gensalt()));
         user.setFirstName("John Doe");
         user.setPhone("+6283213121");
         user.setRole("OWNER");
-        user.setToken("TOKENTEST");
-        user.setTokenExpiredAt(System.currentTimeMillis() + (1000L * 60));
         userRepository.save(user);
+
+        authorizationToken = "Bearer " + jwtUtil.generate(user.getUsername(), jwtTtl);
     }
 
     @Test
@@ -89,7 +97,7 @@ class UserControllerTest {
         mockMvc.perform(
                multipart("/api/users")
                        .file(new MockMultipartFile("photo", "tan-malaka.png", "image/png", getClass().getResourceAsStream("/images/tan-malaka.png")))
-                       .header("X-API-TOKEN", "TOKENTEST")
+                       .header("Authorization", authorizationToken)
                        .contentType(MediaType.MULTIPART_FORM_DATA_VALUE)
                        .params(params)
         ).andExpectAll(
@@ -128,7 +136,7 @@ class UserControllerTest {
 
         mockMvc.perform(
                 multipart("/api/users")
-                        .header("X-API-TOKEN", "TOKENTEST")
+                        .header("Authorization", authorizationToken)
                         .contentType(MediaType.MULTIPART_FORM_DATA_VALUE)
                         .params(params)
         ).andExpectAll(
@@ -165,7 +173,7 @@ class UserControllerTest {
         mockMvc.perform(
                 multipart("/api/users")
                         .file(new MockMultipartFile("photo", "wrong-image.sql", "sql", getClass().getResourceAsStream("/images/wrong-image.sql")))
-                        .header("X-API-TOKEN", "TOKENTEST")
+                        .header("Authorization", authorizationToken)
                         .contentType(MediaType.MULTIPART_FORM_DATA_VALUE)
                         .params(params)
 
@@ -215,7 +223,7 @@ class UserControllerTest {
         mockMvc.perform(
                 multipart("/api/users")
                         .file(new MockMultipartFile("photo", "tan-malaka.png", "image/png", getClass().getResourceAsStream("/images/tan-malaka.png")))
-                        .header("X-API-TOKEN", "TOKENTEST")
+                        .header("Authorization", authorizationToken)
                         .contentType(MediaType.MULTIPART_FORM_DATA_VALUE)
                         .params(params)
 
@@ -262,7 +270,7 @@ class UserControllerTest {
         mockMvc.perform(
                 multipart("/api/users")
                         .file(new MockMultipartFile("photo", "tan-malaka.png", "image/png", getClass().getResourceAsStream("/images/tan-malaka.png")))
-                        .header("X-API-TOKEN", "TOKENTEST")
+                        .header("Authorization", authorizationToken)
                         .contentType(MediaType.MULTIPART_FORM_DATA_VALUE)
                         .params(params)
 
@@ -303,7 +311,7 @@ class UserControllerTest {
         mockMvc.perform(
                 multipart(HttpMethod.POST, "/api/users")
                         .file(new MockMultipartFile("photo", "tan-malaka.png", "image/png", getClass().getResourceAsStream("/images/tan-malaka.png")))
-                        .header("X-API-TOKEN", "TOKENTEST")
+                        .header("Authorization", authorizationToken)
                         .contentType(MediaType.MULTIPART_FORM_DATA_VALUE)
                         .params(params)
 
@@ -343,7 +351,7 @@ class UserControllerTest {
         mockMvc.perform(
                 get("/api/users/not-found")
                         .accept(MediaType.APPLICATION_JSON)
-                        .header("X-API-TOKEN", "TOKENTEST")
+                        .header("Authorization", authorizationToken)
         ).andExpectAll(
                 status().isNotFound()
         ).andDo(result -> {
@@ -359,7 +367,7 @@ class UserControllerTest {
         mockMvc.perform(
                 get("/api/users/  ")
                         .accept(MediaType.APPLICATION_JSON)
-                        .header("X-API-TOKEN", "TOKENTEST")
+                        .header("Authorization", authorizationToken)
         ).andExpectAll(
                 status().isBadRequest()
         ).andDo(result -> {
@@ -397,7 +405,7 @@ class UserControllerTest {
         mockMvc.perform(
                 get("/api/users/ adminwarehouse")
                         .accept(MediaType.APPLICATION_JSON)
-                        .header("X-API-TOKEN", "TOKENTEST")
+                        .header("Authorization", authorizationToken)
         ).andExpectAll(
                 status().isOk()
         ).andDo(result -> {
@@ -456,7 +464,7 @@ class UserControllerTest {
                 patch("/api/users/adminwarehouse")
                         .contentType(MediaType.MULTIPART_FORM_DATA_VALUE)
                         .accept(MediaType.APPLICATION_JSON)
-                        .header("X-API-TOKEN", "TOKENTEST")
+                        .header("Authorization", authorizationToken)
                         .param("password", "123a")
                         .param("email", "johndo123.com")
                         .param("role", "Wrong ROle")
@@ -478,7 +486,7 @@ class UserControllerTest {
                 patch("/api/users/adminwarehouse")
                         .contentType(MediaType.MULTIPART_FORM_DATA_VALUE)
                         .accept(MediaType.APPLICATION_JSON)
-                        .header("X-API-TOKEN", "TOKENTEST")
+                        .header("Authorization", authorizationToken)
                         .param("password", "abcd1234")
                         .param("email", "johndo123@example.com")
         ).andExpectAll(
@@ -518,7 +526,7 @@ class UserControllerTest {
                         .file(new MockMultipartFile("photo", "1.jpg", "image/jpg", getClass().getResourceAsStream("/images/1.jpg")))
                         .contentType(MediaType.MULTIPART_FORM_DATA_VALUE)
                         .accept(MediaType.APPLICATION_JSON)
-                        .header("X-API-TOKEN", "TOKENTEST")
+                        .header("Authorization", authorizationToken)
                         .param("password", "abcd1234")
                         .param("firstName", "John Update")
                         .param("lastName", "Doe Update")
@@ -569,7 +577,7 @@ class UserControllerTest {
             assertNull(response.getData());
             assertNotNull(response.getErrors());
 
-            assertEquals("Unauthenticated request.", response.getErrors());
+            assertEquals("Authentication failed", response.getErrors());
         });
     }
 
@@ -578,7 +586,7 @@ class UserControllerTest {
         mockMvc.perform(
                 get("/api/users/current")
                         .accept(MediaType.APPLICATION_JSON)
-                        .header("X-API-TOKEN", "TOKENTEST")
+                        .header("Authorization", authorizationToken)
         ).andExpectAll(
                 status().isOk()
         ).andDo(result -> {
@@ -600,6 +608,7 @@ class UserControllerTest {
 
 
     @Test
+    @Transactional
     void updateUserCurrentFailedValidation() throws Exception {
         User user = new User();
         user.setUsername("adminwarehouse");
@@ -607,11 +616,11 @@ class UserControllerTest {
         user.setFirstName("adminwarehouse123");
         user.setPhone("6200312300");
         user.setEmail("john@doe.com");
-        user.setToken("ADMN_WRHS");
-        user.setTokenExpiredAt(System.currentTimeMillis() + (1000L * 60));
         user.setRole(Role.ADMIN_WAREHOUSE.toString());
 
         userRepository.save(user);
+        authorizationToken = "Bearer " + jwtUtil.generate(user.getUsername(), jwtTtl);
+
         Address address = new Address();
         address.setStreet("Street 123");
         address.setVillage("Village Test");
@@ -627,7 +636,7 @@ class UserControllerTest {
                 patch("/api/users/current")
                         .contentType(MediaType.MULTIPART_FORM_DATA_VALUE)
                         .accept(MediaType.APPLICATION_JSON)
-                        .header("X-API-TOKEN", "ADMN_WRHS")
+                        .header("Authorization", authorizationToken)
                         .param("password", "123a")
                         .param("email", "johndo123.com")
         ).andExpectAll(
@@ -657,7 +666,7 @@ class UserControllerTest {
             });
             assertNull(response.getData());
             assertNotNull(response.getErrors());
-            assertEquals("Unauthenticated request.", response.getErrors());
+            assertEquals("Authentication failed", response.getErrors());
         });
     }
 
@@ -665,14 +674,16 @@ class UserControllerTest {
     void updateUserCurrentSuccess() throws Exception {
         User user = new User();
         user.setUsername("adminwarehouse");
-        user.setPassword("adminwarehouse123");
+        user.setPassword("{bcrypt}" + BCrypt.hashpw("admin_warehouse", BCrypt.gensalt()));
         user.setFirstName("adminwarehouse123");
         user.setPhone("6200312300");
         user.setEmail("john@doe.com");
         user.setRole(Role.ADMIN_WAREHOUSE.toString());
-        user.setToken("ADMN_WRHS");
-        user.setTokenExpiredAt(System.currentTimeMillis() + (1000L * 60));
         userRepository.save(user);
+        authorizationToken = "Bearer " + jwtUtil.generate(user.getUsername(), jwtTtl);
+
+        log.info(authorizationToken);
+
         Address address = new Address();
         address.setStreet("Street 123");
         address.setVillage("Village Test");
@@ -688,7 +699,7 @@ class UserControllerTest {
                 multipart(HttpMethod.PATCH, "/api/users/current")
                         .contentType(MediaType.MULTIPART_FORM_DATA_VALUE)
                         .accept(MediaType.APPLICATION_JSON)
-                        .header("X-API-TOKEN", "ADMN_WRHS")
+                        .header("Authorization", authorizationToken)
                         .param("password", "abcd1234")
                         .param("firstName", "John Update")
                         .param("lastName", "Doe Update")
@@ -742,7 +753,7 @@ class UserControllerTest {
         mockMvc.perform(
                 get("/api/users")
                         .accept(MediaType.APPLICATION_JSON)
-                        .header("X-API-TOKEN", "TOKENTEST")
+                        .header("Authorization", authorizationToken)
         ).andExpectAll(
                 status().isOk()
         ).andDo(result -> {
@@ -775,7 +786,7 @@ class UserControllerTest {
         mockMvc.perform(
                 get("/api/users")
                         .accept(MediaType.APPLICATION_JSON)
-                        .header("X-API-TOKEN", "TOKENTEST")
+                        .header("Authorization", authorizationToken)
                         .param("username", "warehouse1") // 1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19. Total = 11 Items
         ).andExpectAll(
                 status().isOk()
@@ -809,7 +820,7 @@ class UserControllerTest {
         mockMvc.perform(
                 get("/api/users")
                         .accept(MediaType.APPLICATION_JSON)
-                        .header("X-API-TOKEN", "TOKENTEST")
+                        .header("Authorization", authorizationToken)
                         .param("name", "warehouse 1") // 1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19. Total = 11 Items
         ).andExpectAll(
                 status().isOk()
@@ -844,7 +855,7 @@ class UserControllerTest {
         mockMvc.perform(
                 get("/api/users")
                         .accept(MediaType.APPLICATION_JSON)
-                        .header("X-API-TOKEN", "TOKENTEST")
+                        .header("Authorization", authorizationToken)
                         .param("email", "john1") // 1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19. Total = 11 Items
         ).andExpectAll(
                 status().isOk()
@@ -866,7 +877,7 @@ class UserControllerTest {
         mockMvc.perform(
                 get("/api/users")
                         .accept(MediaType.APPLICATION_JSON)
-                        .header("X-API-TOKEN", "TOKENTEST")
+                        .header("Authorization", authorizationToken)
                         .param("phone", "62003123001") // 1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19. Total = 11 Items
         ).andExpectAll(
                 status().isOk()
@@ -888,7 +899,7 @@ class UserControllerTest {
         mockMvc.perform(
                 get("/api/users")
                         .accept(MediaType.APPLICATION_JSON)
-                        .header("X-API-TOKEN", "TOKENTEST")
+                        .header("Authorization", authorizationToken)
                         .param("email", "john1") // 1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19. Total = 11 Items
                         .param("phone", "620031230010") // 10. Total = 1 Items
         ).andExpectAll(
@@ -923,7 +934,7 @@ class UserControllerTest {
         mockMvc.perform(
                 get("/api/users")
                         .accept(MediaType.APPLICATION_JSON)
-                        .header("X-API-TOKEN", "TOKENTEST")
+                        .header("Authorization", authorizationToken)
                         .param("role", Role.ADMIN_WAREHOUSE.toString()) //  Total = 100 Items
         ).andExpectAll(
                 status().isOk()
@@ -958,7 +969,7 @@ class UserControllerTest {
         mockMvc.perform(
                 get("/api/users")
                         .accept(MediaType.APPLICATION_JSON)
-                        .header("X-API-TOKEN", "TOKENTEST")
+                        .header("Authorization", authorizationToken)
                         .param("role", Role.ADMIN_WAREHOUSE.toString()) //  Total = 100 Items
                         .param("email", "john1") // 1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19. Total = 11 Items
                         .param("phone", "620031230010") // 10. Total = 1 Items

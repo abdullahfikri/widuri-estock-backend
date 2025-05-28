@@ -8,10 +8,12 @@ import dev.mfikri.widuriestock.model.user.AuthLoginRequest;
 import dev.mfikri.widuriestock.model.WebResponse;
 import dev.mfikri.widuriestock.repository.UserRepository;
 import dev.mfikri.widuriestock.util.BCrypt;
+import dev.mfikri.widuriestock.util.JwtUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
@@ -35,13 +37,14 @@ class AuthControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+
     @BeforeEach
     void setUp() {
         userRepository.deleteAll();
 
         User user = new User();
         user.setUsername("admin");
-        user.setPassword(BCrypt.hashpw("admin_warehouse", BCrypt.gensalt()));
+        user.setPassword("{bcrypt}" + BCrypt.hashpw("admin_warehouse", BCrypt.gensalt()));
         user.setFirstName("John Doe");
         user.setPhone("+6283213121");
         user.setRole("OWNER");

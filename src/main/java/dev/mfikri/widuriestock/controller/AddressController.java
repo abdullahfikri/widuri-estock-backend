@@ -29,7 +29,7 @@ public class AddressController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     @ResponseStatus(HttpStatus.CREATED)
-    public WebResponse<AddressResponse> create(@RequestBody AddressCreateRequest request, @PathVariable String username, User user) {
+    public WebResponse<AddressResponse> create(@RequestBody AddressCreateRequest request, @PathVariable String username) {
         request.setUsername(username);
 
         AddressResponse response = addressService.create(request);
@@ -53,7 +53,7 @@ public class AddressController {
     @GetMapping(path = "/addresses/{addressId}",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    public WebResponse<AddressResponse> get(@PathVariable String username, @PathVariable Integer addressId, User user) {
+    public WebResponse<AddressResponse> get(@PathVariable String username, @PathVariable Integer addressId) {
         AddressResponse response = addressService.get(username, addressId);
 
         return WebResponse.<AddressResponse>builder()
@@ -65,7 +65,7 @@ public class AddressController {
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    public WebResponse<AddressResponse> update(@RequestBody AddressUpdateRequest request, @PathVariable String username, @PathVariable Integer addressId, User user) {
+    public WebResponse<AddressResponse> update(@RequestBody AddressUpdateRequest request, @PathVariable String username, @PathVariable Integer addressId) {
         request.setUsername(username);
         request.setAddressId(addressId);
 
@@ -80,7 +80,7 @@ public class AddressController {
     @DeleteMapping(path = "/addresses/{addressId}",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    public WebResponse<String> delete(@PathVariable String username, @PathVariable Integer addressId, User user) {
+    public WebResponse<String> delete(@PathVariable String username, @PathVariable Integer addressId) {
         addressService.delete(username, addressId);
 
         return WebResponse.<String>builder()

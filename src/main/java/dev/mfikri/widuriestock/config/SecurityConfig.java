@@ -1,6 +1,7 @@
 package dev.mfikri.widuriestock.config;
 
-import dev.mfikri.widuriestock.filter.JwtAuthFilter;
+import dev.mfikri.widuriestock.entrypoint.JwtAuthenticationEntryPoint;
+import dev.mfikri.widuriestock.filter.JwtAuthenticationFilter;
 import dev.mfikri.widuriestock.util.JwtUtil;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.context.ApplicationEventPublisher;
@@ -19,6 +20,8 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
+import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import javax.crypto.SecretKey;
@@ -29,13 +32,16 @@ public class SecurityConfig {
     private final SecurityConfigProperties securityConfigProperties;
     private final UserDetailsService userDetailsService;
 
-    public SecurityConfig(SecurityConfigProperties securityConfigProperties, UserDetailsService userDetailsService) {
+    private final JwtAuthenticationEntryPoint entryPoint;
+
+    public SecurityConfig(SecurityConfigProperties securityConfigProperties, UserDetailsService userDetailsService, JwtAuthenticationEntryPoint entryPoint) {
         this.securityConfigProperties = securityConfigProperties;
         this.userDetailsService = userDetailsService;
+        this.entryPoint = entryPoint;
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(configurer -> configurer
@@ -44,12 +50,13 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/login").permitAll()
                         .anyRequest().authenticated()
                 )
+                .exceptionHandling(handler-> handler.authenticationEntryPoint(entryPoint))
                 .authenticationProvider(authenticationProvider())
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .logout(LogoutConfigurer::disable)
                 .anonymous(AnonymousConfigurer::disable)
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter, AuthorizationFilter.class);
 
 
         return http.build();

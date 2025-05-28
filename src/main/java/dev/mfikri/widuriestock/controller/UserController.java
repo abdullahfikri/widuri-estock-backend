@@ -4,11 +4,13 @@ import dev.mfikri.widuriestock.entity.User;
 import dev.mfikri.widuriestock.model.WebResponse;
 import dev.mfikri.widuriestock.model.user.*;
 import dev.mfikri.widuriestock.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
 
 @RestController
@@ -26,7 +28,7 @@ public class UserController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     @ResponseStatus(HttpStatus.CREATED)
-    public WebResponse<UserResponse> create (@ModelAttribute UserCreateRequest request, User user) {
+    public WebResponse<UserResponse> create (@ModelAttribute UserCreateRequest request) {
         UserResponse response = userService.create(request);
 
         return WebResponse.<UserResponse>builder()
@@ -37,7 +39,7 @@ public class UserController {
     @GetMapping(path = "",
         produces = MediaType.APPLICATION_JSON_VALUE
     )
-    public WebResponse<List<UserSearchResponse>> search (User user,
+    public WebResponse<List<UserSearchResponse>> search (
                                                          @RequestParam(value = "username", required = false) String username,
                                                          @RequestParam(value = "name", required = false) String name,
                                                          @RequestParam(value = "phone", required = false) String phone,
@@ -72,7 +74,7 @@ public class UserController {
     @GetMapping(path = "/{username}",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    public WebResponse<UserResponse> get (User user, @PathVariable String username) {
+    public WebResponse<UserResponse> get (@PathVariable String username) {
         UserResponse response = userService.get(username);
 
         return WebResponse.<UserResponse>builder()
@@ -84,7 +86,7 @@ public class UserController {
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    public WebResponse<UserResponse> update (@ModelAttribute UserUpdateRequest request, User user, @PathVariable String username) {
+    public WebResponse<UserResponse> update (@ModelAttribute UserUpdateRequest request, @PathVariable String username) {
         request.setUsername(username);
 
         UserResponse response = userService.update(request, false);
@@ -98,8 +100,10 @@ public class UserController {
     @GetMapping(path = "/current",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    public WebResponse<UserResponse> getCurrent (User user) {
-        UserResponse response = userService.get(user.getUsername());
+    public WebResponse<UserResponse> getCurrent (HttpServletRequest httpServletRequest) {
+        // todo: get user from user details
+        Principal userPrincipal = httpServletRequest.getUserPrincipal();
+        UserResponse response = userService.get(userPrincipal.getName());
 
         return WebResponse.<UserResponse>builder()
                 .data(response)
@@ -110,8 +114,10 @@ public class UserController {
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    public WebResponse<UserResponse> updateCurrent (@ModelAttribute UserUpdateRequest request, User user) {
-        request.setUsername(user.getUsername());
+    public WebResponse<UserResponse> updateCurrent (@ModelAttribute UserUpdateRequest request, HttpServletRequest httpServletRequest) {
+        // todo: get user from user details
+        Principal userPrincipal = httpServletRequest.getUserPrincipal();
+        request.setUsername(userPrincipal.getName());
 
         UserResponse response = userService.update(request, true);
 

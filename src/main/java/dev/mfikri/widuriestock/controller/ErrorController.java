@@ -1,10 +1,12 @@
 package dev.mfikri.widuriestock.controller;
 
+import dev.mfikri.widuriestock.exception.JwtAuthenticationException;
 import dev.mfikri.widuriestock.model.WebResponse;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -36,14 +38,36 @@ public class ErrorController {
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<WebResponse<String>> badCredentialException(BadCredentialsException exception) {
-//        log.info(exception.getClass().getName());
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
                 .body(WebResponse.
                         <String>builder()
                         .errors("Username or password wrong")
                         .build());
+    }
 
+    @ExceptionHandler(AuthenticationCredentialsNotFoundException.class)
+    public ResponseEntity<WebResponse<String>> authenticationException(AuthenticationCredentialsNotFoundException exception) {
+        log.info(exception.getClass().getName());
+
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(WebResponse
+                        .<String>builder()
+                        .errors("Authentication failed")
+                        .build());
+    }
+
+    @ExceptionHandler(JwtAuthenticationException.class)
+    public ResponseEntity<WebResponse<String>> jwtAuthenticationException(AuthenticationException exception) {
+        String message =  exception.getMessage();
+
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(WebResponse
+                        .<String>builder()
+                        .errors(message != null ? message: "Invalid Access Token")
+                        .build());
     }
 
 

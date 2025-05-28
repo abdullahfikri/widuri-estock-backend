@@ -20,6 +20,6 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = userRepository.findById(username).orElseThrow(() -> new UsernameNotFoundException("Username or password wrong"));
-        return new UserPrincipal(user.getUsername(), "{bcrypt}"+ user.getPassword(), "ROLE_"+user.getRole());
+        return new UserPrincipal(user.getUsername(), user.getPassword(), "ROLE_"+user.getRole());
     }
 }

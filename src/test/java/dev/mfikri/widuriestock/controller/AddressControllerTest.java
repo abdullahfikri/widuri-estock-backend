@@ -12,6 +12,7 @@ import dev.mfikri.widuriestock.model.user.AddressUpdateRequest;
 import dev.mfikri.widuriestock.repository.AddressRepository;
 import dev.mfikri.widuriestock.repository.UserRepository;
 import dev.mfikri.widuriestock.util.BCrypt;
+import dev.mfikri.widuriestock.util.JwtUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,6 +49,12 @@ class AddressControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private JwtUtil jwtUtil;
+    Integer jwtTtl = 300000;
+
+    String authorizationToken = "";
+
     @BeforeEach
     @Transactional
     void setUp() {
@@ -56,13 +63,13 @@ class AddressControllerTest {
 
         User user = new User();
         user.setUsername("owner");
-        user.setPassword(BCrypt.hashpw("owner123ee", BCrypt.gensalt()));
+        user.setPassword("{bcrypt}" + BCrypt.hashpw("admin_warehouse", BCrypt.gensalt()));
         user.setFirstName("John Doe");
         user.setPhone("+6283213121");
         user.setRole("OWNER");
-        user.setToken("TOKENTEST");
-        user.setTokenExpiredAt(System.currentTimeMillis() + (1000L * 60));
         userRepository.save(user);
+
+        authorizationToken = "Bearer " + jwtUtil.generate(user.getUsername(), jwtTtl);
     }
 
     @Test
@@ -85,7 +92,7 @@ class AddressControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("Unauthenticated request.", response.getErrors());
+            assertEquals("Authentication failed", response.getErrors());
         });
     }
 
@@ -96,7 +103,7 @@ class AddressControllerTest {
 
         mockMvc.perform(
                 post("/api/users/owner/addresses")
-                        .header("X-API-TOKEN", "TOKENTEST")
+                        .header("Authorization", authorizationToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(address))
@@ -126,7 +133,7 @@ class AddressControllerTest {
 
         mockMvc.perform(
                 post("/api/users/unknown_user/addresses")
-                        .header("X-API-TOKEN", "TOKENTEST")
+                        .header("Authorization", authorizationToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(address))
@@ -156,7 +163,7 @@ class AddressControllerTest {
 
         mockMvc.perform(
                 post("/api/users/owner/addresses")
-                        .header("X-API-TOKEN", "TOKENTEST")
+                        .header("Authorization", authorizationToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(address))
@@ -207,7 +214,7 @@ class AddressControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("Unauthenticated request.", response.getErrors());
+            assertEquals("Authentication failed", response.getErrors());
         });
     }
 
@@ -215,7 +222,7 @@ class AddressControllerTest {
     void getListAddressFailedUserNotFound() throws Exception {
         mockMvc.perform(
                 get("/api/users/unknown_user/addresses")
-                        .header("X-API-TOKEN", "TOKENTEST")
+                        .header("Authorization", authorizationToken)
                         .accept(MediaType.APPLICATION_JSON)
         ).andExpectAll(
                 status().isNotFound()
@@ -254,7 +261,7 @@ class AddressControllerTest {
 
         mockMvc.perform(
                 get("/api/users/owner/addresses")
-                        .header("X-API-TOKEN", "TOKENTEST")
+                        .header("Authorization", authorizationToken)
                         .accept(MediaType.APPLICATION_JSON)
         ).andExpectAll(
                 status().isOk()
@@ -295,7 +302,7 @@ class AddressControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("Unauthenticated request.", response.getErrors());
+            assertEquals("Authentication failed", response.getErrors());
         });
     }
 
@@ -304,7 +311,7 @@ class AddressControllerTest {
         mockMvc.perform(
                 get("/api/users/unkown_user/addresses/123")
                         .accept(MediaType.APPLICATION_JSON)
-                        .header("X-API-TOKEN", "TOKENTEST")
+                        .header("Authorization", authorizationToken)
         ).andExpectAll(
                 status().isNotFound()
         ).andDo(result -> {
@@ -323,7 +330,7 @@ class AddressControllerTest {
         mockMvc.perform(
                 get("/api/users/owner/addresses/123")
                         .accept(MediaType.APPLICATION_JSON)
-                        .header("X-API-TOKEN", "TOKENTEST")
+                        .header("Authorization", authorizationToken)
         ).andExpectAll(
                 status().isNotFound()
         ).andDo(result -> {
@@ -345,8 +352,6 @@ class AddressControllerTest {
         user.setFirstName("John Doe");
         user.setPhone("+6283213121");
         user.setRole(Role.ADMIN_WAREHOUSE.toString());
-        user.setToken("TOKENTEST2");
-        user.setTokenExpiredAt(System.currentTimeMillis() + (1000L * 60));
         userRepository.save(user);
 
         Address address = new Address();
@@ -364,7 +369,7 @@ class AddressControllerTest {
         mockMvc.perform(
                 get("/api/users/owner/addresses/" + address.getId())
                         .accept(MediaType.APPLICATION_JSON)
-                        .header("X-API-TOKEN", "TOKENTEST")
+                        .header("Authorization", authorizationToken)
         ).andExpectAll(
                 status().isNotFound()
         ).andDo(result -> {
@@ -397,7 +402,7 @@ class AddressControllerTest {
         mockMvc.perform(
                 get("/api/users/owner/addresses/" + address.getId())
                         .accept(MediaType.APPLICATION_JSON)
-                        .header("X-API-TOKEN", "TOKENTEST")
+                        .header("Authorization", authorizationToken)
         ).andExpectAll(
                 status().isOk()
         ).andDo(result -> {
@@ -438,7 +443,7 @@ class AddressControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("Unauthenticated request.", response.getErrors());
+            assertEquals("Authentication failed", response.getErrors());
         });
     }
 
@@ -468,7 +473,7 @@ class AddressControllerTest {
 
         mockMvc.perform(
                 put("/api/users/owner/addresses/" + address.getId())
-                        .header("X-API-TOKEN", "TOKENTEST")
+                        .header("Authorization", authorizationToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest))
@@ -513,7 +518,7 @@ class AddressControllerTest {
 
         mockMvc.perform(
                 put("/api/users/unknown_user/addresses/123")
-                        .header("X-API-TOKEN", "TOKENTEST")
+                        .header("Authorization", authorizationToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest))
@@ -558,7 +563,7 @@ class AddressControllerTest {
         mockMvc.perform(
                 put("/api/users/owner/addresses/99999999")
                         .accept(MediaType.APPLICATION_JSON)
-                        .header("X-API-TOKEN", "TOKENTEST")
+                        .header("Authorization", authorizationToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest))
         ).andExpectAll(
@@ -582,8 +587,6 @@ class AddressControllerTest {
         user.setFirstName("John Doe");
         user.setPhone("+6283213121");
         user.setRole(Role.ADMIN_WAREHOUSE.toString());
-        user.setToken("TOKENTEST2");
-        user.setTokenExpiredAt(System.currentTimeMillis() + (1000L * 60));
         userRepository.save(user);
 
         Address address = new Address();
@@ -611,7 +614,7 @@ class AddressControllerTest {
                 // not address belong to owner
                 put("/api/users/owner/addresses/" + address.getId())
                         .accept(MediaType.APPLICATION_JSON)
-                        .header("X-API-TOKEN", "TOKENTEST")
+                        .header("Authorization", authorizationToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest))
         ).andExpectAll(
@@ -655,7 +658,7 @@ class AddressControllerTest {
 
         mockMvc.perform(
                 put("/api/users/owner/addresses/" + address.getId())
-                        .header("X-API-TOKEN", "TOKENTEST")
+                        .header("Authorization", authorizationToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest))
@@ -710,7 +713,7 @@ class AddressControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("Unauthenticated request.", response.getErrors());
+            assertEquals("Authentication failed", response.getErrors());
         });
     }
 
@@ -719,7 +722,7 @@ class AddressControllerTest {
         mockMvc.perform(
                 delete("/api/users/unkown_user/addresses/123")
                         .accept(MediaType.APPLICATION_JSON)
-                        .header("X-API-TOKEN", "TOKENTEST")
+                        .header("Authorization", authorizationToken)
         ).andExpectAll(
                 status().isNotFound()
         ).andDo(result -> {
@@ -738,7 +741,7 @@ class AddressControllerTest {
         mockMvc.perform(
                 delete("/api/users/owner/addresses/123")
                         .accept(MediaType.APPLICATION_JSON)
-                        .header("X-API-TOKEN", "TOKENTEST")
+                        .header("Authorization", authorizationToken)
         ).andExpectAll(
                 status().isNotFound()
         ).andDo(result -> {
@@ -757,13 +760,13 @@ class AddressControllerTest {
     void deleteAddressFailedUserAndAddressNotMatch() throws Exception {
         User user = new User();
         user.setUsername("TESTINGUSER");
-        user.setPassword(BCrypt.hashpw("TESTINGPASSWORD", BCrypt.gensalt()));
+        user.setPassword("{bcrypt}" + BCrypt.hashpw("TESTINGPASSWORD", BCrypt.gensalt()));
         user.setFirstName("John Doe");
         user.setPhone("+6283213121");
         user.setRole(Role.ADMIN_WAREHOUSE.toString());
-        user.setToken("TOKENTEST2");
-        user.setTokenExpiredAt(System.currentTimeMillis() + (1000L * 60));
         userRepository.save(user);
+
+        authorizationToken = "Bearer " + jwtUtil.generate(user.getUsername(), jwtTtl);
 
         Address address = new Address();
         address.setUser(user);
@@ -781,7 +784,7 @@ class AddressControllerTest {
                 // not owner address
                 delete("/api/users/owner/addresses/" + address.getId())
                         .accept(MediaType.APPLICATION_JSON)
-                        .header("X-API-TOKEN", "TOKENTEST")
+                        .header("Authorization", authorizationToken)
         ).andExpectAll(
                 status().isNotFound()
         ).andDo(result -> {
@@ -816,7 +819,7 @@ class AddressControllerTest {
         mockMvc.perform(
                 delete("/api/users/owner/addresses/" + address.getId())
                         .accept(MediaType.APPLICATION_JSON)
-                        .header("X-API-TOKEN", "TOKENTEST")
+                        .header("Authorization", authorizationToken)
         ).andExpectAll(
                 status().isOk()
         ).andDo(result -> {

@@ -3,11 +3,13 @@ package dev.mfikri.widuriestock.util;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.function.Function;
 
+@Slf4j
 public class JwtUtil {
 
     private final SecretKey secretKey;
@@ -40,7 +42,7 @@ public class JwtUtil {
     }
 
     public boolean isTokenValid(String token, String username) {
-        return isTokenExpired(token) && extractUsername(token).equals(username);
+        return !isTokenExpired(token) && extractUsername(token).equals(username);
     }
 
 
