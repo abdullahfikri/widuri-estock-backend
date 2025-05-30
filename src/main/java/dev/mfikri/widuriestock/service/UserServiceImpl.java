@@ -65,7 +65,7 @@ public class UserServiceImpl implements UserService {
             user.setPhoto(path.toString());
         }
 
-        user.setRole(request.getRole());
+        user.setRole(request.getRole().toUpperCase());
 
         user.setDateIn(Instant.now());
         userRepository.save(user);

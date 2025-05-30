@@ -4,9 +4,13 @@ import dev.mfikri.widuriestock.entrypoint.JwtAuthenticationEntryPoint;
 import dev.mfikri.widuriestock.filter.JwtAuthenticationFilter;
 import dev.mfikri.widuriestock.util.JwtUtil;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.DispatcherType;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.authentication.*;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -47,8 +51,25 @@ public class SecurityConfig {
                 .sessionManagement(configurer -> configurer
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests((authorize) -> authorize
+                        .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers("/api/auth/login").permitAll()
-                        .anyRequest().authenticated()
+                        .requestMatchers("/api/auth/refresh-token").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/users").hasRole("OWNER")
+                        .requestMatchers(HttpMethod.GET, "/api/users").hasRole("OWNER")
+                        .requestMatchers(HttpMethod.GET, "/api/users/current").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/api/users/current").authenticated()
+                        // TODO: address current request controller
+                        .requestMatchers(HttpMethod.POST, "/api/users/current/addresses").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/users/current/addresses").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/users/current/addresses/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/users/current/addresses/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/users/current/addresses/**").authenticated()
+
+                        // get/update any users
+                        .requestMatchers(HttpMethod.PATCH, "/api/users/**").hasRole("OWNER")
+                        .requestMatchers(HttpMethod.GET, "/api/users/**").hasRole("OWNER")
+
+                        .anyRequest().denyAll()
                 )
                 .exceptionHandling(handler-> handler.authenticationEntryPoint(entryPoint))
                 .authenticationProvider(authenticationProvider())
@@ -87,5 +108,13 @@ public class SecurityConfig {
     public JwtUtil jwtUtil() {
         final SecretKey secretKey = Keys.hmacShaKeyFor(securityConfigProperties.getSecretKey().getBytes());
         return new JwtUtil(secretKey);
+    }
+
+    @Bean
+    public RoleHierarchy roleHierarchy() {
+        return RoleHierarchyImpl.withDefaultRolePrefix()
+                .role("OWNER").implies("ADMIN_SELLER")
+                .role("OWNER").implies("ADMIN_WAREHOUSE")
+                .build();
     }
 }

@@ -300,10 +300,10 @@ paths:
 # TODO: Adding reset password ENDPOINT
 
 # ADDRESS
-  /users/{username}/addresses:
+  /users/current/addresses:
     post:
       tags:
-        - "Addresses"
+        - "Addresses Current User"
       summary: "Create user address"
       parameters:
         - $ref: "#/components/parameters/X-API-TOKEN"
@@ -325,7 +325,7 @@ paths:
           $ref: "#/components/responses/ServerErrorResponse"
     get:
       tags:
-        - "Addresses"
+        - "Addresses Current User"
       summary: "Get list of address users"
       parameters:
         - $ref: "#/components/parameters/X-API-TOKEN"
@@ -349,10 +349,10 @@ paths:
           $ref: "#/components/responses/UserNotFoundErrorResponse"
         500:
           $ref: "#/components/responses/ServerErrorResponse"
-  /users/{username}/addresses/{addressId}:
+  /users/current/addresses/{addressId}:
     get:
       tags:
-        - "Addresses"
+        - "Addresses Current User"
       summary: "Get an address record from a user"
       parameters:
         - $ref: "#/components/parameters/X-API-TOKEN"
@@ -371,7 +371,7 @@ paths:
           $ref: "#/components/responses/ServerErrorResponse"
     put:
       tags:
-        - "Addresses"
+        - "Addresses Current User"
       summary: "Update an address record from a user"
       parameters:
         - $ref: "#/components/parameters/X-API-TOKEN"
@@ -394,7 +394,7 @@ paths:
           $ref: "#/components/responses/ServerErrorResponse"
     delete:
       tags:
-        - "Addresses"
+        - "Addresses Current User"
       summary: "Delete an address record from a user"
       parameters:
         - $ref: "#/components/parameters/X-API-TOKEN"

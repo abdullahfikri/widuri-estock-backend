@@ -19,4 +19,8 @@ public class AuthLoginRequest {
     @NotBlank
     @Size(max = 100, min = 8)
     private String password;
+
+    @NotBlank
+    @Size(max = 100)
+    private String userAgent;
 }

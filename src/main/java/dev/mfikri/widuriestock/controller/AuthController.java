@@ -1,6 +1,7 @@
 package dev.mfikri.widuriestock.controller;
 
 import dev.mfikri.widuriestock.entity.User;
+import dev.mfikri.widuriestock.model.user.AuthRefreshTokenRequest;
 import dev.mfikri.widuriestock.model.user.AuthTokenResponse;
 import dev.mfikri.widuriestock.model.user.AuthLoginRequest;
 import dev.mfikri.widuriestock.model.WebResponse;
@@ -25,11 +26,20 @@ public class AuthController {
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    public WebResponse<AuthTokenResponse> login (@RequestBody AuthLoginRequest request) {
+    public WebResponse<AuthTokenResponse> login(@RequestBody AuthLoginRequest request) {
         AuthTokenResponse response = authService.login(request);
 
         return WebResponse.<AuthTokenResponse>builder()
                 .data(response)
+                .build();
+    }
+
+    @PostMapping(path = "/refresh-token")
+    public WebResponse<AuthTokenResponse> getNewAccessToken(@RequestBody AuthRefreshTokenRequest authRefreshTokenRequest) {
+        AuthTokenResponse newAccessToken = authService.getNewAccessToken(authRefreshTokenRequest.getRefreshToken());
+
+        return WebResponse.<AuthTokenResponse>builder()
+                .data(newAccessToken)
                 .build();
     }
 

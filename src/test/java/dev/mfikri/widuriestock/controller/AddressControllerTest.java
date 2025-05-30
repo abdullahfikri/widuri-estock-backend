@@ -10,6 +10,7 @@ import dev.mfikri.widuriestock.model.user.AddressCreateRequest;
 import dev.mfikri.widuriestock.model.user.AddressResponse;
 import dev.mfikri.widuriestock.model.user.AddressUpdateRequest;
 import dev.mfikri.widuriestock.repository.AddressRepository;
+import dev.mfikri.widuriestock.repository.RefreshTokenRepository;
 import dev.mfikri.widuriestock.repository.UserRepository;
 import dev.mfikri.widuriestock.util.BCrypt;
 import dev.mfikri.widuriestock.util.JwtUtil;
@@ -44,6 +45,9 @@ class AddressControllerTest {
     private AddressRepository addressRepository;
 
     @Autowired
+    private RefreshTokenRepository refreshTokenRepository;
+
+    @Autowired
     private MockMvc mockMvc;
 
     @Autowired
@@ -58,12 +62,13 @@ class AddressControllerTest {
     @BeforeEach
     @Transactional
     void setUp() {
+        refreshTokenRepository.deleteAll();
         addressRepository.deleteAll();
         userRepository.deleteAll();
 
         User user = new User();
         user.setUsername("owner");
-        user.setPassword("{bcrypt}" + BCrypt.hashpw("admin_warehouse", BCrypt.gensalt()));
+        user.setPassword("{bcrypt}" + BCrypt.hashpw("owner_password", BCrypt.gensalt()));
         user.setFirstName("John Doe");
         user.setPhone("+6283213121");
         user.setRole("OWNER");
@@ -79,7 +84,7 @@ class AddressControllerTest {
         address.setStreet("Just Street");
 
         mockMvc.perform(
-                post("/api/users/owner/addresses")
+                post("/api/users/current/addresses")
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(address))
@@ -102,7 +107,7 @@ class AddressControllerTest {
         address.setStreet("Just Street");
 
         mockMvc.perform(
-                post("/api/users/owner/addresses")
+                post("/api/users/current/addresses")
                         .header("Authorization", authorizationToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON)
@@ -119,37 +124,6 @@ class AddressControllerTest {
         });
     }
 
-
-    @Test
-    void createAddressFailedUserNotFound() throws Exception {
-        Address address = new Address();
-        address.setStreet("JLN Diponegoro");
-        address.setVillage("Kel. Air Baru");
-        address.setDistrict("Kec. Pantai Indah");
-        address.setCity("Meikarta");
-        address.setProvince("Jakarta");
-        address.setCountry("Indonesia");
-        address.setPostalCode("123123");
-
-        mockMvc.perform(
-                post("/api/users/unknown_user/addresses")
-                        .header("Authorization", authorizationToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .accept(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(address))
-        ).andExpectAll(
-                status().isNotFound()
-        ).andDo(result -> {
-            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
-            });
-
-            assertNull(response.getData());
-            assertNull(response.getPaging());
-            assertNotNull(response.getErrors());
-            assertEquals("User is not found.", response.getErrors());
-        });
-    }
-
     @Test
     void createAddressSuccess() throws Exception {
         AddressCreateRequest address = new AddressCreateRequest();
@@ -162,7 +136,7 @@ class AddressControllerTest {
         address.setPostalCode("123123");
 
         mockMvc.perform(
-                post("/api/users/owner/addresses")
+                post("/api/users/current/addresses")
                         .header("Authorization", authorizationToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON)
@@ -203,7 +177,7 @@ class AddressControllerTest {
     @Test
     void getListAddressFailedTokenNotSend() throws Exception {
         mockMvc.perform(
-                get("/api/users/owner/addresses")
+                get("/api/users/current/addresses")
                         .accept(MediaType.APPLICATION_JSON)
         ).andExpectAll(
                 status().isUnauthorized()
@@ -218,24 +192,6 @@ class AddressControllerTest {
         });
     }
 
-    @Test
-    void getListAddressFailedUserNotFound() throws Exception {
-        mockMvc.perform(
-                get("/api/users/unknown_user/addresses")
-                        .header("Authorization", authorizationToken)
-                        .accept(MediaType.APPLICATION_JSON)
-        ).andExpectAll(
-                status().isNotFound()
-        ).andDo(result -> {
-            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
-            });
-
-            assertNull(response.getData());
-            assertNull(response.getPaging());
-            assertNotNull(response.getErrors());
-            assertEquals("User is not found.", response.getErrors());
-        });
-    }
 
     @Test
     void getListAddressSuccess() throws Exception {
@@ -260,7 +216,7 @@ class AddressControllerTest {
 
 
         mockMvc.perform(
-                get("/api/users/owner/addresses")
+                get("/api/users/current/addresses")
                         .header("Authorization", authorizationToken)
                         .accept(MediaType.APPLICATION_JSON)
         ).andExpectAll(
@@ -291,7 +247,7 @@ class AddressControllerTest {
     @Test
     void getAddressFailedTokenNotSend() throws Exception {
         mockMvc.perform(
-                get("/api/users/owner/addresses/123")
+                get("/api/users/current/addresses/123")
                         .accept(MediaType.APPLICATION_JSON)
         ).andExpectAll(
                 status().isUnauthorized()
@@ -307,28 +263,9 @@ class AddressControllerTest {
     }
 
     @Test
-    void getAddressFailedUserNotFound() throws Exception {
-        mockMvc.perform(
-                get("/api/users/unkown_user/addresses/123")
-                        .accept(MediaType.APPLICATION_JSON)
-                        .header("Authorization", authorizationToken)
-        ).andExpectAll(
-                status().isNotFound()
-        ).andDo(result -> {
-            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
-            });
-
-            assertNull(response.getData());
-            assertNull(response.getPaging());
-            assertNotNull(response.getErrors());
-            assertEquals("User is not found.", response.getErrors());
-        });
-    }
-
-    @Test
     void getAddressFailedAddressNotFound() throws Exception {
         mockMvc.perform(
-                get("/api/users/owner/addresses/123")
+                get("/api/users/current/addresses/123")
                         .accept(MediaType.APPLICATION_JSON)
                         .header("Authorization", authorizationToken)
         ).andExpectAll(
@@ -367,7 +304,7 @@ class AddressControllerTest {
         addressRepository.save(address);
 
         mockMvc.perform(
-                get("/api/users/owner/addresses/" + address.getId())
+                get("/api/users/current/addresses/" + address.getId())
                         .accept(MediaType.APPLICATION_JSON)
                         .header("Authorization", authorizationToken)
         ).andExpectAll(
@@ -400,7 +337,7 @@ class AddressControllerTest {
         addressRepository.save(address);
 
         mockMvc.perform(
-                get("/api/users/owner/addresses/" + address.getId())
+                get("/api/users/current/addresses/" + address.getId())
                         .accept(MediaType.APPLICATION_JSON)
                         .header("Authorization", authorizationToken)
         ).andExpectAll(
@@ -430,7 +367,7 @@ class AddressControllerTest {
         address.setStreet("Just Street");
 
         mockMvc.perform(
-                put("/api/users/owner/addresses/123")
+                put("/api/users/current/addresses/123")
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(address))
@@ -472,7 +409,7 @@ class AddressControllerTest {
 
 
         mockMvc.perform(
-                put("/api/users/owner/addresses/" + address.getId())
+                put("/api/users/current/addresses/" + address.getId())
                         .header("Authorization", authorizationToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON)
@@ -487,51 +424,6 @@ class AddressControllerTest {
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
             log.info(response.getErrors());
-        });
-    }
-
-
-    @Test
-    void updateAddressFailedUserNotFound() throws Exception {
-        User user = userRepository.findById("owner").orElse(null);
-        assertNotNull(user);
-
-        Address address = new Address();
-        address.setStreet("Test street");
-        address.setVillage("Test Village");
-        address.setDistrict("Test District");
-        address.setCity("Test City");
-        address.setProvince("Test Province");
-        address.setCountry("Test Country");
-        address.setPostalCode("123123");
-        address.setUser(user);
-        addressRepository.save(address);
-
-        AddressUpdateRequest updateRequest = new AddressUpdateRequest();
-        updateRequest.setStreet("JLN Diponegoro");
-        updateRequest.setVillage("Kel. Air Baru");
-        updateRequest.setDistrict("Kec. Pantai Indah");
-        updateRequest.setCity("Meikarta");
-        updateRequest.setProvince("Jakarta");
-        updateRequest.setCountry("Indonesia");
-        updateRequest.setPostalCode("123123");
-
-        mockMvc.perform(
-                put("/api/users/unknown_user/addresses/123")
-                        .header("Authorization", authorizationToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .accept(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updateRequest))
-        ).andExpectAll(
-                status().isNotFound()
-        ).andDo(result -> {
-            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
-            });
-
-            assertNull(response.getData());
-            assertNull(response.getPaging());
-            assertNotNull(response.getErrors());
-            assertEquals("User is not found.", response.getErrors());
         });
     }
 
@@ -561,7 +453,7 @@ class AddressControllerTest {
         updateRequest.setPostalCode("123123");
 
         mockMvc.perform(
-                put("/api/users/owner/addresses/99999999")
+                put("/api/users/current/addresses/99999999")
                         .accept(MediaType.APPLICATION_JSON)
                         .header("Authorization", authorizationToken)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -612,7 +504,7 @@ class AddressControllerTest {
 
         mockMvc.perform(
                 // not address belong to owner
-                put("/api/users/owner/addresses/" + address.getId())
+                put("/api/users/current/addresses/" + address.getId())
                         .accept(MediaType.APPLICATION_JSON)
                         .header("Authorization", authorizationToken)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -657,7 +549,7 @@ class AddressControllerTest {
         updateRequest.setPostalCode("123123");
 
         mockMvc.perform(
-                put("/api/users/owner/addresses/" + address.getId())
+                put("/api/users/current/addresses/" + address.getId())
                         .header("Authorization", authorizationToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON)
@@ -702,7 +594,7 @@ class AddressControllerTest {
     @Test
     void deleteAddressFailedTokenNotSend() throws Exception {
         mockMvc.perform(
-                delete("/api/users/owner/addresses/123")
+                delete("/api/users/current/addresses/123")
                         .accept(MediaType.APPLICATION_JSON)
         ).andExpectAll(
                 status().isUnauthorized()
@@ -718,28 +610,9 @@ class AddressControllerTest {
     }
 
     @Test
-    void deleteAddressFailedUserNotFound() throws Exception {
-        mockMvc.perform(
-                delete("/api/users/unkown_user/addresses/123")
-                        .accept(MediaType.APPLICATION_JSON)
-                        .header("Authorization", authorizationToken)
-        ).andExpectAll(
-                status().isNotFound()
-        ).andDo(result -> {
-            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
-            });
-
-            assertNull(response.getData());
-            assertNull(response.getPaging());
-            assertNotNull(response.getErrors());
-            assertEquals("User is not found.", response.getErrors());
-        });
-    }
-
-    @Test
     void deleteAddressFailedAddressNotFound() throws Exception {
         mockMvc.perform(
-                delete("/api/users/owner/addresses/123")
+                delete("/api/users/current/addresses/123")
                         .accept(MediaType.APPLICATION_JSON)
                         .header("Authorization", authorizationToken)
         ).andExpectAll(
@@ -766,8 +639,6 @@ class AddressControllerTest {
         user.setRole(Role.ADMIN_WAREHOUSE.toString());
         userRepository.save(user);
 
-        authorizationToken = "Bearer " + jwtUtil.generate(user.getUsername(), jwtTtl);
-
         Address address = new Address();
         address.setUser(user);
         address.setStreet("JLN Diponegoro ");
@@ -782,7 +653,7 @@ class AddressControllerTest {
 
         mockMvc.perform(
                 // not owner address
-                delete("/api/users/owner/addresses/" + address.getId())
+                delete("/api/users/current/addresses/" + address.getId())
                         .accept(MediaType.APPLICATION_JSON)
                         .header("Authorization", authorizationToken)
         ).andExpectAll(
@@ -817,7 +688,7 @@ class AddressControllerTest {
         addressRepository.save(address);
 
         mockMvc.perform(
-                delete("/api/users/owner/addresses/" + address.getId())
+                delete("/api/users/current/addresses/" + address.getId())
                         .accept(MediaType.APPLICATION_JSON)
                         .header("Authorization", authorizationToken)
         ).andExpectAll(

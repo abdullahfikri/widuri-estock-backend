@@ -64,3 +64,24 @@ ALTER TABLE addresses
 #     ADD CONSTRAINT fk_user_addresses
 #         FOREIGN KEY (supplier_id) REFERENCES suppliers (id);
 
+CREATE TABLE refresh_token (
+    id int NOT NULL AUTO_INCREMENT,
+    refresh_token VARCHAR(255) NOT NULL ,
+    expiredAt TIMESTAMP,
+    userAgent VARCHAR(100),
+    user_id VARCHAR(100),
+    primary key (id),
+    unique (refresh_token)
+) engine = InnoDB;
+
+ALTER TABLE refresh_token
+    ADD CONSTRAINT fk_user_refresh_token
+    FOREIGN KEY (user_id) REFERENCES users (username);
+
+SELECT * FROM refresh_token;
+
+ALTER TABLE refresh_token
+    RENAME COLUMN expiredAT to expired_at;
+
+ALTER TABLE refresh_token
+    RENAME COLUMN userAgent to user_agent;

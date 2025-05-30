@@ -10,6 +10,7 @@ import dev.mfikri.widuriestock.model.user.AddressResponse;
 import dev.mfikri.widuriestock.model.user.UserResponse;
 import dev.mfikri.widuriestock.model.user.UserSearchResponse;
 import dev.mfikri.widuriestock.repository.AddressRepository;
+import dev.mfikri.widuriestock.repository.RefreshTokenRepository;
 import dev.mfikri.widuriestock.repository.UserRepository;
 import dev.mfikri.widuriestock.util.BCrypt;
 import dev.mfikri.widuriestock.util.JwtUtil;
@@ -46,6 +47,8 @@ class UserControllerTest {
     @Autowired
     private AddressRepository addressRepository;
 
+    @Autowired
+    private RefreshTokenRepository refreshTokenRepository;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -58,12 +61,13 @@ class UserControllerTest {
 
     @BeforeEach
     void setUp() {
+        refreshTokenRepository.deleteAll();
         addressRepository.deleteAll();
         userRepository.deleteAll();
 
         User user = new User();
-        user.setUsername("admin");
-        user.setPassword("{bcrypt}" + BCrypt.hashpw("admin_warehouse", BCrypt.gensalt()));
+        user.setUsername("owner");
+        user.setPassword("{bcrypt}" + BCrypt.hashpw("owner_password", BCrypt.gensalt()));
         user.setFirstName("John Doe");
         user.setPhone("+6283213121");
         user.setRole("OWNER");
@@ -131,9 +135,6 @@ class UserControllerTest {
         params.add("address.country", "Katuliswi");
         params.add("address.postalCode", "00000012");
 
-
-
-
         mockMvc.perform(
                 multipart("/api/users")
                         .header("Authorization", authorizationToken)
@@ -154,8 +155,8 @@ class UserControllerTest {
     @Test
     void createFailedInvalidPhotoFormat() throws Exception{
         MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        params.add("username", "adminwarehouse123");
-        params.add("password", "adminwarehouse123");
+        params.add("username", "adminwarehouse");
+        params.add("password", "adminwarehouse");
         params.add("firstName", "John");
         params.add("lastName", "Doe");
         params.add("phone", "623123123");
@@ -193,16 +194,16 @@ class UserControllerTest {
     @Test
     void createFailedUsernameExists() throws Exception{
         User user = new User();
-        user.setUsername("adminwarehouse123");
-        user.setPassword("adminwarehouse123");
-        user.setFirstName("adminwarehouse123");
+        user.setUsername("adminwarehouse");
+        user.setPassword("adminwarehouse");
+        user.setFirstName("adminwarehouse");
         user.setPhone("6200312300");
         user.setRole(Role.ADMIN_WAREHOUSE.toString());
         userRepository.save(user);
 
         MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        params.add("username", "adminwarehouse123");
-        params.add("password", "adminwarehouse123");
+        params.add("username", "adminwarehouse");
+        params.add("password", "adminwarehouse");
         params.add("firstName", "John");
         params.add("lastName", "Doe");
         params.add("phone", "623123123");
@@ -596,7 +597,7 @@ class UserControllerTest {
             assertNull(response.getErrors());
             assertNotNull(response.getData());
 
-            assertEquals("admin", response.getData().getUsername());
+            assertEquals("owner", response.getData().getUsername());
             assertEquals("John Doe", response.getData().getFirstName());
             assertNull(response.getData().getLastName());
             assertEquals("+6283213121", response.getData().getPhone());

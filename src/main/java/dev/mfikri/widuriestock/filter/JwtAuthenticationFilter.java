@@ -2,6 +2,7 @@ package dev.mfikri.widuriestock.filter;
 
 import dev.mfikri.widuriestock.exception.JwtAuthenticationException;
 import dev.mfikri.widuriestock.util.JwtUtil;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -48,7 +49,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // log.info("invoke");
         try {
             final String tokenUsername = jwtUtil.extractUsername(token);
-            // log.info(tokenUsername);
+             log.info(tokenUsername);
 
             if (tokenUsername != null && securityContextHolderStrategy.getContext().getAuthentication() == null) {
                 UserDetails userDetails;
@@ -56,7 +57,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 userDetails = userDetailsService.loadUserByUsername(tokenUsername);
                 if (!jwtUtil.isTokenValid(token, userDetails.getUsername())) {
-                    throw new UsernameNotFoundException("Failed to authenticate with access token A");
+                    throw new UsernameNotFoundException("Failed to authenticate with access token");
                 }
 
                 final SecurityContext securityContext = this.securityContextHolderStrategy.createEmptyContext();
@@ -66,7 +67,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 this.securityContextHolderStrategy.setContext(securityContext);
 
             }
-        } catch (UsernameNotFoundException | JwtException e) {
+        }
+        catch (ExpiredJwtException e) {
+            throw new JwtAuthenticationException("Access Token Expired", e.getCause());
+        }
+        catch (UsernameNotFoundException | JwtException e) {
             throw new JwtAuthenticationException("Invalid Access Token", e.getCause());
         }
 
