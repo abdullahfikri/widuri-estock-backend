@@ -708,6 +708,378 @@ class AddressControllerTest {
         });
     }
 
+    // test authorization
 
 
+    @Test
+    void testAdminWarehouse() throws Exception {
+        User user = new User();
+        user.setUsername("adminwhs");
+        user.setPassword("{bcrypt}" + BCrypt.hashpw("adminwhs_password", BCrypt.gensalt()));
+        user.setFirstName("John Doe");
+        user.setPhone("+6283213121");
+        user.setRole(Role.ADMIN_WAREHOUSE.toString());
+        userRepository.save(user);
+        authorizationToken = "Bearer " + jwtUtil.generate(user.getUsername(), jwtTtl);
+
+        AddressCreateRequest address = new AddressCreateRequest();
+        address.setStreet("JLN Diponegoro");
+        address.setVillage("Kel. Air Baru");
+        address.setDistrict("Kec. Pantai Indah");
+        address.setCity("Meikarta");
+        address.setProvince("Jakarta");
+        address.setCountry("Indonesia");
+        address.setPostalCode("123123");
+
+        // create
+        mockMvc.perform(
+                post("/api/users/current/addresses")
+                        .header("Authorization", authorizationToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(address))
+        ).andExpectAll(
+                status().isCreated()
+        ).andDo(result -> {
+            WebResponse<AddressResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getErrors());
+            assertNull(response.getPaging());
+            assertNotNull(response.getData());
+
+            assertEquals(address.getStreet(), response.getData().getStreet());
+            assertEquals(address.getVillage(), response.getData().getVillage());
+            assertEquals(address.getDistrict(), response.getData().getDistrict());
+            assertEquals(address.getCity(), response.getData().getCity());
+            assertEquals(address.getProvince(), response.getData().getProvince());
+            assertEquals(address.getCountry(), response.getData().getCountry());
+            assertEquals(address.getProvince(), response.getData().getProvince());
+            assertEquals(user.getUsername(), response.getData().getUsernameId());
+
+            Address addressDb = addressRepository.findById(response.getData().getId()).orElse(null);
+            assertNotNull(addressDb);
+
+            assertEquals(address.getStreet(), addressDb.getStreet());
+            assertEquals(address.getVillage(), addressDb.getVillage());
+            assertEquals(address.getDistrict(), addressDb.getDistrict());
+            assertEquals(address.getCity(), addressDb.getCity());
+            assertEquals(address.getProvince(), addressDb.getProvince());
+            assertEquals(address.getCountry(), addressDb.getCountry());
+            assertEquals(address.getProvince(), addressDb.getProvince());
+            assertEquals(user.getUsername(), addressDb.getUser().getUsername());
+
+            address.setId(response.getData().getId());
+        });
+
+        // get list
+        mockMvc.perform(
+                get("/api/users/current/addresses")
+                        .header("Authorization", authorizationToken)
+                        .accept(MediaType.APPLICATION_JSON)
+        ).andExpectAll(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<List<AddressResponse>> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getErrors());
+            assertNull(response.getPaging());
+            assertNotNull(response.getData());
+            assertEquals(1, response.getData().size());
+
+            AddressResponse firstAddress = response.getData().getFirst();
+            assertNotNull(firstAddress);
+            assertNotNull(firstAddress.getId());
+            assertEquals(user.getUsername(), firstAddress.getUsernameId());
+            assertEquals(address.getStreet(), firstAddress.getStreet());
+            assertEquals(address.getVillage(), firstAddress.getVillage());
+            assertEquals(address.getDistrict(), firstAddress.getDistrict());
+            assertEquals(address.getCity(), firstAddress.getCity());
+            assertEquals(address.getProvince(), firstAddress.getProvince());
+            assertEquals(address.getCountry(), firstAddress.getCountry());
+            assertEquals(address.getPostalCode(), firstAddress.getPostalCode());
+        });
+
+
+        // get single address
+        mockMvc.perform(
+                get("/api/users/current/addresses/" + address.getId())
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("Authorization", authorizationToken)
+        ).andExpectAll(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<AddressResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getErrors());
+            assertNull(response.getPaging());
+            assertNotNull(response.getData());
+            assertEquals(address.getId(), response.getData().getId());
+            assertEquals(address.getStreet(), response.getData().getStreet());
+            assertEquals(address.getVillage(), response.getData().getVillage());
+            assertEquals(address.getDistrict(), response.getData().getDistrict());
+            assertEquals(address.getCity(), response.getData().getCity());
+            assertEquals(address.getProvince(), response.getData().getProvince());
+            assertEquals(address.getPostalCode(), response.getData().getPostalCode());
+        });
+
+        // update
+        AddressUpdateRequest updateRequest = new AddressUpdateRequest();
+        updateRequest.setStreet("JLN Diponegoro new");
+        updateRequest.setVillage("Kel. Air Baru new");
+        updateRequest.setDistrict("Kec. Pantai Indah new");
+        updateRequest.setCity("Meikarta new");
+        updateRequest.setProvince("Jakarta new");
+        updateRequest.setCountry("Indonesia");
+        updateRequest.setPostalCode("123123");
+
+        mockMvc.perform(
+                put("/api/users/current/addresses/" + address.getId())
+                        .header("Authorization", authorizationToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateRequest))
+        ).andExpectAll(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<AddressResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getErrors());
+            assertNull(response.getPaging());
+            assertNotNull(response.getData());
+
+            assertEquals(address.getId(), response.getData().getId());
+            assertEquals(updateRequest.getStreet(), response.getData().getStreet());
+            assertEquals(updateRequest.getVillage(), response.getData().getVillage());
+            assertEquals(updateRequest.getDistrict(), response.getData().getDistrict());
+            assertEquals(updateRequest.getCity(), response.getData().getCity());
+            assertEquals(updateRequest.getProvince(), response.getData().getProvince());
+            assertEquals(updateRequest.getCountry(), response.getData().getCountry());
+            assertEquals(updateRequest.getProvince(), response.getData().getProvince());
+            assertEquals(user.getUsername(), response.getData().getUsernameId());
+
+            Address addressDb = addressRepository.findById(response.getData().getId()).orElse(null);
+
+            assertNotNull(addressDb);
+            assertEquals(address.getId(), addressDb.getId());
+            assertEquals(updateRequest.getStreet(), addressDb.getStreet());
+            assertEquals(updateRequest.getVillage(), addressDb.getVillage());
+            assertEquals(updateRequest.getDistrict(), addressDb.getDistrict());
+            assertEquals(updateRequest.getCity(), addressDb.getCity());
+            assertEquals(updateRequest.getProvince(), addressDb.getProvince());
+            assertEquals(updateRequest.getCountry(), addressDb.getCountry());
+            assertEquals(updateRequest.getProvince(), addressDb.getProvince());
+            assertEquals(user.getUsername(), addressDb.getUser().getUsername());
+        });
+
+        // delete
+        mockMvc.perform(
+                delete("/api/users/current/addresses/" + address.getId())
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("Authorization", authorizationToken)
+        ).andExpectAll(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getErrors());
+            assertNull(response.getPaging());
+            assertNotNull(response.getData());
+            assertEquals("OK", response.getData());
+
+            Address deletedAddress = addressRepository.findById(address.getId()).orElse(null);
+            assertNull(deletedAddress);
+
+        });
+    }
+
+    @Test
+    void testAdminSeller() throws Exception {
+        User user = new User();
+        user.setUsername("adminslr");
+        user.setPassword("{bcrypt}" + BCrypt.hashpw("adminslr_password", BCrypt.gensalt()));
+        user.setFirstName("John Doe");
+        user.setPhone("+6283213121");
+        user.setRole(Role.ADMIN_SELLER.toString());
+        userRepository.save(user);
+        authorizationToken = "Bearer " + jwtUtil.generate(user.getUsername(), jwtTtl);
+
+        AddressCreateRequest address = new AddressCreateRequest();
+        address.setStreet("JLN Diponegoro");
+        address.setVillage("Kel. Air Baru");
+        address.setDistrict("Kec. Pantai Indah");
+        address.setCity("Meikarta");
+        address.setProvince("Jakarta");
+        address.setCountry("Indonesia");
+        address.setPostalCode("123123");
+
+        // create
+        mockMvc.perform(
+                post("/api/users/current/addresses")
+                        .header("Authorization", authorizationToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(address))
+        ).andExpectAll(
+                status().isCreated()
+        ).andDo(result -> {
+            WebResponse<AddressResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getErrors());
+            assertNull(response.getPaging());
+            assertNotNull(response.getData());
+
+            assertEquals(address.getStreet(), response.getData().getStreet());
+            assertEquals(address.getVillage(), response.getData().getVillage());
+            assertEquals(address.getDistrict(), response.getData().getDistrict());
+            assertEquals(address.getCity(), response.getData().getCity());
+            assertEquals(address.getProvince(), response.getData().getProvince());
+            assertEquals(address.getCountry(), response.getData().getCountry());
+            assertEquals(address.getProvince(), response.getData().getProvince());
+            assertEquals(user.getUsername(), response.getData().getUsernameId());
+
+            Address addressDb = addressRepository.findById(response.getData().getId()).orElse(null);
+            assertNotNull(addressDb);
+
+            assertEquals(address.getStreet(), addressDb.getStreet());
+            assertEquals(address.getVillage(), addressDb.getVillage());
+            assertEquals(address.getDistrict(), addressDb.getDistrict());
+            assertEquals(address.getCity(), addressDb.getCity());
+            assertEquals(address.getProvince(), addressDb.getProvince());
+            assertEquals(address.getCountry(), addressDb.getCountry());
+            assertEquals(address.getProvince(), addressDb.getProvince());
+            assertEquals(user.getUsername(), addressDb.getUser().getUsername());
+
+            address.setId(response.getData().getId());
+        });
+
+        // get list
+        mockMvc.perform(
+                get("/api/users/current/addresses")
+                        .header("Authorization", authorizationToken)
+                        .accept(MediaType.APPLICATION_JSON)
+        ).andExpectAll(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<List<AddressResponse>> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getErrors());
+            assertNull(response.getPaging());
+            assertNotNull(response.getData());
+            assertEquals(1, response.getData().size());
+
+            AddressResponse firstAddress = response.getData().getFirst();
+            assertNotNull(firstAddress);
+            assertNotNull(firstAddress.getId());
+            assertEquals(user.getUsername(), firstAddress.getUsernameId());
+            assertEquals(address.getStreet(), firstAddress.getStreet());
+            assertEquals(address.getVillage(), firstAddress.getVillage());
+            assertEquals(address.getDistrict(), firstAddress.getDistrict());
+            assertEquals(address.getCity(), firstAddress.getCity());
+            assertEquals(address.getProvince(), firstAddress.getProvince());
+            assertEquals(address.getCountry(), firstAddress.getCountry());
+            assertEquals(address.getPostalCode(), firstAddress.getPostalCode());
+        });
+
+
+        // get single address
+        mockMvc.perform(
+                get("/api/users/current/addresses/" + address.getId())
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("Authorization", authorizationToken)
+        ).andExpectAll(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<AddressResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getErrors());
+            assertNull(response.getPaging());
+            assertNotNull(response.getData());
+            assertEquals(address.getId(), response.getData().getId());
+            assertEquals(address.getStreet(), response.getData().getStreet());
+            assertEquals(address.getVillage(), response.getData().getVillage());
+            assertEquals(address.getDistrict(), response.getData().getDistrict());
+            assertEquals(address.getCity(), response.getData().getCity());
+            assertEquals(address.getProvince(), response.getData().getProvince());
+            assertEquals(address.getPostalCode(), response.getData().getPostalCode());
+        });
+
+        // update
+        AddressUpdateRequest updateRequest = new AddressUpdateRequest();
+        updateRequest.setStreet("JLN Diponegoro new");
+        updateRequest.setVillage("Kel. Air Baru new");
+        updateRequest.setDistrict("Kec. Pantai Indah new");
+        updateRequest.setCity("Meikarta new");
+        updateRequest.setProvince("Jakarta new");
+        updateRequest.setCountry("Indonesia");
+        updateRequest.setPostalCode("123123");
+
+        mockMvc.perform(
+                put("/api/users/current/addresses/" + address.getId())
+                        .header("Authorization", authorizationToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateRequest))
+        ).andExpectAll(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<AddressResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getErrors());
+            assertNull(response.getPaging());
+            assertNotNull(response.getData());
+
+            assertEquals(address.getId(), response.getData().getId());
+            assertEquals(updateRequest.getStreet(), response.getData().getStreet());
+            assertEquals(updateRequest.getVillage(), response.getData().getVillage());
+            assertEquals(updateRequest.getDistrict(), response.getData().getDistrict());
+            assertEquals(updateRequest.getCity(), response.getData().getCity());
+            assertEquals(updateRequest.getProvince(), response.getData().getProvince());
+            assertEquals(updateRequest.getCountry(), response.getData().getCountry());
+            assertEquals(updateRequest.getProvince(), response.getData().getProvince());
+            assertEquals(user.getUsername(), response.getData().getUsernameId());
+
+            Address addressDb = addressRepository.findById(response.getData().getId()).orElse(null);
+
+            assertNotNull(addressDb);
+            assertEquals(address.getId(), addressDb.getId());
+            assertEquals(updateRequest.getStreet(), addressDb.getStreet());
+            assertEquals(updateRequest.getVillage(), addressDb.getVillage());
+            assertEquals(updateRequest.getDistrict(), addressDb.getDistrict());
+            assertEquals(updateRequest.getCity(), addressDb.getCity());
+            assertEquals(updateRequest.getProvince(), addressDb.getProvince());
+            assertEquals(updateRequest.getCountry(), addressDb.getCountry());
+            assertEquals(updateRequest.getProvince(), addressDb.getProvince());
+            assertEquals(user.getUsername(), addressDb.getUser().getUsername());
+        });
+
+        // delete
+        mockMvc.perform(
+                delete("/api/users/current/addresses/" + address.getId())
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("Authorization", authorizationToken)
+        ).andExpectAll(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getErrors());
+            assertNull(response.getPaging());
+            assertNotNull(response.getData());
+            assertEquals("OK", response.getData());
+
+            Address deletedAddress = addressRepository.findById(address.getId()).orElse(null);
+            assertNull(deletedAddress);
+
+        });
+    }
 }

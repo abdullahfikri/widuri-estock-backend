@@ -38,10 +38,13 @@ public class SecurityConfig {
 
     private final JwtAuthenticationEntryPoint entryPoint;
 
-    public SecurityConfig(SecurityConfigProperties securityConfigProperties, UserDetailsService userDetailsService, JwtAuthenticationEntryPoint entryPoint) {
+    private final CustomAccessDeniedHandler customAccessDeniedHandler;
+
+    public SecurityConfig(SecurityConfigProperties securityConfigProperties, UserDetailsService userDetailsService, JwtAuthenticationEntryPoint entryPoint, CustomAccessDeniedHandler customAccessDeniedHandler) {
         this.securityConfigProperties = securityConfigProperties;
         this.userDetailsService = userDetailsService;
         this.entryPoint = entryPoint;
+        this.customAccessDeniedHandler = customAccessDeniedHandler;
     }
 
     @Bean
@@ -71,7 +74,8 @@ public class SecurityConfig {
 
                         .anyRequest().denyAll()
                 )
-                .exceptionHandling(handler-> handler.authenticationEntryPoint(entryPoint))
+                .exceptionHandling(handler-> handler.authenticationEntryPoint(entryPoint)
+                        .accessDeniedHandler(customAccessDeniedHandler))
                 .authenticationProvider(authenticationProvider())
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)

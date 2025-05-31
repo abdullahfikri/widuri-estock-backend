@@ -8,10 +8,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.nio.file.AccessDeniedException;
 
 @Slf4j
 @RestControllerAdvice
@@ -67,6 +70,18 @@ public class ErrorController {
                 .body(WebResponse
                         .<String>builder()
                         .errors(message != null ? message: "Invalid Access Token")
+                        .build());
+    }
+
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    public ResponseEntity<WebResponse<String>> forbiddenAccessException(AuthorizationDeniedException exception) {
+//        String message =  exception.getMessage();
+
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(WebResponse
+                        .<String>builder()
+                        .errors("Forbidden Access")
                         .build());
     }
 

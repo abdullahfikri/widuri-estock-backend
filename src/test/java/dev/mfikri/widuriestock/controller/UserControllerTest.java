@@ -990,4 +990,259 @@ class UserControllerTest {
         });
     }
 
+
+    // test authorization
+
+
+    @Test
+    void testAdminWarehouse() throws Exception{
+        User user = new User();
+        user.setUsername("adminwhs");
+        user.setPassword("{bcrypt}" + BCrypt.hashpw("adminwhs_password", BCrypt.gensalt()));
+        user.setFirstName("John Doe");
+        user.setPhone("+6283213121");
+        user.setRole(Role.ADMIN_WAREHOUSE.toString());
+        userRepository.save(user);
+
+        authorizationToken = "Bearer " + jwtUtil.generate(user.getUsername(), jwtTtl);
+
+        // create
+        mockMvc.perform(
+                post("/api/users")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("Authorization", authorizationToken)
+        ).andExpectAll(
+                status().isForbidden()
+        ).andDo(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getData());
+            assertNotNull(response.getErrors());
+            assertEquals("Forbidden Access", response.getErrors());
+        });
+
+        // search
+        mockMvc.perform(
+                get("/api/users")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("Authorization", authorizationToken)
+        ).andExpectAll(
+                status().isForbidden()
+        ).andDo(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getData());
+            assertNotNull(response.getErrors());
+            assertEquals("Forbidden Access", response.getErrors());
+        });
+
+        // get
+        mockMvc.perform(
+                get("/api/users/adminwhs")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("Authorization", authorizationToken)
+        ).andExpectAll(
+                status().isForbidden()
+        ).andDo(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getData());
+            assertNotNull(response.getErrors());
+            assertEquals("Forbidden Access", response.getErrors());
+        });
+
+        // update
+        mockMvc.perform(
+                patch("/api/users/adminwhs")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("Authorization", authorizationToken)
+        ).andExpectAll(
+                status().isForbidden()
+        ).andDo(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getData());
+            assertNotNull(response.getErrors());
+            assertEquals("Forbidden Access", response.getErrors());
+        });
+
+        // get current
+        mockMvc.perform(
+                get("/api/users/current")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("Authorization", authorizationToken)
+        ).andExpectAll(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<UserResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getErrors());
+            assertNotNull(response.getData());
+            assertEquals(user.getUsername(), response.getData().getUsername());
+            assertEquals(user.getFirstName(), response.getData().getFirstName());
+            assertEquals(user.getPhone(), response.getData().getPhone());
+            assertEquals(user.getEmail(), response.getData().getEmail());
+            assertEquals(user.getLastName(), response.getData().getLastName());
+            assertEquals(user.getRole(), response.getData().getRole());
+        });
+
+        // update current
+        mockMvc.perform(
+                patch("/api/users/current")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("Authorization", authorizationToken)
+                        .contentType(MediaType.MULTIPART_FORM_DATA_VALUE)
+                        .param("password", "abcd1234")
+                        .param("firstName", "John Update")
+                        .param("lastName", "Doe Update")
+                        .param("phone", "623123123")
+                        .param("email", "johndo123@example.com")
+                        .param("role", Role.ADMIN_SELLER.toString())
+        ).andExpectAll(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<UserResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getErrors());
+            assertNotNull(response.getData());
+            assertEquals(user.getUsername(), response.getData().getUsername());
+            assertEquals("John Update", response.getData().getFirstName());
+            assertEquals("Doe Update", response.getData().getLastName());
+            assertEquals("623123123", response.getData().getPhone());
+            assertEquals("johndo123@example.com", response.getData().getEmail());
+            assertEquals(Role.ADMIN_WAREHOUSE.toString(), response.getData().getRole());
+        });
+    }
+
+    @Test
+    void testAdminSeller() throws Exception{
+        User user = new User();
+        user.setUsername("adminslr");
+        user.setPassword("{bcrypt}" + BCrypt.hashpw("adminslr_password", BCrypt.gensalt()));
+        user.setFirstName("John Doe");
+        user.setPhone("+6283213121");
+        user.setRole(Role.ADMIN_SELLER.toString());
+        userRepository.save(user);
+
+        authorizationToken = "Bearer " + jwtUtil.generate(user.getUsername(), jwtTtl);
+
+        // create
+        mockMvc.perform(
+                post("/api/users")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("Authorization", authorizationToken)
+        ).andExpectAll(
+                status().isForbidden()
+        ).andDo(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getData());
+            assertNotNull(response.getErrors());
+            assertEquals("Forbidden Access", response.getErrors());
+        });
+
+        // search
+        mockMvc.perform(
+                get("/api/users")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("Authorization", authorizationToken)
+        ).andExpectAll(
+                status().isForbidden()
+        ).andDo(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getData());
+            assertNotNull(response.getErrors());
+            assertEquals("Forbidden Access", response.getErrors());
+        });
+
+        // get
+        mockMvc.perform(
+                get("/api/users/adminwhs")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("Authorization", authorizationToken)
+        ).andExpectAll(
+                status().isForbidden()
+        ).andDo(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getData());
+            assertNotNull(response.getErrors());
+            assertEquals("Forbidden Access", response.getErrors());
+        });
+
+        // update
+        mockMvc.perform(
+                patch("/api/users/adminwhs")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("Authorization", authorizationToken)
+        ).andExpectAll(
+                status().isForbidden()
+        ).andDo(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getData());
+            assertNotNull(response.getErrors());
+            assertEquals("Forbidden Access", response.getErrors());
+        });
+
+        // get current
+        mockMvc.perform(
+                get("/api/users/current")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("Authorization", authorizationToken)
+        ).andExpectAll(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<UserResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getErrors());
+            assertNotNull(response.getData());
+            assertEquals(user.getUsername(), response.getData().getUsername());
+            assertEquals(user.getFirstName(), response.getData().getFirstName());
+            assertEquals(user.getPhone(), response.getData().getPhone());
+            assertEquals(user.getEmail(), response.getData().getEmail());
+            assertEquals(user.getLastName(), response.getData().getLastName());
+            assertEquals(user.getRole(), response.getData().getRole());
+        });
+
+        // update current
+        mockMvc.perform(
+                patch("/api/users/current")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("Authorization", authorizationToken)
+                        .contentType(MediaType.MULTIPART_FORM_DATA_VALUE)
+                        .param("password", "abcd1234")
+                        .param("firstName", "John Update")
+                        .param("lastName", "Doe Update")
+                        .param("phone", "623123123")
+                        .param("email", "johndo123@example.com")
+                        .param("role", Role.ADMIN_WAREHOUSE.toString())
+        ).andExpectAll(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<UserResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getErrors());
+            assertNotNull(response.getData());
+            assertEquals(user.getUsername(), response.getData().getUsername());
+            assertEquals("John Update", response.getData().getFirstName());
+            assertEquals("Doe Update", response.getData().getLastName());
+            assertEquals("623123123", response.getData().getPhone());
+            assertEquals("johndo123@example.com", response.getData().getEmail());
+            assertEquals(Role.ADMIN_SELLER.toString(), response.getData().getRole());
+        });
+    }
 }

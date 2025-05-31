@@ -72,6 +72,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             throw new JwtAuthenticationException("Access Token Expired", e.getCause());
         }
         catch (UsernameNotFoundException | JwtException e) {
+            log.info(e.getMessage());
             throw new JwtAuthenticationException("Invalid Access Token", e.getCause());
         }
 
