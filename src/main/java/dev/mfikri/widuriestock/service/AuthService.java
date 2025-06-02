@@ -1,10 +1,11 @@
 package dev.mfikri.widuriestock.service;
 
 import dev.mfikri.widuriestock.entity.User;
-import dev.mfikri.widuriestock.model.user.TokenResponse;
-import dev.mfikri.widuriestock.model.user.UserLoginRequest;
+import dev.mfikri.widuriestock.model.user.AuthTokenResponse;
+import dev.mfikri.widuriestock.model.user.AuthLoginRequest;
 
 public interface AuthService {
-    TokenResponse login(UserLoginRequest request);
-    void logout(User user);
+    AuthTokenResponse login(AuthLoginRequest request);
+    AuthTokenResponse getNewAccessToken(String refreshTokenString);
+//    void logout(User user);
 }

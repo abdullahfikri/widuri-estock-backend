@@ -89,16 +89,6 @@ public class AddressServiceImpl implements AddressService {
         return toAddressResponse(address);
     }
 
-    private void setAddress(Address address, String street, String village, String district, String city, String province, String country, String postalCode) {
-        address.setStreet(street);
-        address.setVillage(village);
-        address.setDistrict(district);
-        address.setCity(city);
-        address.setProvince(province);
-        address.setCountry(country);
-        address.setPostalCode(postalCode);
-    }
-
     @Override
     @Transactional
     public void delete(String username, Integer addressId) {
@@ -109,7 +99,15 @@ public class AddressServiceImpl implements AddressService {
         }
     }
 
-
+    private void setAddress(Address address, String street, String village, String district, String city, String province, String country, String postalCode) {
+        address.setStreet(street);
+        address.setVillage(village);
+        address.setDistrict(district);
+        address.setCity(city);
+        address.setProvince(province);
+        address.setCountry(country);
+        address.setPostalCode(postalCode);
+    }
 
     private User findUserByUsernameOrThrows(String username) {
         return userRepository.findById(username.trim()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User is not found."));

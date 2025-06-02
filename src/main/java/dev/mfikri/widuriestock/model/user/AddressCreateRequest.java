@@ -2,6 +2,7 @@ package dev.mfikri.widuriestock.model.user;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Null;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,6 +14,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 public class AddressCreateRequest {
+    @JsonIgnore
+    @Null
+    private Integer id;
+
     @JsonIgnore
     @Size(max = 100, min = 5)
     private String username;

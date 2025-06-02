@@ -54,7 +54,7 @@ public class UserServiceImpl implements UserService {
 
         User user = new User();
         user.setUsername(request.getUsername());
-        user.setPassword(BCrypt.hashpw(request.getPassword(), BCrypt.gensalt()));
+        user.setPassword("{bcrypt}" + BCrypt.hashpw(request.getPassword(), BCrypt.gensalt()));
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
         user.setPhone(request.getPhone());
@@ -65,7 +65,7 @@ public class UserServiceImpl implements UserService {
             user.setPhoto(path.toString());
         }
 
-        user.setRole(request.getRole());
+        user.setRole(request.getRole().toUpperCase());
 
         user.setDateIn(Instant.now());
         userRepository.save(user);
