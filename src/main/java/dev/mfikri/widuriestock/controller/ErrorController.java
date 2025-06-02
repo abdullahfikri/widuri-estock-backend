@@ -12,6 +12,7 @@ import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.file.AccessDeniedException;
@@ -58,6 +59,18 @@ public class ErrorController {
                 .body(WebResponse
                         .<String>builder()
                         .errors("Authentication failed")
+                        .build());
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<WebResponse<String>> methodArgumentTypeMismatch(MethodArgumentTypeMismatchException exception) {
+        log.info(exception.getClass().getName());
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(WebResponse
+                        .<String>builder()
+                        .errors("Argument path type is wrong.")
                         .build());
     }
 

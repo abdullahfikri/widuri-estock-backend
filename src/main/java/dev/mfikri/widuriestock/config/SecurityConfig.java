@@ -1,5 +1,6 @@
 package dev.mfikri.widuriestock.config;
 
+import dev.mfikri.widuriestock.entity.Role;
 import dev.mfikri.widuriestock.entrypoint.JwtAuthenticationEntryPoint;
 import dev.mfikri.widuriestock.filter.JwtAuthenticationFilter;
 import dev.mfikri.widuriestock.util.JwtUtil;
@@ -71,6 +72,11 @@ public class SecurityConfig {
                         // get/update any users
                         .requestMatchers(HttpMethod.PATCH, "/api/users/**").hasRole("OWNER")
                         .requestMatchers(HttpMethod.GET, "/api/users/**").hasRole("OWNER")
+
+                        // categories crud api
+                        .requestMatchers(HttpMethod.POST, "/api/categories").hasRole(Role.ADMIN_WAREHOUSE.name())
+                        .requestMatchers(HttpMethod.GET, "/api/categories/*").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/categories/*").hasRole(Role.ADMIN_WAREHOUSE.name())
 
                         .anyRequest().denyAll()
                 )

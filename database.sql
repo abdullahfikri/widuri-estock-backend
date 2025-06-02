@@ -85,3 +85,14 @@ ALTER TABLE refresh_token
 
 ALTER TABLE refresh_token
     RENAME COLUMN userAgent to user_agent;
+
+
+CREATE TABLE categories (
+    id int NOT NULL AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL ,
+    description VARCHAR(255),
+    PRIMARY KEY (id),
+    UNIQUE (name)
+) ENGINE = InnoDB;
+
+SELECT * FROM categories;
