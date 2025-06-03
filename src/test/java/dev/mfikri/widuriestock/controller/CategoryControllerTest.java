@@ -8,6 +8,7 @@ import dev.mfikri.widuriestock.entity.User;
 import dev.mfikri.widuriestock.model.WebResponse;
 import dev.mfikri.widuriestock.model.product.CategoryCreateRequest;
 import dev.mfikri.widuriestock.model.product.CategoryResponse;
+import dev.mfikri.widuriestock.model.product.CategoryUpdateRequest;
 import dev.mfikri.widuriestock.repository.CategoryRepository;
 import dev.mfikri.widuriestock.repository.RefreshTokenRepository;
 import dev.mfikri.widuriestock.repository.UserRepository;
@@ -20,6 +21,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -162,7 +165,7 @@ class CategoryControllerTest {
         ).andExpectAll(
                 status().isCreated()
         ).andDo(result -> {
-            WebResponse<CategoryResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            WebResponse<Category> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
 
             assertNull(response.getErrors());
@@ -182,6 +185,57 @@ class CategoryControllerTest {
     }
 
     @Test
+    void getListFailedTokenNotSend() throws Exception {
+
+        mockMvc.perform(
+                get("/api/categories")
+                        .accept(MediaType.APPLICATION_JSON)
+        ).andExpectAll(
+                status().isUnauthorized()
+        ).andDo(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getData());
+            assertNull(response.getPaging());
+            assertNotNull(response.getErrors());
+            assertEquals("Authentication failed", response.getErrors());
+        });
+    }
+
+    @Test
+    void getListSuccess() throws Exception {
+
+        for (int i = 0; i < 5; i++) {
+            Category category = new Category();
+            category.setName("Category " + i);
+            category.setDescription("Description " + i);
+            categoryRepository.save(category);
+        }
+
+        mockMvc.perform(
+                get("/api/categories")
+                        .header("Authorization", authorizationToken)
+                        .accept(MediaType.APPLICATION_JSON)
+        ).andExpectAll(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<List<Category>> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getErrors());
+            assertNull(response.getPaging());
+            assertNotNull(response.getData());
+            assertEquals(5, response.getData().size());
+            Category category1 = response.getData().getFirst();
+            assertNotNull(category1.getId());
+            assertEquals("Category 0", category1.getName());
+            assertEquals("Description 0", category1.getDescription());
+
+        });
+    }
+
+    @Test
     void getFailedIdTypeWrong() throws Exception {
         mockMvc.perform(
                 get("/api/categories/abc" )
@@ -190,7 +244,7 @@ class CategoryControllerTest {
         ).andExpectAll(
                 status().isBadRequest()
         ).andDo(result -> {
-            WebResponse<CategoryResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            WebResponse<Category> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
 
             assertNull(response.getData());
@@ -209,7 +263,7 @@ class CategoryControllerTest {
         ).andExpectAll(
                 status().isNotFound()
         ).andDo(result -> {
-            WebResponse<CategoryResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            WebResponse<Category> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
 
             assertNull(response.getData());
@@ -234,7 +288,7 @@ class CategoryControllerTest {
         ).andExpectAll(
                 status().isOk()
         ).andDo(result -> {
-            WebResponse<CategoryResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            WebResponse<Category> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
 
             assertNull(response.getErrors());
@@ -243,6 +297,120 @@ class CategoryControllerTest {
             assertEquals(category.getId(), response.getData().getId());
             assertEquals(category.getName(), response.getData().getName());
             assertEquals(category.getDescription(), response.getData().getDescription());
+
+        });
+    }
+
+    @Test
+    void updateFailedTokenNotSend() throws Exception {
+        CategoryUpdateRequest request = new CategoryUpdateRequest();
+
+        mockMvc.perform(
+                put("/api/categories/123")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+        ).andExpectAll(
+                status().isUnauthorized()
+        ).andDo(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getData());
+            assertNull(response.getPaging());
+            assertNotNull(response.getErrors());
+            assertEquals("Authentication failed", response.getErrors());
+        });
+    }
+
+    @Test
+    void updateFailedValidation() throws Exception {
+        Category category = new Category();
+        category.setName("Category 1");
+        category.setDescription("Another description");
+        categoryRepository.save(category);
+
+        CategoryCreateRequest request = new CategoryCreateRequest();
+
+        mockMvc.perform(
+                put("/api/categories/" + category.getId())
+                        .header("Authorization", authorizationToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+        ).andExpectAll(
+                status().isBadRequest()
+        ).andDo(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getData());
+            assertNull(response.getPaging());
+            assertNotNull(response.getErrors());
+        });
+    }
+
+    @Test
+    void updateFailedNotFound() throws Exception {
+        CategoryCreateRequest request = new CategoryCreateRequest();
+        request.setName("Category updated");
+        request.setDescription("Description updated");
+
+        mockMvc.perform(
+                put("/api/categories/123" )
+                        .header("Authorization", authorizationToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .accept(MediaType.APPLICATION_JSON)
+        ).andExpectAll(
+                status().isNotFound()
+        ).andDo(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getData());
+            assertNull(response.getPaging());
+            assertNotNull(response.getErrors());
+            assertEquals("Category is not found.", response.getErrors());
+        });
+    }
+
+    @Test
+    void updateSuccess() throws Exception {
+
+        Category category = new Category();
+        category.setName("Category 1");
+        category.setDescription("Another description");
+        categoryRepository.save(category);
+
+        CategoryCreateRequest request = new CategoryCreateRequest();
+        request.setName("Category updated");
+        request.setDescription("Description updated");
+
+        mockMvc.perform(
+                put("/api/categories/" + category.getId())
+                        .header("Authorization", authorizationToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .accept(MediaType.APPLICATION_JSON)
+        ).andExpectAll(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<Category> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getErrors());
+            assertNull(response.getPaging());
+            assertNotNull(response.getData());
+            assertEquals(category.getId(), response.getData().getId());
+            assertEquals(request.getName(), response.getData().getName());
+            assertEquals(request.getDescription(), response.getData().getDescription());
+
+            Category categoryDB = categoryRepository.findById(category.getId()).orElse(null);
+            assertNotNull(categoryDB);
+            assertEquals(category.getId(), categoryDB.getId());
+            assertEquals(request.getName(), categoryDB.getName());
+            assertEquals(request.getDescription(), categoryDB.getDescription());
 
         });
     }
@@ -340,7 +508,7 @@ class CategoryControllerTest {
         ).andExpectAll(
                 status().isCreated()
         ).andDo(result -> {
-            WebResponse<CategoryResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            WebResponse<Category> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
 
             assertNull(response.getErrors());
@@ -358,6 +526,28 @@ class CategoryControllerTest {
             assertEquals(response.getData().getDescription(), category.getDescription());
         });
 
+        // get list
+        mockMvc.perform(
+                get("/api/categories")
+                        .header("Authorization", authorizationToken)
+                        .accept(MediaType.APPLICATION_JSON)
+        ).andExpectAll(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<List<Category>> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getErrors());
+            assertNull(response.getPaging());
+            assertNotNull(response.getData());
+            assertEquals(1, response.getData().size());
+            Category category1 = response.getData().getFirst();
+            assertNotNull(category1.getId());
+            assertEquals(request.getName(), category1.getName());
+            assertEquals(request.getDescription(), category1.getDescription());
+
+        });
+
         Category category = categoryRepository.findFirstByName(request.getName()).orElse(null);
         assertNotNull(category);
 
@@ -369,7 +559,7 @@ class CategoryControllerTest {
         ).andExpectAll(
                 status().isOk()
         ).andDo(result -> {
-            WebResponse<CategoryResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            WebResponse<Category> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
 
             assertNull(response.getErrors());
@@ -378,6 +568,39 @@ class CategoryControllerTest {
             assertEquals(category.getId(), response.getData().getId());
             assertEquals(category.getName(), response.getData().getName());
             assertEquals(category.getDescription(), response.getData().getDescription());
+        });
+
+        // update
+
+        CategoryCreateRequest requestUpdate = new CategoryCreateRequest();
+        requestUpdate.setName("Category updated");
+        requestUpdate.setDescription("Description updated");
+
+        mockMvc.perform(
+                put("/api/categories/" + category.getId())
+                        .header("Authorization", authorizationToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestUpdate))
+                        .accept(MediaType.APPLICATION_JSON)
+        ).andExpectAll(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<Category> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getErrors());
+            assertNull(response.getPaging());
+            assertNotNull(response.getData());
+            assertEquals(category.getId(), response.getData().getId());
+            assertEquals(requestUpdate.getName(), response.getData().getName());
+            assertEquals(requestUpdate.getDescription(), response.getData().getDescription());
+
+            Category categoryDB = categoryRepository.findById(category.getId()).orElse(null);
+            assertNotNull(categoryDB);
+            assertEquals(category.getId(), categoryDB.getId());
+            assertEquals(requestUpdate.getName(), categoryDB.getName());
+            assertEquals(requestUpdate.getDescription(), categoryDB.getDescription());
+
         });
 
 
@@ -439,6 +662,28 @@ class CategoryControllerTest {
         category.setDescription("Another description");
         categoryRepository.save(category);
 
+        // get list
+        mockMvc.perform(
+                get("/api/categories")
+                        .header("Authorization", authorizationToken)
+                        .accept(MediaType.APPLICATION_JSON)
+        ).andExpectAll(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<List<Category>> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getErrors());
+            assertNull(response.getPaging());
+            assertNotNull(response.getData());
+            assertEquals(1, response.getData().size());
+            Category category1 = response.getData().getFirst();
+            assertNotNull(category1.getId());
+            assertEquals(category.getName(), category1.getName());
+            assertEquals(category.getDescription(), category1.getDescription());
+
+        });
+
         // get
         mockMvc.perform(
                 get("/api/categories/" + category.getId())
@@ -447,7 +692,7 @@ class CategoryControllerTest {
         ).andExpectAll(
                 status().isOk()
         ).andDo(result -> {
-            WebResponse<CategoryResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            WebResponse<Category> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
 
             assertNull(response.getErrors());
@@ -456,6 +701,28 @@ class CategoryControllerTest {
             assertEquals(category.getId(), response.getData().getId());
             assertEquals(category.getName(), response.getData().getName());
             assertEquals(category.getDescription(), response.getData().getDescription());
+        });
+
+        CategoryCreateRequest requestUpdate = new CategoryCreateRequest();
+        requestUpdate.setName("Category updated");
+        requestUpdate.setDescription("Description updated");
+
+        mockMvc.perform(
+                put("/api/categories/" + category.getId())
+                        .header("Authorization", authorizationTokenSeller)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestUpdate))
+                        .accept(MediaType.APPLICATION_JSON)
+        ).andExpectAll(
+                status().isForbidden()
+        ).andDo(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getData());
+            assertNull(response.getPaging());
+            assertNotNull(response.getErrors());
+            assertEquals("Forbidden Access", response.getErrors());
         });
 
         mockMvc.perform(

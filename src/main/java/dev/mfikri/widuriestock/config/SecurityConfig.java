@@ -75,7 +75,9 @@ public class SecurityConfig {
 
                         // categories crud api
                         .requestMatchers(HttpMethod.POST, "/api/categories").hasRole(Role.ADMIN_WAREHOUSE.name())
+                        .requestMatchers(HttpMethod.GET, "/api/categories").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/categories/*").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/categories/*").hasRole(Role.ADMIN_WAREHOUSE.name())
                         .requestMatchers(HttpMethod.DELETE, "/api/categories/*").hasRole(Role.ADMIN_WAREHOUSE.name())
 
                         .anyRequest().denyAll()

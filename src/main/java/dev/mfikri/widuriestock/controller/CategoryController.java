@@ -1,12 +1,16 @@
 package dev.mfikri.widuriestock.controller;
 
+import dev.mfikri.widuriestock.entity.Category;
 import dev.mfikri.widuriestock.model.WebResponse;
 import dev.mfikri.widuriestock.model.product.CategoryCreateRequest;
 import dev.mfikri.widuriestock.model.product.CategoryResponse;
+import dev.mfikri.widuriestock.model.product.CategoryUpdateRequest;
 import dev.mfikri.widuriestock.service.CategoryService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api")
@@ -23,10 +27,21 @@ public class CategoryController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     @ResponseStatus(HttpStatus.CREATED)
-    public WebResponse<CategoryResponse> create(@RequestBody CategoryCreateRequest request) {
-        CategoryResponse response = categoryService.create(request);
+    public WebResponse<Category> create(@RequestBody CategoryCreateRequest request) {
+        Category response = categoryService.create(request);
 
-        return WebResponse.<CategoryResponse>builder()
+        return WebResponse.<Category>builder()
+                .data(response)
+                .build();
+    }
+
+    @GetMapping(path = "/categories",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public WebResponse<List<Category>> getList() {
+        List<Category> response = categoryService.getList();
+
+        return WebResponse.<List<Category>>builder()
                 .data(response)
                 .build();
     }
@@ -34,10 +49,23 @@ public class CategoryController {
     @GetMapping(path = "/categories/{categoryId}",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    public WebResponse<CategoryResponse> get(@PathVariable Integer categoryId) {
-        CategoryResponse response = categoryService.get(categoryId);
+    public WebResponse<Category> get(@PathVariable Integer categoryId) {
+        Category response = categoryService.get(categoryId);
 
-        return WebResponse.<CategoryResponse>builder()
+        return WebResponse.<Category>builder()
+                .data(response)
+                .build();
+    }
+
+    @PutMapping(path = "/categories/{categoryId}",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public WebResponse<Category> update(@RequestBody CategoryUpdateRequest request, @PathVariable Integer categoryId) {
+        request.setId(categoryId);
+        Category response = categoryService.update(request);
+
+        return WebResponse.<Category>builder()
                 .data(response)
                 .build();
     }

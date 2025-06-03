@@ -3,7 +3,9 @@ package dev.mfikri.widuriestock.service;
 import dev.mfikri.widuriestock.entity.Category;
 import dev.mfikri.widuriestock.model.product.CategoryCreateRequest;
 import dev.mfikri.widuriestock.model.product.CategoryResponse;
+import dev.mfikri.widuriestock.model.product.CategoryUpdateRequest;
 import dev.mfikri.widuriestock.repository.CategoryRepository;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,7 +25,7 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     @Transactional
-    public CategoryResponse create(CategoryCreateRequest request) {
+    public Category create(CategoryCreateRequest request) {
         validationService.validate(request);
 
         boolean isExists = categoryRepository.existsByName(request.getName());
@@ -36,25 +38,29 @@ public class CategoryServiceImpl implements CategoryService {
         category.setDescription(request.getDescription());
         categoryRepository.save(category);
 
-        return this.toCategoryResponse(category);
+        return category;
     }
 
     @Override
-    public CategoryResponse get(Integer id) {
-
-        Category category = this.findCategoryByIdOrThrows(id);
-
-        return this.toCategoryResponse(category);
+    public Category get(Integer id) {
+        return this.findCategoryByIdOrThrows(id);
     }
 
     @Override
-    public List<CategoryResponse> getList() {
-        return List.of();
+    public List<Category> getList() {
+        return categoryRepository.findAll(Sort.by(Sort.Order.asc("name")));
     }
 
     @Override
-    public CategoryResponse update(Integer id) {
-        return null;
+    public Category update(CategoryUpdateRequest request) {
+        validationService.validate(request);
+
+        Category category = this.findCategoryByIdOrThrows(request.getId());
+        category.setName(request.getName());
+        category.setDescription(request.getDescription());
+        categoryRepository.save(category);
+
+        return category;
     }
 
     @Override
@@ -68,11 +74,11 @@ public class CategoryServiceImpl implements CategoryService {
         return categoryRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Category is not found."));
     }
 
-    private CategoryResponse toCategoryResponse(Category category) {
-        return CategoryResponse.builder()
-                .id(category.getId())
-                .name(category.getName())
-                .description(category.getDescription())
-                .build();
-    }
+//    private CategoryResponse toCategoryResponse(Category category) {
+//        return CategoryResponse.builder()
+//                .id(category.getId())
+//                .name(category.getName())
+//                .description(category.getDescription())
+//                .build();
+//    }
 }

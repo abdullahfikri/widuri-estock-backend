@@ -8,6 +8,8 @@ servers:
 paths:
   /categories:
     post:
+      tags:
+        - "Categories"
       summary: "Create Category Product"
       parameters:
         - $ref: "#/components/parameters/X-API-TOKEN"
@@ -17,16 +19,16 @@ paths:
             schema:
               type: object
               properties:
-                categoryName:
+                name:
                   type: string
                 description:
                   type: string
             example:
-              categoryName: "Mata Kail"
+              name: "Mata Kail"
               description: "Hook atau mata kail"
       responses:
         201:
-          $ref: "#/components/responses/GeneralSuccessResponse"
+          $ref: "#/components/responses/CategorySuccessResponse"
         400:
           description: "Bad Request"
           content:
@@ -36,7 +38,7 @@ paths:
               examples:
                 ValidationBadRequest:
                   value:
-                    errors: "categoryName must not blank, description must not blank..."
+                    errors: "name must not blank, description must not blank..."
                 CategoryDuplicateError:
                   value:
                     errors: "Category name is already exists."
@@ -47,6 +49,8 @@ paths:
         500:
           $ref: "#/components/responses/ServerErrorResponse"
     get:
+      tags:
+        - "Categories"
       parameters:
         - $ref: "#/components/parameters/X-API-TOKEN"
       summary: "Get list of categories"
@@ -64,17 +68,17 @@ paths:
                       properties:
                         id:
                           type: integer
-                        categoryName:
+                        name:
                           type: string
                         description:
                           type: string
               example:
                 data:
                   - id: 1
-                    categoryName: "Fishing Hook"
+                    name: "Fishing Hook"
                     description: "Category for all of Fishing Hook type"
                   - id: 2
-                    categoryName: "Fishing Rod"
+                    name: "Fishing Rod"
                     description: "Category for all of Fishing Rod type"
         401:
           $ref: "#/components/responses/UnauthenticatedErrorResponse"
@@ -82,8 +86,79 @@ paths:
           $ref: "#/components/responses/UnauthorizedErrorResponse"
         500:
           $ref: "#/components/responses/ServerErrorResponse"
+  /categories/{categoryId}:
+    get:
+      tags:
+        - "Categories"
+      summary: "Get a single Category Product record"
+      parameters:
+        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/CATEGORY-ID"
+      responses:
+        200:
+          $ref: "#/components/responses/CategorySuccessResponse"
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        404:
+          $ref: "#/components/responses/CategoryNotFoundErrorResponse"
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+    put:
+      tags:
+        - "Categories"
+      summary: "Update a single Category Product record"
+      parameters:
+        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/CATEGORY-ID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+            example:
+              name: "Mata Kail updated"
+              description: "Hook atau mata kail updated"
+      responses:
+        200:
+          $ref: "#/components/responses/CategorySuccessResponse"
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        404:
+          $ref: "#/components/responses/CategoryNotFoundErrorResponse"
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+    delete:
+      tags:
+        - "Categories"
+      summary: "Delete a single Category Product record"
+      parameters:
+        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/CATEGORY-ID"
+      responses:
+        200:
+          $ref: "#/components/responses/GeneralSuccessResponse"
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        404:
+          $ref: "#/components/responses/CategoryNotFoundErrorResponse"
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+
   /products:
     post:
+      tags:
+        - "Products"
       parameters:
         - $ref: "#/components/parameters/X-API-TOKEN"
       summary: "Create an products"
@@ -199,6 +274,8 @@ paths:
         500:
           $ref: "#/components/responses/ServerErrorResponse"
     get:
+      tags:
+        - "Products"
       summary: "Get products with pagination"
       parameters:
         - $ref: "#/components/parameters/X-API-TOKEN"
@@ -271,6 +348,8 @@ paths:
           $ref: "#/components/responses/ServerErrorResponse"
   /products/{productId}:
     get:
+      tags:
+        - "Products"
       summary: "Get more detail of one products"
       parameters:
         - $ref: "#/components/parameters/X-API-TOKEN"
@@ -301,6 +380,8 @@ paths:
         500:
           $ref: "#/components/responses/ServerErrorResponse"
     put:
+      tags:
+        - "Products"
       summary: "Update the products"
       parameters:
         - $ref: "#/components/parameters/X-API-TOKEN"
@@ -451,21 +532,12 @@ paths:
         403:
           $ref: "#/components/responses/UnauthorizedErrorResponse"
         404:
-          description: "Not Found Error"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GeneralErrorSchema"
-              examples:
-                ProductNotFound:
-                  value:
-                    errors: "Product is not found"
-                CategoryNotFound:
-                  value:
-                    errors: "Category is not found"
+          $ref: "#/components/responses/ProductNotFoundErrorResponse"
         500:
           $ref: "#/components/responses/ServerErrorResponse"
     delete:
+      tags:
+        - "Products"
       summary: "Delete a product"
       parameters:
         - $ref: "#/components/parameters/X-API-TOKEN"
@@ -560,6 +632,14 @@ components:
       example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
     PRODUCT-ID:
       name: "productId"
+      in: path
+      required: true
+      schema:
+        type: string
+        format: number
+        example: 1321
+    CATEGORY-ID:
+      name: "categoryId"
       in: path
       required: true
       schema:
@@ -698,6 +778,22 @@ components:
                 type: string
           example:
             data: "OK"
+    CategorySuccessResponse:
+      description: "Success"
+      content:
+        application/json:
+          schema:
+            properties:
+              id:
+                type: integer
+              name:
+                type: string
+              description:
+                type: string
+          example:
+            id: 123
+            name: "Reel Fishing"
+            description: "Premium fishing reels..."
     BadRequestProductResponse:
       description: "Bad Request"
       content:
@@ -735,6 +831,14 @@ components:
             $ref: "#/components/schemas/GeneralErrorSchema"
           example:
             errors: "Product is not found"
+    CategoryNotFoundErrorResponse:
+      description: "Category not found"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/GeneralErrorSchema"
+          example:
+            errors: "Category is not found."
     ServerErrorResponse:
       description: "Server error"
       content:
