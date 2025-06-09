@@ -39,7 +39,7 @@ public class ProductController {
     @GetMapping(path = "/products",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    public WebResponse<List<ProductsGetListResponse>> getList( @RequestParam(value = "page", required = false, defaultValue = "0") Integer page,
+    public WebResponse<List<ProductsGetListResponse>> getList(@RequestParam(value = "page", required = false, defaultValue = "0") Integer page,
                                         @RequestParam(value = "size", required = false, defaultValue = "10") Integer size) {
         Page<ProductsGetListResponse> responsePage = productService.getList(page, size);
 
@@ -52,4 +52,28 @@ public class ProductController {
                         .build())
                 .build();
     }
+
+    @GetMapping(path = "/products/{productId}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public WebResponse<ProductResponse> get(@PathVariable Integer productId) {
+        ProductResponse response = productService.get(productId);
+
+        return WebResponse.<ProductResponse>builder()
+                .data(response)
+                .build();
+    }
+
+    @DeleteMapping(path = "/products/{productId}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public WebResponse<String> delete(@PathVariable Integer productId) {
+        productService.delete(productId);
+
+        return WebResponse.<String>builder()
+                .data("OK")
+                .build();
+    }
+
+
 }

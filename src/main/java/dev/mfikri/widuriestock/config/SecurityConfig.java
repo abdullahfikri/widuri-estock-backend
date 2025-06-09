@@ -82,7 +82,9 @@ public class SecurityConfig {
 
                         // products crud api
                         .requestMatchers(HttpMethod.POST, "/api/products").hasRole(Role.ADMIN_WAREHOUSE.name())
-                        .requestMatchers(HttpMethod.GET, "/api/products").hasRole(Role.ADMIN_WAREHOUSE.name())
+                        .requestMatchers(HttpMethod.GET, "/api/products").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/products/*").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/products/*").hasRole(Role.ADMIN_WAREHOUSE.name())
 
                         .anyRequest().denyAll()
                 )

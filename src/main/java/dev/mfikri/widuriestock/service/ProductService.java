@@ -8,4 +8,9 @@ import org.springframework.data.domain.Page;
 public interface ProductService {
     ProductResponse create(ProductCreateRequest request);
     Page<ProductsGetListResponse> getList(Integer page, Integer size);
+
+    ProductResponse get(Integer productId);
+
+    void delete(Integer productId);
+
 }

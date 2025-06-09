@@ -93,7 +93,8 @@ public class ProductServiceImpl implements ProductService {
                 photo.setImageLocation(path.toString());
                 productPhotos.add(photo);
 
-                ProductResponse.ProductPhoto pPhotoResponse = new ProductResponse.ProductPhoto(photo.getImageLocation());
+                ProductResponse.ProductPhoto pPhotoResponse = new ProductResponse.ProductPhoto();
+                pPhotoResponse.setImageLocation(photo.getImageLocation());
                 productPhotosResponse.add(pPhotoResponse);
             }
             productPhotoRepository.saveAll(productPhotos);
@@ -204,5 +205,66 @@ public class ProductServiceImpl implements ProductService {
 
 
         return new PageImpl<>(productsListResponse, pageable, products.getTotalElements());
+    }
+
+    @Override
+    public ProductResponse get(Integer productId) {
+        Product product = findProductByIdOrThrows(productId);
+
+        List<ProductResponse.ProductPhoto> productPhotos = product.getProductPhotos().stream().map(this::toProductPhotoResponse).toList();
+        List<ProductResponse.ProductVariant> productVariants = product.getProductVariants().stream().map(this::toProductVariantResponse).toList();
+
+        return ProductResponse.builder()
+                .id(product.getId())
+                .name(product.getName())
+                .description(product.getDescription())
+                .hasVariant(product.getHasVariant())
+                .stock(product.getStock())
+                .price(product.getPrice())
+                .category(dev.mfikri.widuriestock.model.product.Category.builder()
+                        .id(product.getCategory().getId())
+                        .name(product.getCategory().getName())
+                        .build())
+                .photos(productPhotos)
+                .variants(productVariants)
+                .build();
+    }
+
+    @Override
+    public void delete(Integer productId) {
+        Product product = findProductByIdOrThrows(productId);
+
+        productRepository.delete(product);
+    }
+
+    private Product findProductByIdOrThrows(Integer productId) {
+        return productRepository.findById(productId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product is not found."));
+    }
+
+    private ProductResponse.ProductPhoto toProductPhotoResponse(ProductPhoto productPhoto) {
+        return ProductResponse.ProductPhoto.builder()
+                .id(productPhoto.getId())
+                .imageLocation(productPhoto.getImageLocation())
+                .build();
+    }
+
+    private ProductResponse.ProductVariant toProductVariantResponse(ProductVariant productVariant) {
+        List<ProductResponse.ProductVariantAttribute> attributes = productVariant.getProductVariantAttributes()
+                .stream()
+                .map(productVariantAttribute -> ProductResponse.ProductVariantAttribute.builder()
+                    .id(productVariantAttribute.getId())
+                    .attributeKey(productVariantAttribute.getAttributeKey())
+                    .attributeValue(productVariantAttribute.getAttributeValue())
+                    .build())
+                .toList();
+
+
+        return ProductResponse.ProductVariant.builder()
+                .id(productVariant.getId())
+                .sku(productVariant.getSku())
+                .price(productVariant.getPrice())
+                .stock(productVariant.getStock())
+                .attributes(attributes)
+                .build();
     }
 }
