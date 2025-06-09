@@ -4,18 +4,22 @@ import dev.mfikri.widuriestock.exception.JwtAuthenticationException;
 import dev.mfikri.widuriestock.model.WebResponse;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.file.AccessDeniedException;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestControllerAdvice
@@ -63,7 +67,7 @@ public class ErrorController {
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<WebResponse<String>> methodArgumentTypeMismatch(MethodArgumentTypeMismatchException exception) {
+    public ResponseEntity<WebResponse<String>> methodArgumentPathTypeMismatch(MethodArgumentTypeMismatchException exception) {
         log.info(exception.getClass().getName());
 
         return ResponseEntity
@@ -71,6 +75,22 @@ public class ErrorController {
                 .body(WebResponse
                         .<String>builder()
                         .errors("Argument path type is wrong.")
+                        .build());
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<WebResponse<String>> methodArgumentTypeMismatch(MethodArgumentNotValidException exception) {
+        String message = exception.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .map(DefaultMessageSourceResolvable::getDefaultMessage)
+                .collect(Collectors.joining(","));
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(WebResponse
+                        .<String>builder()
+                        .errors(message)
                         .build());
     }
 

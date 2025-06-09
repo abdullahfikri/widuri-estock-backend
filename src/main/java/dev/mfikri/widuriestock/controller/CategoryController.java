@@ -1,9 +1,8 @@
 package dev.mfikri.widuriestock.controller;
 
-import dev.mfikri.widuriestock.entity.Category;
+import dev.mfikri.widuriestock.entity.product.Category;
 import dev.mfikri.widuriestock.model.WebResponse;
 import dev.mfikri.widuriestock.model.product.CategoryCreateRequest;
-import dev.mfikri.widuriestock.model.product.CategoryResponse;
 import dev.mfikri.widuriestock.model.product.CategoryUpdateRequest;
 import dev.mfikri.widuriestock.service.CategoryService;
 import org.springframework.http.HttpStatus;

@@ -2,12 +2,11 @@ package dev.mfikri.widuriestock.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import dev.mfikri.widuriestock.entity.Category;
+import dev.mfikri.widuriestock.entity.product.Category;
 import dev.mfikri.widuriestock.entity.Role;
 import dev.mfikri.widuriestock.entity.User;
 import dev.mfikri.widuriestock.model.WebResponse;
 import dev.mfikri.widuriestock.model.product.CategoryCreateRequest;
-import dev.mfikri.widuriestock.model.product.CategoryResponse;
 import dev.mfikri.widuriestock.model.product.CategoryUpdateRequest;
 import dev.mfikri.widuriestock.repository.CategoryRepository;
 import dev.mfikri.widuriestock.repository.RefreshTokenRepository;
@@ -26,10 +25,8 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import static org.springframework.test.web.servlet.MockMvcBuilder.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc

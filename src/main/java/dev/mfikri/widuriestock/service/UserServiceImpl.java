@@ -61,7 +61,7 @@ public class UserServiceImpl implements UserService {
         user.setEmail(request.getEmail());
 
         if (!request.getPhoto().isEmpty()){
-            Path path = uploadPhoto(request.getPhoto(), request.getUsername());
+            Path path = ImageUtil.uploadPhoto(request.getPhoto(), request.getUsername(), false);
             user.setPhoto(path.toString());
         }
 
@@ -127,7 +127,7 @@ public class UserServiceImpl implements UserService {
         }
 
         if (request.getPhoto() != null && !request.getPhoto().isEmpty()) {
-            Path path = uploadPhoto(request.getPhoto(), request.getUsername());
+            Path path = ImageUtil.uploadPhoto(request.getPhoto(), request.getUsername(), false);
             user.setPhoto(path.toString());
         }
 
@@ -186,21 +186,21 @@ public class UserServiceImpl implements UserService {
         return new PageImpl<>(users, pageable, userPage.getTotalElements());
     }
 
-    private Path uploadPhoto(MultipartFile photo, String username) {
-        String contentType = photo.getContentType();
-        if (contentType == null || !ImageUtil.isImage(contentType)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Image photo is not valid");
-        }
-        String type = photo.getContentType().split("/")[1];
-
-        Path path = Path.of("upload/profile-" + username + "." + type);
-        try {
-            photo.transferTo(path);
-            return path;
-        } catch (IOException e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Server unavailable, try again later");
-        }
-    }
+//    private Path uploadPhoto(MultipartFile photo, String username) {
+//        String contentType = photo.getContentType();
+//        if (contentType == null || !ImageUtil.isImage(contentType)) {
+//            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Image photo is not valid");
+//        }
+//        String type = photo.getContentType().split("/")[1];
+//
+//        Path path = Path.of("upload/profile-" + username + "." + type);
+//        try {
+//            photo.transferTo(path);
+//            return path;
+//        } catch (IOException e) {
+//            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Server unavailable, try again later");
+//        }
+//    }
 
     private User findUserByUsernameOrThrows(String username) {
         return userRepository.findById(username.trim()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,  "User is not found."));

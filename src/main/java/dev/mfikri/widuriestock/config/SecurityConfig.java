@@ -80,6 +80,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/categories/*").hasRole(Role.ADMIN_WAREHOUSE.name())
                         .requestMatchers(HttpMethod.DELETE, "/api/categories/*").hasRole(Role.ADMIN_WAREHOUSE.name())
 
+                        // products crud api
+                        .requestMatchers(HttpMethod.POST, "/api/products").hasRole(Role.ADMIN_WAREHOUSE.name())
+                        .requestMatchers(HttpMethod.GET, "/api/products").hasRole(Role.ADMIN_WAREHOUSE.name())
+
                         .anyRequest().denyAll()
                 )
                 .exceptionHandling(handler-> handler.authenticationEntryPoint(entryPoint)
