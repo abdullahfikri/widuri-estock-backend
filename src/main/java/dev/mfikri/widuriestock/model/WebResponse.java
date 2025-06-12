@@ -1,6 +1,5 @@
 package dev.mfikri.widuriestock.model;
 
-import dev.mfikri.widuriestock.model.user.PagingResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

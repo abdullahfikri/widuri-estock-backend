@@ -1,6 +1,6 @@
 package dev.mfikri.widuriestock.controller;
 
-import dev.mfikri.widuriestock.entity.User;
+import dev.mfikri.widuriestock.model.PagingResponse;
 import dev.mfikri.widuriestock.model.WebResponse;
 import dev.mfikri.widuriestock.model.user.*;
 import dev.mfikri.widuriestock.service.UserService;

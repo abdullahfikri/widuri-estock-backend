@@ -1,4 +1,4 @@
-package dev.mfikri.widuriestock.model.product;
+package dev.mfikri.widuriestock.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,8 +9,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class CategoryResponse {
-    private Integer id;
-    private String name;
-    private String description;
+public class PagingResponse {
+    private int currentPage;
+    private int totalPage;
+    private int sizePerPage;
 }

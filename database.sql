@@ -86,9 +86,10 @@ ALTER TABLE refresh_token
 ALTER TABLE refresh_token
     RENAME COLUMN userAgent to user_agent;
 
+SELECT * FROM users;
 
 CREATE TABLE categories (
-    id int NOT NULL AUTO_INCREMENT,
+    id INT NOT NULL AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL ,
     description VARCHAR(255),
     PRIMARY KEY (id),
@@ -96,3 +97,100 @@ CREATE TABLE categories (
 ) ENGINE = InnoDB;
 
 SELECT * FROM categories;
+
+CREATE TABLE products (
+    id INT NOT NULL AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    description TEXT NOT NULL,
+    has_variant BOOLEAN,
+    stock SMALLINT,
+    price INT,
+    category_id INT NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE (name)
+);
+
+ALTER TABLE products
+    ADD COLUMN created_at TIMESTAMP;
+
+ALTER TABLE products
+    ADD COLUMN updated_at TIMESTAMP;
+
+ALTER TABLE products
+    ADD CONSTRAINT fk_category_product
+    FOREIGN KEY (category_id) REFERENCES categories (id);
+
+SELECT * FROM products;
+
+DELETE FROM product_photos;
+DELETE FROM products;
+
+CREATE TABLE product_photos (
+    id VARCHAR(255) NOT NULL,
+    image_location VARCHAR(255),
+    product_id INT NOT NULL ,
+    PRIMARY KEY (id)
+) ENGINE = InnoDB;
+
+# ALTER TABLE product_photos
+#     DROP id;
+#
+# ALTER TABLE product_photos
+#     ADD (id VARCHAR(255));
+#
+# DELETE FROM product_photos;
+#
+# ALTER TABLE product_photos
+#     ADD CONSTRAINT pk_product_photo
+#     PRIMARY KEY (id);
+# DROP TABLE product_photos;
+
+ALTER TABLE product_photos
+    ADD CONSTRAINT fk_product_product_photo
+    FOREIGN KEY (product_id) REFERENCES products (id);
+
+SELECT * FROM product_photos;
+
+
+CREATE TABLE product_variants (
+    id INT NOT NULL AUTO_INCREMENT,
+    sku VARCHAR(255) NOT NULL,
+    stock SMALLINT NOT NULL,
+    price INT NOT NULL ,
+    product_id int NOT NULL,
+    PRIMARY KEY (id)
+) ENGINE = InnoDB;
+# ADD FOREIGN KEY
+ALTER TABLE product_variants
+    ADD CONSTRAINT fk_product_product_variant
+    FOREIGN KEY (product_id) REFERENCES products (id);
+
+ALTER TABLE product_variants
+    ADD CONSTRAINT uc_product_variants
+    UNIQUE (sku, product_id);
+
+
+SELECT * FROM product_variants;
+
+CREATE TABLE variant_attributes (
+    id INT NOT NULL AUTO_INCREMENT,
+    attribute_key VARCHAR(100) NOT NULL,
+    attribute_value VARCHAR(100) NOT NULL,
+    product_variants_id INT NOT NULL,
+    PRIMARY KEY (id)
+) ENGINE = InnoDB;
+# ADD FOREIGN KEY
+ALTER TABLE variant_attributes
+    ADD CONSTRAINT fk_product_variant_variant_attribute
+    FOREIGN KEY (product_variants_id) REFERENCES product_variants (id);
+
+# SELECT * FROM variant_attributes;
+
+RENAME TABLE variant_attributes TO product_variant_attributes;
+
+SELECT * FROM product_variant_attributes;
+
+
+
+# ADD FOREIGN KEY
+ 
