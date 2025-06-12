@@ -54,7 +54,7 @@ public class ProductResponse {
     @NoArgsConstructor
     @Builder
     public static class ProductPhoto {
-        private Integer id;
+        private String id;
         private String imageLocation;
     }
 }

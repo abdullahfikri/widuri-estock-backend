@@ -3,6 +3,7 @@ package dev.mfikri.widuriestock.service;
 import dev.mfikri.widuriestock.entity.product.*;
 import dev.mfikri.widuriestock.model.product.ProductCreateRequest;
 import dev.mfikri.widuriestock.model.product.ProductResponse;
+import dev.mfikri.widuriestock.model.product.ProductUpdateRequest;
 import dev.mfikri.widuriestock.model.product.ProductsGetListResponse;
 import dev.mfikri.widuriestock.repository.*;
 import dev.mfikri.widuriestock.util.ImageUtil;
@@ -14,10 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -84,12 +82,13 @@ public class ProductServiceImpl implements ProductService {
         if (request.getProductPhotos() != null) {
             List<ProductPhoto> productPhotos = new ArrayList<>();
             for (int i = 0; i < request.getProductPhotos().size(); i++) {
-                ProductCreateRequest.ProductPhoto productPhoto = request.getProductPhotos().get(i);
+                ProductCreateRequest.ProductPhotoCreateRequest productPhotoCreateRequest = request.getProductPhotos().get(i);
 
-                Path path = ImageUtil.uploadPhoto(productPhoto.getImage(), product.getName() + "-" + i, true);
 
                 ProductPhoto photo = new ProductPhoto();
                 photo.setProduct(product);
+                photo.setId(UUID.randomUUID().toString());
+                Path path = ImageUtil.uploadPhoto(productPhotoCreateRequest.getImage(), product.getName() + "-" + photo.getId(), true);
                 photo.setImageLocation(path.toString());
                 productPhotos.add(photo);
 
@@ -97,6 +96,7 @@ public class ProductServiceImpl implements ProductService {
                 pPhotoResponse.setImageLocation(photo.getImageLocation());
                 productPhotosResponse.add(pPhotoResponse);
             }
+            log.info(String.valueOf(productPhotos.size()));
             productPhotoRepository.saveAll(productPhotos);
         }
 
@@ -107,15 +107,15 @@ public class ProductServiceImpl implements ProductService {
 
             Set<String> skuVariantProductSet = new HashSet<>();
 
-            request.getVariants().forEach(productVariant -> {
+            request.getVariants().forEach(productVariantCreateRequest -> {
 
                 ProductVariant pVariant = new ProductVariant();
-                pVariant.setSku(productVariant.getSku());
-                pVariant.setStock(productVariant.getStock());
-                pVariant.setPrice(productVariant.getPrice());
+                pVariant.setSku(productVariantCreateRequest.getSku());
+                pVariant.setStock(productVariantCreateRequest.getStock());
+                pVariant.setPrice(productVariantCreateRequest.getPrice());
                 pVariant.setProduct(product);
                 productVariants.add(pVariant);
-                skuVariantProductSet.add(productVariant.getSku());
+                skuVariantProductSet.add(productVariantCreateRequest.getSku());
             });
 
             if (skuVariantProductSet.size() != productVariants.size()) {
@@ -129,16 +129,16 @@ public class ProductServiceImpl implements ProductService {
             int attributeSize = 0;
             for (int i = 0; i < productVariants.size(); i++) {
 
-                ProductCreateRequest.ProductVariant productVariant = request.getVariants().get(i);
-                if (i != 0 && productVariant.getAttributes().size() != attributeSize){
+                ProductCreateRequest.ProductVariantCreateRequest productVariantCreateRequest = request.getVariants().get(i);
+                if (i != 0 && productVariantCreateRequest.getAttributes().size() != attributeSize){
                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "'Attribute' size must be same for each 'Variant'.");
                 }
-                attributeSize = productVariant.getAttributes().size();
+                attributeSize = productVariantCreateRequest.getAttributes().size();
 
                 // pVariant
                 ProductVariant pVariant = productVariants.get(i);
 
-                productVariant.getAttributes().forEach(productVariantAttribute -> {
+                productVariantCreateRequest.getAttributes().forEach(productVariantAttribute -> {
                     ProductVariantAttribute attribute = new ProductVariantAttribute();
                     attribute.setAttributeKey(productVariantAttribute.getAttributeKey());
                     attribute.setAttributeValue(productVariantAttribute.getAttributeValue());
@@ -178,6 +178,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<ProductsGetListResponse> getList(Integer page, Integer size) {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.asc("name")));
@@ -208,6 +209,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ProductResponse get(Integer productId) {
         Product product = findProductByIdOrThrows(productId);
 
@@ -231,9 +233,167 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Transactional
+    public ProductResponse update(ProductUpdateRequest request) {
+        validationService.validate(request);
+
+        Category category = categoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Category is not found."));
+
+        Product product = findProductByIdOrThrows(request.getId());
+
+        List<ProductPhoto> productPhotos = new ArrayList<>();
+        List<ProductVariant> productVariants = new ArrayList<>();
+        List<ProductVariantAttribute> productVariantAttributes = new ArrayList<>();
+
+
+        if (request.getHasVariant()) {
+            if (request.getPrice() != null || request.getStock() != null ) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Price and Stock must not be included when 'hasVariant' is true.");
+            }
+            if (request.getVariants() == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Product variant must be included when 'hasVariant' is true.");
+            }
+
+            product.setCategory(category);
+            product.setName(request.getName());
+            product.setDescription(request.getDescription());
+            product.setStock(null);
+            product.setPrice(null);
+            product.setHasVariant(request.getHasVariant());
+
+            // update variant
+            productVariants = request.getVariants().stream().map(productVariantUpdateRequest -> {
+                ProductVariant productVariant;
+                if (productVariantUpdateRequest.getId() != null) {
+                    log.info(String.valueOf(productVariantUpdateRequest.getId()));
+                    log.info(String.valueOf(product.getId()));
+                    productVariant = productVariantRepository.findByIdAndProduct(productVariantUpdateRequest.getId(), product)
+                            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product variant is not found"));
+                } else {
+                    productVariant = new ProductVariant();
+                    productVariant.setProduct(product);
+                }
+
+                productVariant.setSku(productVariantUpdateRequest.getSku());
+                productVariant.setStock(productVariantUpdateRequest.getStock());
+                productVariant.setPrice(productVariantUpdateRequest.getPrice());
+                return productVariant;
+            }).toList();
+            productVariantRepository.saveAll(productVariants);
+
+            // update variant attribute
+            for (int i = 0; i < productVariants.size(); i++) {
+                ProductVariant productVariant = productVariants.get(i);
+                ProductUpdateRequest.ProductVariantUpdateRequest productVariantUpdateRequest = request.getVariants().get(i);
+
+                List<ProductVariantAttribute> variantAttributes = productVariantUpdateRequest.getAttributes().stream().map(productVariantAttributeUpdateRequest -> {
+                    ProductVariantAttribute productVariantAttribute;
+
+                    if (productVariantAttributeUpdateRequest.getId() != null) {
+                        productVariantAttribute = productVariantAttributeRepository.findByIdAndProductVariant(productVariantAttributeUpdateRequest.getId(), productVariant)
+                                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product variant attribute is not found"));
+                    } else {
+                        productVariantAttribute = new ProductVariantAttribute();
+                        productVariantAttribute.setProductVariant(productVariant);
+                    }
+
+                    productVariantAttribute.setAttributeKey(productVariantAttributeUpdateRequest.getAttributeKey());
+                    productVariantAttribute.setAttributeValue(productVariantAttributeUpdateRequest.getAttributeValue());
+                    return productVariantAttribute;
+                }).toList();
+
+                productVariantAttributes.addAll(variantAttributes);
+            }
+
+            productVariantAttributeRepository.saveAll(productVariantAttributes);
+
+        } else {
+            if ((request.getPrice() == null || request.getStock() == null )) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Price and Stock must be included when 'hasVariant' is false.");
+            }
+            if (request.getVariants() != null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Product variants must not be included when 'hasVariant' is false.");
+            }
+            log.info("invoke");
+            productVariantRepository.deleteAllByProduct(product);
+            log.info("invoke1");
+
+            product.setCategory(category);
+            product.setName(request.getName());
+            product.setDescription(request.getDescription());
+            product.setStock(request.getStock());
+            product.setPrice(request.getPrice());
+            product.setHasVariant(request.getHasVariant());
+            product.setProductVariants(null);
+        }
+
+
+        if (request.getProductPhotos() != null) {
+            log.info("photo");
+            for (int i = 0; i < request.getProductPhotos().size(); i++) {
+                ProductUpdateRequest.ProductPhotoUpdateRequest productPhotoUpdateRequest = request.getProductPhotos().get(i);
+                ProductPhoto photo;
+
+                if (productPhotoUpdateRequest.getId() != null) {
+                    photo = productPhotoRepository.findByIdAndProduct(productPhotoUpdateRequest.getId(), product)
+                            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product photo is not found"));
+                } else {
+                    photo = new ProductPhoto();
+                    photo.setId(UUID.randomUUID().toString());
+                }
+
+                if (productPhotoUpdateRequest.getImage() != null) {
+                    Path path = ImageUtil.uploadPhoto(productPhotoUpdateRequest.getImage(), product.getName() + "-" + photo.getId(), true);
+                    photo.setImageLocation(path.toString());
+                } else {
+                    photo.setImageLocation(productPhotoUpdateRequest.getImageLocation());
+                }
+                photo.setProduct(product);
+                productPhotos.add(photo);
+            }
+            productPhotoRepository.saveAll(productPhotos);
+        }
+        productRepository.save(product);
+
+
+        List<ProductResponse.ProductVariant> productVariantsResponse = new ArrayList<>();
+        if (!productVariants.isEmpty()) {
+            productVariantsResponse.addAll(productVariants.stream().map(productVariant -> {
+                List<ProductVariantAttribute> variantAttributes = productVariantAttributes.stream()
+                        .filter(productVariantAttribute -> Objects.equals(productVariantAttribute.getProductVariant().getId(), productVariant.getId())).toList();
+                productVariant.setProductVariantAttributes(variantAttributes);
+                return toProductVariantResponse(productVariant);
+            }).toList());
+        }
+
+        List<ProductResponse.ProductPhoto> productPhotosResponse = new ArrayList<>();
+        if (!productPhotos.isEmpty()) {
+            productPhotosResponse.addAll(productPhotos.stream().map(this::toProductPhotoResponse).toList());
+        }
+
+        return ProductResponse.builder()
+                .id(product.getId())
+                .name(product.getName())
+                .description(product.getDescription())
+                .hasVariant(product.getHasVariant())
+                .stock(product.getStock())
+                .price(product.getPrice())
+                .category(dev.mfikri.widuriestock.model.product.Category
+                        .builder()
+                        .id(category.getId())
+                        .name(category.getName())
+                        .build())
+                .variants(productVariantsResponse)
+                .photos(productPhotosResponse)
+                .build();
+    }
+
+    @Override
+    @Transactional
     public void delete(Integer productId) {
         Product product = findProductByIdOrThrows(productId);
-
+        productPhotoRepository.deleteAllByProduct(product);
         productRepository.delete(product);
     }
 

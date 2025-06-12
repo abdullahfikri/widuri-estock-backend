@@ -14,8 +14,8 @@ import lombok.Setter;
 public class ProductPhoto {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+//    @GeneratedValue(strategy = GenerationType.UUID)
+    private String id;
     @Column(name = "image_location")
     private String imageLocation;
 

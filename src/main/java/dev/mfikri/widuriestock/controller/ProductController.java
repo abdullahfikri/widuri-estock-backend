@@ -4,6 +4,7 @@ import dev.mfikri.widuriestock.model.PagingResponse;
 import dev.mfikri.widuriestock.model.WebResponse;
 import dev.mfikri.widuriestock.model.product.ProductCreateRequest;
 import dev.mfikri.widuriestock.model.product.ProductResponse;
+import dev.mfikri.widuriestock.model.product.ProductUpdateRequest;
 import dev.mfikri.widuriestock.model.product.ProductsGetListResponse;
 import dev.mfikri.widuriestock.service.ProductService;
 import org.springframework.data.domain.Page;
@@ -63,6 +64,21 @@ public class ProductController {
                 .data(response)
                 .build();
     }
+
+    @PutMapping(path = "/products/{productId}",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public WebResponse<ProductResponse> update(@ModelAttribute ProductUpdateRequest request, @PathVariable Integer productId) {
+
+        request.setId(productId);
+        ProductResponse response = productService.update(request);
+
+        return WebResponse.<ProductResponse>builder()
+                .data(response)
+                .build();
+    }
+
 
     @DeleteMapping(path = "/products/{productId}",
             produces = MediaType.APPLICATION_JSON_VALUE

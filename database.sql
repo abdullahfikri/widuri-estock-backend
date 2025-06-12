@@ -126,11 +126,24 @@ DELETE FROM product_photos;
 DELETE FROM products;
 
 CREATE TABLE product_photos (
-    id INT NOT NULL AUTO_INCREMENT,
+    id VARCHAR(255) NOT NULL,
     image_location VARCHAR(255),
     product_id INT NOT NULL ,
     PRIMARY KEY (id)
 ) ENGINE = InnoDB;
+
+# ALTER TABLE product_photos
+#     DROP id;
+#
+# ALTER TABLE product_photos
+#     ADD (id VARCHAR(255));
+#
+# DELETE FROM product_photos;
+#
+# ALTER TABLE product_photos
+#     ADD CONSTRAINT pk_product_photo
+#     PRIMARY KEY (id);
+# DROP TABLE product_photos;
 
 ALTER TABLE product_photos
     ADD CONSTRAINT fk_product_product_photo

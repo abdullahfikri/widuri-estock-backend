@@ -8,6 +8,7 @@ import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
@@ -118,5 +119,13 @@ public class ErrorController {
                         .build());
     }
 
+    // sql
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<WebResponse<String>> conflictLockingException(ObjectOptimisticLockingFailureException exception) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(WebResponse.<String>builder()
+                        .errors("Data was updated by another user. Please refresh and retry.")
+                        .build());
+    }
 
 }

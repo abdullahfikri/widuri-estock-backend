@@ -24,7 +24,7 @@ public class ImageUtil {
         if (contentType == null || !isImage(contentType)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Image photo is not valid");
         }
-        String type = photo.getContentType().split("/")[1];
+        String type = contentType.split("/")[1];
 
         String folder;
         if (isProduct) {

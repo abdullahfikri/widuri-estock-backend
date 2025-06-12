@@ -35,15 +35,15 @@ public class ProductCreateRequest {
     private Integer price;
 
     @Valid
-    private List<ProductPhoto> productPhotos;
+    private List<ProductPhotoCreateRequest> productPhotos;
 
     @Valid
-    private List<ProductVariant> variants;
+    private List<ProductVariantCreateRequest> variants;
 
     @Getter
     @Setter
     @NoArgsConstructor
-    public static class ProductPhoto {
+    public static class ProductPhotoCreateRequest {
         @NotNull
         private MultipartFile image;
     }
@@ -51,7 +51,7 @@ public class ProductCreateRequest {
     @Getter
     @Setter
     @NoArgsConstructor
-    public static class ProductVariant {
+    public static class ProductVariantCreateRequest {
 
         @NotBlank
         @Size(min = 1, max = 255)
@@ -68,12 +68,12 @@ public class ProductCreateRequest {
 
         @NotNull
         @Valid
-        private List<ProductVariantAttribute> attributes;
+        private List<ProductVariantAttributeCreateRequest> attributes;
 
         @Getter
         @Setter
         @NoArgsConstructor
-        public static class ProductVariantAttribute {
+        public static class ProductVariantAttributeCreateRequest {
 
             @NotBlank
             @Size(min = 1, max = 100)

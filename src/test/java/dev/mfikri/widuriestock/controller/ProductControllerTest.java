@@ -81,6 +81,7 @@ class ProductControllerTest {
         refreshTokenRepository.deleteAll();
         addressRepository.deleteAll();
         userRepository.deleteAll();
+        productPhotoRepository.deleteAll();
         productRepository.deleteAll();
         categoryRepository.deleteAll();
 
@@ -541,13 +542,11 @@ class ProductControllerTest {
 
         mockMvc.perform(
                 multipart(HttpMethod.POST,"/api/products")
-                        .file(new MockMultipartFile("productPhotos[0].image", "tan-malaka.png", "image/png", getClass().getResourceAsStream("/images/tan-malaka.png")))
+                        .file(new MockMultipartFile("productPhotos[0].image", "moon.jpg", "image/jpg", getClass().getResourceAsStream("/images/moon.jpg")))
                         .header("Authorization", authorizationToken)
                         .accept(MediaType.APPLICATION_JSON)
                         .contentType(MediaType.MULTIPART_FORM_DATA_VALUE)
                         .params(params)
-
-
         ).andExpect(
                 status().isCreated()
         ).andDo(result -> {
@@ -619,6 +618,7 @@ class ProductControllerTest {
         productRepository.save(product0);
 
         ProductPhoto photo = new ProductPhoto();
+        photo.setId("PHOTO-TEST");
         photo.setImageLocation("upload/product/product-product-test-0.png");
         photo.setProduct(product0);
         productPhotoRepository.save(photo);
@@ -680,6 +680,7 @@ class ProductControllerTest {
         productRepository.save(product0);
 
         ProductPhoto photo = new ProductPhoto();
+        photo.setId("TEST-ID");
         photo.setImageLocation("upload/product/product-product-test-0.png");
         photo.setProduct(product0);
         productPhotoRepository.save(photo);
@@ -902,6 +903,7 @@ class ProductControllerTest {
         productVariantAttributeRepository.save(productVariantAttribute);
 
         ProductPhoto productPhoto = new ProductPhoto();
+        productPhoto.setId("PHOTO-TEST");
         productPhoto.setProduct(product);
         productPhoto.setImageLocation("/location/dummy/example.png");
         productPhotoRepository.save(productPhoto);
@@ -1021,6 +1023,7 @@ class ProductControllerTest {
         productVariantAttributeRepository.save(productVariantAttribute);
 
         ProductPhoto productPhoto = new ProductPhoto();
+        productPhoto.setId("PHOTO-TEST");
         productPhoto.setProduct(product);
         productPhoto.setImageLocation("/location/dummy/example.png");
         productPhotoRepository.save(productPhoto);
@@ -1047,6 +1050,779 @@ class ProductControllerTest {
             ProductVariantAttribute deletedProductVariantAttribute = productVariantAttributeRepository.findById(productVariantAttribute.getId()).orElse(null);
             assertNull(deletedProductVariantAttribute);
 
+            ProductPhoto deletedProductPhoto = productPhotoRepository.findById(productPhoto.getId()).orElse(null);
+            assertNull(deletedProductPhoto);
+        });
+    }
+
+    @Test
+    void updateFailedTokenNotSend() throws Exception {
+        mockMvc.perform(
+                put("/api/products/123")
+                        .accept(MediaType.APPLICATION_JSON)
+        ).andExpect(
+                status().isUnauthorized()
+        ).andDo(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+            assertNull(response.getData());
+            assertNotNull(response.getErrors());
+            assertEquals("Authentication failed", response.getErrors());
+        });
+    }
+
+    @Test
+    void updateFailedPathVariableWrongDataType() throws Exception {
+        mockMvc.perform(
+                put("/api/products/abc")
+                        .header("Authorization", authorizationToken)
+                        .contentType(MediaType.MULTIPART_FORM_DATA_VALUE)
+                        .accept(MediaType.APPLICATION_JSON)
+        ).andExpect(
+                status().isBadRequest()
+        ).andDo(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+            assertNull(response.getData());
+            assertNotNull(response.getErrors());
+            assertEquals("Argument path type is wrong.", response.getErrors());
+        });
+    }
+
+    @Test
+    void updateFailedValidation() throws Exception {
+
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("name", "Product Test");
+        params.add("description", "Product description test");
+        params.add("categoryId", categoryId.toString());
+
+
+        mockMvc.perform(
+                put("/api/products/123")
+                        .header("Authorization", authorizationToken)
+                        .contentType(MediaType.MULTIPART_FORM_DATA_VALUE)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .params(params)
+        ).andExpect(
+                status().isBadRequest()
+        ).andDo(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+            assertNull(response.getData());
+            assertNotNull(response.getErrors());
+            assertEquals("hasVariant: must not be null", response.getErrors());
+            log.info(response.getErrors());
+        });
+    }
+
+    @Test
+    void updateFailedProductNotFound() throws Exception {
+
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("name", "Product Test");
+        params.add("description", "Product description test");
+        params.add("categoryId", categoryId.toString());
+        params.add("hasVariant", "false");
+        params.add("stock", "100");
+        params.add("price", "120500");
+
+
+        mockMvc.perform(
+                put("/api/products/123")
+                        .header("Authorization", authorizationToken)
+                        .contentType(MediaType.MULTIPART_FORM_DATA_VALUE)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .params(params)
+        ).andExpect(
+                status().isNotFound()
+        ).andDo(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+            assertNull(response.getData());
+            assertNotNull(response.getErrors());
+            assertEquals("Product is not found.", response.getErrors());
+            log.info(response.getErrors());
+        });
+    }
+
+    @Test
+    void updateFailedCategoryNotFound() throws Exception {
+        Category category = categoryRepository.findById(categoryId).orElse(null);
+        assertNotNull(category);
+
+        Product product = new Product();
+        product.setName("Product Test");
+        product.setDescription("Product Description Test");
+        product.setHasVariant(false);
+        product.setPrice(120500);
+        product.setStock(100);
+        product.setCategory(category);
+        productRepository.save(product);
+
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("name", "Product Test");
+        params.add("description", "Product description test");
+        params.add("categoryId", "0");
+        params.add("hasVariant", "false");
+        params.add("stock", "100");
+        params.add("price", "120500");
+
+        mockMvc.perform(
+                put("/api/products/" + product.getId())
+                        .header("Authorization", authorizationToken)
+                        .contentType(MediaType.MULTIPART_FORM_DATA_VALUE)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .params(params)
+        ).andExpect(
+                status().isNotFound()
+        ).andDo(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+            assertNull(response.getData());
+            assertNotNull(response.getErrors());
+            assertEquals("Category is not found.", response.getErrors());
+            log.info(response.getErrors());
+        });
+    }
+
+    @Test
+    void updateFailedValidationWhenHasVariantFalse() throws Exception {
+        Category category = categoryRepository.findById(categoryId).orElse(null);
+        assertNotNull(category);
+
+        Product product = new Product();
+        product.setName("Product Test");
+        product.setDescription("Product Description Test");
+        product.setHasVariant(false);
+        product.setPrice(120500);
+        product.setStock(100);
+        product.setCategory(category);
+        productRepository.save(product);
+
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("name", "Product Test");
+        params.add("description", "Product description test");
+        params.add("categoryId", categoryId.toString());
+        params.add("hasVariant", "false");
+
+        mockMvc.perform(
+                put("/api/products/" + product.getId())
+                        .header("Authorization", authorizationToken)
+                        .contentType(MediaType.MULTIPART_FORM_DATA_VALUE)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .params(params)
+        ).andExpect(
+                status().isBadRequest()
+        ).andDo(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+            assertNull(response.getData());
+            assertNotNull(response.getErrors());
+            assertEquals("Price and Stock must be included when 'hasVariant' is false.", response.getErrors());
+            log.info(response.getErrors());
+        });
+
+        mockMvc.perform(
+                put("/api/products/" + product.getId())
+                        .header("Authorization", authorizationToken)
+                        .contentType(MediaType.MULTIPART_FORM_DATA_VALUE)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .params(params)
+                        .param("price", "10000")
+                        .param("stock", "15")
+                        .param("variants[0].sku", "joran-pancing-white")
+                        .param("variants[0].stock", "10")
+                        .param("variants[0].price", "215000")
+                        .param("variants[0].attributes[0].attributeKey", "color")
+                        .param("variants[0].attributes[0].attributeValue", "white")
+        ).andExpect(
+                status().isBadRequest()
+        ).andDo(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+            assertNull(response.getData());
+            assertNotNull(response.getErrors());
+            assertEquals("Product variants must not be included when 'hasVariant' is false.", response.getErrors());
+            log.info(response.getErrors());
+        });
+    }
+
+    @Test
+    void updateFailedValidationWhenHasVariantTrue() throws Exception {
+        Category category = categoryRepository.findById(categoryId).orElse(null);
+        assertNotNull(category);
+
+        Product product = new Product();
+        product.setName("Product Test");
+        product.setDescription("Product Description Test");
+        product.setHasVariant(false);
+        product.setPrice(120500);
+        product.setStock(100);
+        product.setCategory(category);
+        productRepository.save(product);
+
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("name", "Product Test");
+        params.add("description", "Product description test");
+        params.add("categoryId", categoryId.toString());
+        params.add("hasVariant", "true");
+
+        mockMvc.perform(
+                put("/api/products/" + product.getId())
+                        .header("Authorization", authorizationToken)
+                        .contentType(MediaType.MULTIPART_FORM_DATA_VALUE)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .params(params)
+                        .param("stock", "100")
+                        .param("price", "120500")
+        ).andExpect(
+                status().isBadRequest()
+        ).andDo(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+            assertNull(response.getData());
+            assertNotNull(response.getErrors());
+            assertEquals("Price and Stock must not be included when 'hasVariant' is true.", response.getErrors());
+            log.info(response.getErrors());
+        });
+
+        mockMvc.perform(
+                put("/api/products/" + product.getId())
+                        .header("Authorization", authorizationToken)
+                        .contentType(MediaType.MULTIPART_FORM_DATA_VALUE)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .params(params)
+        ).andExpect(
+                status().isBadRequest()
+        ).andDo(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+            assertNull(response.getData());
+            assertNotNull(response.getErrors());
+            assertEquals("Product variant must be included when 'hasVariant' is true.", response.getErrors());
+            log.info(response.getErrors());
+        });
+    }
+
+
+    @Test
+    void updateSuccessForProductAddPhoto() throws Exception {
+        Category category = categoryRepository.findById(categoryId).orElse(null);
+        assertNotNull(category);
+
+        Product product = new Product();
+        product.setName("Product Test");
+        product.setDescription("Product Description Test");
+        product.setHasVariant(true);
+        product.setCategory(category);
+        productRepository.save(product);
+
+        ProductVariant productVariant = new ProductVariant();
+        productVariant.setProduct(product);
+        productVariant.setSku("product-test-black");
+        productVariant.setPrice(100500);
+        productVariant.setStock(100);
+        productVariantRepository.save(productVariant);
+
+        ProductVariantAttribute productVariantAttribute = new ProductVariantAttribute();
+        productVariantAttribute.setProductVariant(productVariant);
+        productVariantAttribute.setAttributeKey("color");
+        productVariantAttribute.setAttributeValue("black");
+        productVariantAttributeRepository.save(productVariantAttribute);
+
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("name", "Product Updated");
+        params.add("description", "Product description Updated");
+        params.add("categoryId", categoryId.toString());
+        params.add("hasVariant", "true");
+        params.add("variants[0].id", productVariant.getId().toString());
+        params.add("variants[0].sku", "product-test-white");
+        params.add("variants[0].stock", "10");
+        params.add("variants[0].price", "215000");
+        params.add("variants[0].attributes[0].id", productVariantAttribute.getId().toString());
+        params.add("variants[0].attributes[0].attributeKey", "color");
+        params.add("variants[0].attributes[0].attributeValue", "white");
+
+
+        mockMvc.perform(
+                multipart(HttpMethod.PUT,"/api/products/" + product.getId())
+                        .file(new MockMultipartFile("productPhotos[0].image", "tan-malaka.png", "image/png", getClass().getResourceAsStream("/images/tan-malaka.png")))
+                        .header("Authorization", authorizationToken)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.MULTIPART_FORM_DATA_VALUE)
+                        .params(params)
+        ).andExpect(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<ProductResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+            assertNull(response.getErrors());
+            assertNotNull(response.getData());
+
+            assertEquals("Product Updated", response.getData().getName());
+            assertEquals("Product description Updated", response.getData().getDescription());
+            assertEquals(categoryId, response.getData().getCategory().getId());
+            assertEquals(true, response.getData().getHasVariant());
+            assertEquals(null, response.getData().getPrice());
+            assertEquals(null, response.getData().getStock());
+            assertEquals(productVariant.getId(), response.getData().getVariants().getFirst().getId());
+            assertEquals("product-test-white", response.getData().getVariants().getFirst().getSku());
+            assertEquals(10, response.getData().getVariants().getFirst().getStock());
+            assertEquals(215000, response.getData().getVariants().getFirst().getPrice());
+            assertEquals(productVariantAttribute.getId(), response.getData().getVariants().getFirst().getAttributes().getFirst().getId());
+            assertEquals("color", response.getData().getVariants().getFirst().getAttributes().getFirst().getAttributeKey());
+            assertEquals("white", response.getData().getVariants().getFirst().getAttributes().getFirst().getAttributeValue());
+            assertEquals(1, response.getData().getPhotos().size());
+            assertNotNull( response.getData().getPhotos().getFirst().getImageLocation());
+            assertNotNull( response.getData().getPhotos().getFirst().getId());
+
+        });
+    }
+
+    @Test
+    void updateSuccessForProductUpdatePhotoAndAddPhoto() throws Exception {
+        Category category = categoryRepository.findById(categoryId).orElse(null);
+        assertNotNull(category);
+
+        Product product = new Product();
+        product.setName("Product Test");
+        product.setDescription("Product Description Test");
+        product.setHasVariant(true);
+        product.setCategory(category);
+        productRepository.save(product);
+
+        ProductVariant productVariant = new ProductVariant();
+        productVariant.setProduct(product);
+        productVariant.setSku("product-test-black");
+        productVariant.setPrice(100500);
+        productVariant.setStock(100);
+        productVariantRepository.save(productVariant);
+
+        ProductVariantAttribute productVariantAttribute = new ProductVariantAttribute();
+        productVariantAttribute.setProductVariant(productVariant);
+        productVariantAttribute.setAttributeKey("color");
+        productVariantAttribute.setAttributeValue("black");
+        productVariantAttributeRepository.save(productVariantAttribute);
+
+        ProductPhoto productPhoto = new ProductPhoto();
+        productPhoto.setId("image-example");
+        productPhoto.setImageLocation("upload/product/product-test-image-example.png");
+        productPhoto.setProduct(product);
+        productPhotoRepository.save(productPhoto);
+
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("name", "Product Updated");
+        params.add("description", "Product description Updated");
+        params.add("categoryId", categoryId.toString());
+        params.add("hasVariant", "true");
+        params.add("variants[0].id", productVariant.getId().toString());
+        params.add("variants[0].sku", "product-test-white");
+        params.add("variants[0].stock", "10");
+        params.add("variants[0].price", "215000");
+        params.add("variants[0].attributes[0].id", productVariantAttribute.getId().toString());
+        params.add("variants[0].attributes[0].attributeKey", "color");
+        params.add("variants[0].attributes[0].attributeValue", "white");
+        params.add("productPhotos[0].id", productPhoto.getId());
+
+
+        mockMvc.perform(
+                multipart(HttpMethod.PUT,"/api/products/" + product.getId())
+                        .file(new MockMultipartFile("productPhotos[0].image", "1.jpg", "image/jpg", getClass().getResourceAsStream("/images/1.jpg")))
+                        .file(new MockMultipartFile("productPhotos[1].image", "moon.jpg", "image/jpg", getClass().getResourceAsStream("/images/moon.jpg")))
+                        .header("Authorization", authorizationToken)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.MULTIPART_FORM_DATA_VALUE)
+                        .params(params)
+        ).andExpect(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<ProductResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+            assertNull(response.getErrors());
+            assertNotNull(response.getData());
+
+            assertEquals("Product Updated", response.getData().getName());
+            assertEquals("Product description Updated", response.getData().getDescription());
+            assertEquals(categoryId, response.getData().getCategory().getId());
+            assertEquals(true, response.getData().getHasVariant());
+            assertEquals(null, response.getData().getPrice());
+            assertEquals(null, response.getData().getStock());
+            assertEquals(productVariant.getId(), response.getData().getVariants().getFirst().getId());
+            assertEquals("product-test-white", response.getData().getVariants().getFirst().getSku());
+            assertEquals(10, response.getData().getVariants().getFirst().getStock());
+            assertEquals(215000, response.getData().getVariants().getFirst().getPrice());
+            assertEquals(productVariantAttribute.getId(), response.getData().getVariants().getFirst().getAttributes().getFirst().getId());
+            assertEquals("color", response.getData().getVariants().getFirst().getAttributes().getFirst().getAttributeKey());
+            assertEquals("white", response.getData().getVariants().getFirst().getAttributes().getFirst().getAttributeValue());
+            assertEquals(2, response.getData().getPhotos().size());
+            assertEquals(productPhoto.getId(), response.getData().getPhotos().getFirst().getId());
+            assertNotNull(response.getData().getPhotos().getFirst().getImageLocation());
+            assertNotNull(response.getData().getPhotos().get(1).getId());
+            assertNotNull(response.getData().getPhotos().get(1).getImageLocation());
+        });
+    }
+
+
+    @Test
+    void updateSuccessForProductWithoutVariant() throws Exception {
+        Category category = categoryRepository.findById(categoryId).orElse(null);
+        assertNotNull(category);
+
+        Product product = new Product();
+        product.setName("Product Test");
+        product.setDescription("Product Description Test");
+        product.setHasVariant(false);
+        product.setPrice(120500);
+        product.setStock(100);
+        product.setCategory(category);
+        productRepository.save(product);
+
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("name", "Product Updated");
+        params.add("description", "Product description Updated");
+        params.add("categoryId", categoryId.toString());
+        params.add("hasVariant", "false");
+        params.add("stock", "50");
+        params.add("price", "150500");
+
+        mockMvc.perform(
+                put("/api/products/" + product.getId())
+                        .header("Authorization", authorizationToken)
+                        .contentType(MediaType.MULTIPART_FORM_DATA_VALUE)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .params(params)
+
+        ).andExpect(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<ProductResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+            assertNull(response.getErrors());
+            assertNotNull(response.getData());
+
+            assertEquals(product.getId(), response.getData().getId());
+            assertEquals("Product Updated", response.getData().getName());
+            assertEquals("Product description Updated", response.getData().getDescription());
+            assertEquals(categoryId, response.getData().getCategory().getId());
+            assertEquals(false, response.getData().getHasVariant());
+            assertEquals(50, response.getData().getStock());
+            assertEquals(150500, response.getData().getPrice());
+            assertEquals(0, response.getData().getVariants().size());
+            assertEquals(0, response.getData().getPhotos().size());
+
+            Product productRepo = productRepository.findById(product.getId()).orElse(null);
+            assertEquals(productRepo.getId(), response.getData().getId());
+            assertEquals(productRepo.getName(), response.getData().getName());
+            assertEquals(productRepo.getDescription(), response.getData().getDescription());
+            assertEquals(productRepo.getHasVariant(), response.getData().getHasVariant());
+            assertEquals(productRepo.getCategory().getId(), response.getData().getCategory().getId());
+            assertEquals(productRepo.getStock(), response.getData().getStock());
+            assertEquals(productRepo.getPrice(), response.getData().getPrice());
+            assertEquals(productRepo.getProductPhotos().size(), response.getData().getPhotos().size());
+            assertEquals(productRepo.getProductVariants().size(), response.getData().getVariants().size());
+        });
+    }
+
+    @Test
+    void updateSuccessForProductWithVariant() throws Exception {
+        Category category = categoryRepository.findById(categoryId).orElse(null);
+        assertNotNull(category);
+
+        Product product = new Product();
+        product.setName("Product Test");
+        product.setDescription("Product Description Test");
+        product.setHasVariant(true);
+        product.setCategory(category);
+        productRepository.save(product);
+
+        ProductVariant productVariant = new ProductVariant();
+        productVariant.setProduct(product);
+        productVariant.setSku("product-test-black");
+        productVariant.setPrice(100500);
+        productVariant.setStock(100);
+        productVariantRepository.save(productVariant);
+
+        ProductVariantAttribute productVariantAttribute = new ProductVariantAttribute();
+        productVariantAttribute.setProductVariant(productVariant);
+        productVariantAttribute.setAttributeKey("color");
+        productVariantAttribute.setAttributeValue("black");
+        productVariantAttributeRepository.save(productVariantAttribute);
+
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("name", "Product Updated");
+        params.add("description", "Product description Updated");
+        params.add("categoryId", categoryId.toString());
+        params.add("hasVariant", "true");
+        params.add("variants[0].id", productVariant.getId().toString());
+        params.add("variants[0].sku", "product-test-white");
+        params.add("variants[0].stock", "10");
+        params.add("variants[0].price", "215000");
+        params.add("variants[0].attributes[0].id", productVariantAttribute.getId().toString());
+        params.add("variants[0].attributes[0].attributeKey", "color");
+        params.add("variants[0].attributes[0].attributeValue", "white");
+
+        mockMvc.perform(
+                put("/api/products/" + product.getId())
+                        .header("Authorization", authorizationToken)
+                        .contentType(MediaType.MULTIPART_FORM_DATA_VALUE)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .params(params)
+
+        ).andExpect(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<ProductResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+            assertNull(response.getErrors());
+            assertNotNull(response.getData());
+
+            assertEquals("Product Updated", response.getData().getName());
+            assertEquals("Product description Updated", response.getData().getDescription());
+            assertEquals(categoryId, response.getData().getCategory().getId());
+            assertEquals(true, response.getData().getHasVariant());
+            assertEquals(null, response.getData().getPrice());
+            assertEquals(null, response.getData().getStock());
+            assertEquals(productVariant.getId(), response.getData().getVariants().getFirst().getId());
+            assertEquals("product-test-white", response.getData().getVariants().getFirst().getSku());
+            assertEquals(10, response.getData().getVariants().getFirst().getStock());
+            assertEquals(215000, response.getData().getVariants().getFirst().getPrice());
+            assertEquals(productVariantAttribute.getId(), response.getData().getVariants().getFirst().getAttributes().getFirst().getId());
+            assertEquals("color", response.getData().getVariants().getFirst().getAttributes().getFirst().getAttributeKey());
+            assertEquals("white", response.getData().getVariants().getFirst().getAttributes().getFirst().getAttributeValue());
+            assertEquals(0, response.getData().getPhotos().size());
+        });
+    }
+
+    @Test
+    void updateSuccessForAddProductVariant() throws Exception {
+        Category category = categoryRepository.findById(categoryId).orElse(null);
+        assertNotNull(category);
+
+        Product product = new Product();
+        product.setName("Product Test");
+        product.setDescription("Product Description Test");
+        product.setHasVariant(true);
+        product.setCategory(category);
+        productRepository.save(product);
+
+        ProductVariant productVariant = new ProductVariant();
+        productVariant.setProduct(product);
+        productVariant.setSku("product-test-black");
+        productVariant.setPrice(100500);
+        productVariant.setStock(100);
+        productVariantRepository.save(productVariant);
+
+        ProductVariantAttribute productVariantAttribute = new ProductVariantAttribute();
+        productVariantAttribute.setProductVariant(productVariant);
+        productVariantAttribute.setAttributeKey("color");
+        productVariantAttribute.setAttributeValue("black");
+        productVariantAttributeRepository.save(productVariantAttribute);
+
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("name", "Product Updated");
+        params.add("description", "Product description Updated");
+        params.add("categoryId", categoryId.toString());
+        params.add("hasVariant", "true");
+        params.add("variants[0].id", productVariant.getId().toString());
+        params.add("variants[0].sku",productVariant.getSku());
+        params.add("variants[0].stock", String.valueOf(productVariant.getStock()));
+        params.add("variants[0].price", String.valueOf(productVariant.getPrice()));
+        params.add("variants[0].attributes[0].id", productVariantAttribute.getId().toString());
+        params.add("variants[0].attributes[0].attributeKey", productVariantAttribute.getAttributeKey());
+        params.add("variants[0].attributes[0].attributeValue", productVariantAttribute.getAttributeValue());
+        // add new variant
+        params.add("variants[1].sku", "product-test-blue");
+        params.add("variants[1].stock", "20");
+        params.add("variants[1].price", "215000");
+        params.add("variants[1].attributes[0].attributeKey", "color");
+        params.add("variants[1].attributes[0].attributeValue", "blue");
+
+
+        mockMvc.perform(
+                multipart(HttpMethod.PUT,"/api/products/" + product.getId())
+                        .header("Authorization", authorizationToken)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.MULTIPART_FORM_DATA_VALUE)
+                        .params(params)
+        ).andExpect(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<ProductResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+            assertNull(response.getErrors());
+            assertNotNull(response.getData());
+
+            assertEquals("Product Updated", response.getData().getName());
+            assertEquals("Product description Updated", response.getData().getDescription());
+            assertEquals(categoryId, response.getData().getCategory().getId());
+            assertEquals(true, response.getData().getHasVariant());
+            assertEquals(null, response.getData().getPrice());
+            assertEquals(null, response.getData().getStock());
+            assertEquals(2, response.getData().getVariants().size());
+
+            ProductResponse.ProductVariant productVariant1 = response.getData().getVariants().get(0);
+            ProductResponse.ProductVariant productVariant2 = response.getData().getVariants().get(1);
+            assertNotNull(productVariant1);
+            assertNotNull(productVariant2);
+
+            assertEquals(productVariant.getId() ,productVariant1.getId());
+            assertEquals(productVariant.getSku() ,productVariant1.getSku());
+            assertEquals(productVariant.getStock() ,productVariant1.getStock());
+            assertEquals(productVariant.getPrice() ,productVariant1.getPrice());
+            assertEquals(productVariantAttribute.getId() ,productVariant1.getAttributes().getFirst().getId());
+            assertEquals(productVariantAttribute.getAttributeKey() ,productVariant1.getAttributes().getFirst().getAttributeKey());
+            assertEquals(productVariantAttribute.getAttributeValue() ,productVariant1.getAttributes().getFirst().getAttributeValue());
+
+            assertNotNull(productVariant2.getId());
+            log.info(String.valueOf(productVariant2.getId()));
+            assertEquals("product-test-blue" ,productVariant2.getSku());
+            assertEquals(20 ,productVariant2.getStock());
+            assertEquals(215000 ,productVariant2.getPrice());
+            assertNotNull(productVariant2.getAttributes().getFirst().getId());
+            log.info(String.valueOf(productVariant2.getAttributes().getFirst().getId()));
+            assertEquals("color" ,productVariant2.getAttributes().getFirst().getAttributeKey());
+            assertEquals("blue" ,productVariant2.getAttributes().getFirst().getAttributeValue());
+
+        });
+    }
+
+    @Test
+    void updateSuccessForAddProductVariantAttribute() throws Exception {
+        Category category = categoryRepository.findById(categoryId).orElse(null);
+        assertNotNull(category);
+
+        Product product = new Product();
+        product.setName("Product Test");
+        product.setDescription("Product Description Test");
+        product.setHasVariant(true);
+        product.setCategory(category);
+        productRepository.save(product);
+
+        ProductVariant productVariant = new ProductVariant();
+        productVariant.setProduct(product);
+        productVariant.setSku("product-test-black");
+        productVariant.setPrice(100500);
+        productVariant.setStock(100);
+        productVariantRepository.save(productVariant);
+
+        ProductVariantAttribute productVariantAttribute = new ProductVariantAttribute();
+        productVariantAttribute.setProductVariant(productVariant);
+        productVariantAttribute.setAttributeKey("color");
+        productVariantAttribute.setAttributeValue("black");
+        productVariantAttributeRepository.save(productVariantAttribute);
+
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("name", "Product Updated");
+        params.add("description", "Product description Updated");
+        params.add("categoryId", categoryId.toString());
+        params.add("hasVariant", "true");
+        params.add("variants[0].id", productVariant.getId().toString());
+        params.add("variants[0].sku", "product-test-black-large");
+        params.add("variants[0].stock", String.valueOf(productVariant.getStock()));
+        params.add("variants[0].price", String.valueOf(productVariant.getPrice()));
+        params.add("variants[0].attributes[0].id", productVariantAttribute.getId().toString());
+        params.add("variants[0].attributes[0].attributeKey", productVariantAttribute.getAttributeKey());
+        params.add("variants[0].attributes[0].attributeValue", productVariantAttribute.getAttributeValue());
+        // Add new attribute
+        params.add("variants[0].attributes[1].attributeKey", "size");
+        params.add("variants[0].attributes[1].attributeValue", "Large");
+
+        mockMvc.perform(
+                put("/api/products/" + product.getId())
+                        .header("Authorization", authorizationToken)
+                        .contentType(MediaType.MULTIPART_FORM_DATA_VALUE)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .params(params)
+
+        ).andExpect(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<ProductResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+            assertNull(response.getErrors());
+            assertNotNull(response.getData());
+
+            assertEquals("Product Updated", response.getData().getName());
+            assertEquals("Product description Updated", response.getData().getDescription());
+            assertEquals(categoryId, response.getData().getCategory().getId());
+            assertEquals(true, response.getData().getHasVariant());
+            assertEquals(null, response.getData().getPrice());
+            assertEquals(null, response.getData().getStock());
+            assertEquals(productVariant.getId(), response.getData().getVariants().getFirst().getId());
+            assertEquals("product-test-black-large", response.getData().getVariants().getFirst().getSku());
+            assertEquals(productVariant.getStock(), response.getData().getVariants().getFirst().getStock());
+            assertEquals(productVariant.getPrice(), response.getData().getVariants().getFirst().getPrice());
+            assertEquals(productVariantAttribute.getId(), response.getData().getVariants().getFirst().getAttributes().getFirst().getId());
+            assertEquals(productVariantAttribute.getAttributeKey(), response.getData().getVariants().getFirst().getAttributes().getFirst().getAttributeKey());
+            assertEquals(productVariantAttribute.getAttributeValue(), response.getData().getVariants().getFirst().getAttributes().getFirst().getAttributeValue());
+            assertNotNull(response.getData().getVariants().getFirst().getAttributes().get(1).getAttributeKey());
+            assertEquals("size", response.getData().getVariants().getFirst().getAttributes().get(1).getAttributeKey());
+            assertEquals("Large", response.getData().getVariants().getFirst().getAttributes().get(1).getAttributeValue());
+            assertEquals(0, response.getData().getPhotos().size());
+        });
+    }
+
+    @Test
+    void updateSuccessForRemoveProductVariant() throws Exception {
+        Category category = categoryRepository.findById(categoryId).orElse(null);
+        assertNotNull(category);
+
+        Product product = new Product();
+        product.setName("Product Test");
+        product.setDescription("Product Description Test");
+        product.setHasVariant(true);
+        product.setCategory(category);
+        productRepository.save(product);
+
+        ProductVariant productVariant = new ProductVariant();
+        productVariant.setProduct(product);
+        productVariant.setSku("product-test-black");
+        productVariant.setPrice(100500);
+        productVariant.setStock(100);
+        productVariantRepository.save(productVariant);
+
+        ProductVariantAttribute productVariantAttribute = new ProductVariantAttribute();
+        productVariantAttribute.setProductVariant(productVariant);
+        productVariantAttribute.setAttributeKey("color");
+        productVariantAttribute.setAttributeValue("black");
+        productVariantAttributeRepository.save(productVariantAttribute);
+
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("name", "Product Updated");
+        params.add("description", "Product description Updated");
+        params.add("categoryId", categoryId.toString());
+        params.add("hasVariant", "false");
+        params.add("price", "150000");
+        params.add("stock", "120");
+
+
+        mockMvc.perform(
+                multipart(HttpMethod.PUT,"/api/products/" + product.getId())
+                        .header("Authorization", authorizationToken)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.MULTIPART_FORM_DATA_VALUE)
+                        .params(params)
+        ).andExpect(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<ProductResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+            assertNull(response.getErrors());
+            assertNotNull(response.getData());
+
+            assertEquals("Product Updated", response.getData().getName());
+            assertEquals("Product description Updated", response.getData().getDescription());
+            assertEquals(categoryId, response.getData().getCategory().getId());
+            assertEquals(false, response.getData().getHasVariant());
+            assertEquals(150000, response.getData().getPrice());
+            assertEquals(120, response.getData().getStock());
+            assertEquals(0, response.getData().getVariants().size());
+
+            ProductVariant productVariantRepo = productVariantRepository.findById(productVariant.getId()).orElse(null);
+            assertNull(productVariantRepo);
+            ProductVariantAttribute productVariantAttributeRepo = productVariantAttributeRepository.findById(productVariantAttribute.getId()).orElse(null);
+            assertNull(productVariantRepo);
 
         });
     }
