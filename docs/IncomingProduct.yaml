@@ -10,7 +10,7 @@ paths:
     post:
       summary: "Create Incoming Product"
       parameters:
-        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
       requestBody:
         content:
           application/json:
@@ -42,7 +42,7 @@ paths:
     get:
       summary: "Retrieve incoming product all records or within a specific date range"
       parameters:
-        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
         - in: query
           name: start_date
           description: "Start of the date range"
@@ -136,12 +136,11 @@ paths:
 
         500:
           $ref: "#/components/responses/ServerErrorResponse"
-
   /incoming-products/{incomingProductsId}:
     get:
       summary: "Retrieve the incoming a product record"
       parameters:
-        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
         - $ref: "#/components/parameters/INCOMING-PRODUCTS-ID"
       responses:
         200:
@@ -166,7 +165,7 @@ paths:
     put:
       summary: "Update the incoming product record"
       parameters:
-        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
         - $ref: "#/components/parameters/INCOMING-PRODUCTS-ID"
       requestBody: 
         content: 
@@ -219,7 +218,7 @@ paths:
     delete:
       summary: "Delete the incoming product record"
       parameters:
-        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
         - $ref: "#/components/parameters/INCOMING-PRODUCTS-ID"
       responses:
         200:
@@ -234,9 +233,11 @@ paths:
           $ref: "#/components/responses/ServerErrorResponse"
   /suppliers:
     post:
+      tags:
+        - "Suppliers"
       summary: "Create a Supplier record"
       parameters:
-        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
       requestBody:
         content:
           application/json:
@@ -247,7 +248,16 @@ paths:
                 $ref: "#/components/examples/SupplierExample"
       responses:
         201:
-          $ref: "#/components/responses/GeneralSuccessResponse"
+          description: "Success create a supplier record"
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    $ref: "#/components/schemas/SupplierResponseSchema"
+              examples:
+                Supplier:
+                  $ref: "#/components/examples/SupplierResponseExample"
         401:
           $ref: "#/components/responses/UnauthenticatedErrorResponse"
         403:
@@ -255,9 +265,11 @@ paths:
         500:
           $ref: "#/components/responses/ServerErrorResponse"
     get:
+      tags:
+        - "Suppliers"
       summary: "Retrieve the Supplier record"
       parameters:
-        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
         - in: query
           name: page
           description: "Current page number"
@@ -307,6 +319,11 @@ paths:
                     phone: "62877721"
                     email: "adminjohn@indah-kait.com"
                     information: "Supplier for fishing hooks"
+                  - id: 124
+                    supplierName: "PT Indah Kait 2"
+                    phone: "628777212"
+                    email: "adminjohn123@indah-kait.com"
+                    information: "Supplier for fishing rods"
                 paging:
                   currentPage: 0
                   totalPage: 10
@@ -319,9 +336,11 @@ paths:
           $ref: "#/components/responses/ServerErrorResponse"
   /suppliers/{supplierId}:
     put:
+      tags:
+        - "Suppliers"
       summary: "Update a supplier record"
       parameters:
-        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
         - $ref: "#/components/parameters/SUPPLIER-ID"
       requestBody:
         content:
@@ -330,7 +349,19 @@ paths:
               $ref: "#/components/schemas/SupplierRequestSchema"
             examples:
               Supplier:
-                $ref: "#/components/examples/SupplierExample"
+                value:
+                  supplierName: "PT Indah Kait"
+                  phone: "62877721"
+                  email: "adminjohn@indah-kait.com"
+                  information: "Supplier for fishing hooks"
+                  addresses:
+                    - id: 123
+                      street: "JL example"
+                      village: "example 123"
+                      district: "example district"
+                      city: "Jakarta"
+                      province: "DKI Jakarta"
+                      postalCode: "12312EXAMPLE"
       responses:
         200:
           description: "Success update a supplier record"
@@ -339,46 +370,10 @@ paths:
               schema:
                 properties:
                   data:
-                    properties:
-                      id:
-                        type: integer
-                      supplierName:
-                        type: string
-                      phone:
-                        type: string
-                      email:
-                        type: string
-                      information:
-                        type: string
-                      addresses:
-                        items:
-                          properties:
-                            street:
-                              type: string
-                            village:
-                              type: string
-                            district:
-                              type: string
-                            city:
-                              type: string
-                            province:
-                              type: string
-                            postalCode:
-                              type: string
-              example:
-                data:
-                  id: 123
-                  supplierName: "PT Indah Kait"
-                  phone: "62877721"
-                  email: "adminjohn@indah-kait.com"
-                  information: "Supplier for fishing hooks"
-                  addresses:
-                    - street: "JL example"
-                      village: "example 123"
-                      district: "example district"
-                      city: "Jakarta"
-                      province: "DKI Jakarta"
-                      postalCode: "12312EXAMPLE"
+                    $ref: "#/components/schemas/SupplierResponseSchema"
+              examples:
+                Supplier:
+                  $ref: "#/components/examples/SupplierResponseExample"
         401:
           $ref: "#/components/responses/UnauthenticatedErrorResponse"
         403:
@@ -388,9 +383,11 @@ paths:
         500:
           $ref: "#/components/responses/ServerErrorResponse"
     get:
+      tags:
+        - "Suppliers"
       summary: "Retrieve a supplier record"
       parameters:
-        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
         - $ref: "#/components/parameters/SUPPLIER-ID"
       responses:
         200:
@@ -400,49 +397,10 @@ paths:
               schema:
                 properties:
                   data:
-                    properties:
-                      id:
-                        type: integer
-                      supplierName:
-                        type: string
-                      phone:
-                        type: string
-                      email:
-                        type: string
-                      information:
-                        type: string
-                      addresses:
-                        items:
-                          properties:
-                            id:
-                              type: integer
-                            street:
-                              type: string
-                            village:
-                              type: string
-                            district:
-                              type: string
-                            city:
-                              type: string
-                            province:
-                              type: string
-                            postalCode:
-                              type: string
-              example:
-                data:
-                  id: 123
-                  supplierName: "PT Indah Kait"
-                  phone: "62877721"
-                  email: "adminjohn@indah-kait.com"
-                  information: "Supplier for fishing hooks"
-                  addresses:
-                    - id: 3213
-                      street: "JL example"
-                      village: "example 123"
-                      district: "example district"
-                      city: "Jakarta"
-                      province: "DKI Jakarta"
-                      postalCode: "12312EXAMPLE"
+                    $ref: "#/components/schemas/SupplierResponseSchema"
+              examples:
+                Supplier:
+                  $ref: "#/components/examples/SupplierResponseExample"
         401:
           $ref: "#/components/responses/UnauthenticatedErrorResponse"
         403:
@@ -452,9 +410,11 @@ paths:
         500:
           $ref: "#/components/responses/ServerErrorResponse"
     delete:
+      tags:
+        - "Suppliers"
       summary: "Delete a supplier record"
       parameters:
-        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
         - $ref: "#/components/parameters/SUPPLIER-ID"
       responses:
         200:
@@ -467,10 +427,6 @@ paths:
           $ref: "#/components/responses/SupplierNotFoundErrorResponse"
         500:
           $ref: "#/components/responses/ServerErrorResponse"
-
-
-
-
 
 
 components:
@@ -530,20 +486,49 @@ components:
                 type: string
               postalCode:
                 type: string
+    SupplierResponseSchema:
+      properties:
+        id:
+          type: integer
+        supplierName:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        information:
+          type: string
+        addresses:
+          items:
+            properties:
+              id:
+                type: integer
+              street:
+                type: string
+              village:
+                type: string
+              district:
+                type: string
+              city:
+                type: string
+              province:
+                type: string
+              postalCode:
+                type: string
     GeneralErrorSchema:
       type: object
       properties:
         errors:
           type: string
   parameters:
-    X-API-TOKEN:
-      name: "X-API-TOKEN"
+    AUTHORIZATION-TOKEN:
+      name: "Authorization"
       in: "header"
       required: true
       description: "auth token"
       schema:
         type: string
-      example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
+      example: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
     INCOMING-PRODUCTS-ID:
       name: "incomingProductsId"
       in: path
@@ -589,6 +574,22 @@ components:
             city: "Jakarta"
             province: "DKI Jakarta"
             postalCode: "12312EXAMPLE"
+    SupplierResponseExample:
+      value:
+        data:
+          id: 123
+          supplierName: "PT Indah Kait"
+          phone: "62877721"
+          email: "adminjohn@indah-kait.com"
+          information: "Supplier for fishing hooks"
+          addresses:
+            - id: 190
+              street: "JL example"
+              village: "example 123"
+              district: "example district"
+              city: "Jakarta"
+              province: "DKI Jakarta"
+              postalCode: "12312EXAMPLE"
   responses:
     GeneralSuccessResponse:
       description: "Success"

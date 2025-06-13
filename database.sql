@@ -17,6 +17,18 @@ CREATE TABLE users (
     UNIQUE (token, email)
 ) engine = InnoDB;
 
+CREATE TABLE suppliers (
+    id INT NOT NULL AUTO_INCREMENT,
+    supplier_name VARCHAR(100) NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    email VARCHAR(100),
+    information VARCHAR(255),
+    UNIQUE (supplier_name, email),
+    PRIMARY KEY (id)
+) engine = InnoDB;
+
+SELECT * FROM suppliers;
+
 CREATE TABLE addresses (
     id int NOT NULL AUTO_INCREMENT,
     street VARCHAR(100) NOT NULL ,
@@ -39,7 +51,8 @@ CREATE TABLE addresses (
 
 SELECT * FROM users;
 SELECT * FROM addresses;
-INSERT INTO users (username, password, first_name, phone, role) VALUES ('testing', 'testing', 'john', '623213123', 'ADM_WAREHOUSE');
+
+# INSERT INTO users (username, password, first_name, phone, role) VALUES ('testing', 'testing', 'john', '623213123', 'ADM_WAREHOUSE');
 
 
 ALTER TABLE addresses
@@ -53,19 +66,20 @@ ALTER TABLE addresses
 ALTER TABLE addresses
     ADD COLUMN user_id VARCHAR(100);
 
+
 ALTER TABLE addresses
     ADD CONSTRAINT fk_user_addresses
     FOREIGN KEY (user_id) REFERENCES users (username);
-#
-# ALTER TABLE addresses
-#     ADD COLUMN supplier_id INT;
-#
-# ALTER TABLE addresses
-#     ADD CONSTRAINT fk_user_addresses
-#         FOREIGN KEY (supplier_id) REFERENCES suppliers (id);
+
+ALTER TABLE addresses
+    ADD COLUMN supplier_id INT;
+
+ALTER TABLE addresses
+    ADD CONSTRAINT fk_supplier_addresses
+    FOREIGN KEY (supplier_id) REFERENCES suppliers (id);
 
 CREATE TABLE refresh_token (
-    id int NOT NULL AUTO_INCREMENT,
+    id INT NOT NULL AUTO_INCREMENT,
     refresh_token VARCHAR(255) NOT NULL ,
     expiredAt TIMESTAMP,
     userAgent VARCHAR(100),
