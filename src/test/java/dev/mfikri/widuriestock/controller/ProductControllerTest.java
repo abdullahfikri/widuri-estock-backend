@@ -372,7 +372,7 @@ class ProductControllerTest {
 
             assertNull(response.getData());
             assertNotNull(response.getErrors());
-            assertEquals("'Attribute' size must be same for each 'Variant'.", response.getErrors());
+            assertEquals("Variant 'Attribute' size must be same for each 'Variant'.", response.getErrors());
         });
     }
 
@@ -448,7 +448,7 @@ class ProductControllerTest {
             assertEquals(120500, response.getData().getPrice());
             assertEquals(categoryId, response.getData().getCategory().getId());
             assertEquals("Category Test", response.getData().getCategory().getName());
-            assertEquals(0, response.getData().getPhotos().size());
+            assertNull(response.getData().getPhotos());
             assertEquals(0, response.getData().getVariants().size());
 
             Product product = productRepository.findById(response.getData().getId()).orElse(null);
@@ -461,8 +461,8 @@ class ProductControllerTest {
             assertEquals(product.getPrice(), response.getData().getPrice());
             assertEquals(product.getCategory().getId(), response.getData().getCategory().getId());
             assertEquals(product.getCategory().getName(), response.getData().getCategory().getName());
-            assertEquals(product.getProductPhotos().size(), response.getData().getPhotos().size());
             assertEquals(product.getProductVariants().size(), response.getData().getVariants().size());
+            assertEquals(0,product.getProductPhotos().size());
 
         });
     }
@@ -504,7 +504,7 @@ class ProductControllerTest {
             assertEquals(null, response.getData().getPrice());
             assertEquals(categoryId, response.getData().getCategory().getId());
             assertEquals("Category Test", response.getData().getCategory().getName());
-            assertEquals(0, response.getData().getPhotos().size());
+            assertNull(response.getData().getPhotos());
             assertEquals(1, response.getData().getVariants().size());
 
 
@@ -518,7 +518,7 @@ class ProductControllerTest {
             assertEquals(product.getPrice(), response.getData().getPrice());
             assertEquals(product.getCategory().getId(), response.getData().getCategory().getId());
             assertEquals(product.getCategory().getName(), response.getData().getCategory().getName());
-            assertEquals(product.getProductPhotos().size(), response.getData().getPhotos().size());
+            assertNull(response.getData().getPhotos());
             assertEquals(product.getProductVariants().size(), response.getData().getVariants().size());
 
             ProductResponse.ProductVariant productVariant = response.getData().getVariants().getFirst();
