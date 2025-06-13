@@ -72,7 +72,7 @@ paths:
         - "Auth"
       summary: "Logout a user and delete the token from the database"
       parameters:
-        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
       responses:
         200:
           $ref: "#/components/responses/GeneralSuccessResponse"
@@ -86,7 +86,7 @@ paths:
         - "Users"
       summary: "Create a user from appropriate admin"
       parameters:
-        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
       requestBody:
         content:
           multipart/form-data:
@@ -114,7 +114,7 @@ paths:
         - "Users"
       summary: "Get list of users"
       parameters:
-        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
         - in: query
           name: username
           description: "Search users by username"
@@ -194,7 +194,7 @@ paths:
         - "Users"
       summary: "Get the users"
       parameters:
-        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
         - $ref: "#/components/parameters/USERNAME-PATH"
       responses:
         200:
@@ -213,7 +213,7 @@ paths:
       # TODO: add feature to disable users
       summary: "Edit a user depend of username"
       parameters:
-        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
         - $ref: "#/components/parameters/USERNAME-PATH"
       requestBody:
         content:
@@ -241,7 +241,7 @@ paths:
         - "Users"
       summary: "Get Current User"
       parameters:
-        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
       responses:
         200:
           $ref: "#/components/responses/SuccessCreateOrGetOrUpdateUserResponse"
@@ -254,7 +254,7 @@ paths:
         - "Users"
       summary: "Update user profile"
       parameters:
-        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
       requestBody:
         content:
           multipart/form-data:
@@ -306,7 +306,7 @@ paths:
         - "Addresses Current User"
       summary: "Create user address"
       parameters:
-        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
         - $ref: "#/components/parameters/USERNAME-PATH"
       requestBody:
         $ref: "#/components/requestBodies/AddressRequestBody"
@@ -328,7 +328,7 @@ paths:
         - "Addresses Current User"
       summary: "Get list of address users"
       parameters:
-        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
         - $ref: "#/components/parameters/USERNAME-PATH"
       responses:
         200:
@@ -355,7 +355,7 @@ paths:
         - "Addresses Current User"
       summary: "Get an address record from a user"
       parameters:
-        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
         - $ref: "#/components/parameters/USERNAME-PATH"
         - $ref: "#/components/parameters/ADDRESS-ID-PATH"
       responses:
@@ -374,7 +374,7 @@ paths:
         - "Addresses Current User"
       summary: "Update an address record from a user"
       parameters:
-        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
         - $ref: "#/components/parameters/USERNAME-PATH"
         - $ref: "#/components/parameters/ADDRESS-ID-PATH"
       requestBody:
@@ -397,7 +397,7 @@ paths:
         - "Addresses Current User"
       summary: "Delete an address record from a user"
       parameters:
-        - $ref: "#/components/parameters/X-API-TOKEN"
+        - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
         - $ref: "#/components/parameters/USERNAME-PATH"
         - $ref: "#/components/parameters/ADDRESS-ID-PATH"
       responses:
@@ -608,14 +608,14 @@ components:
           postalCode: "123123"
           usernameId: "john321"
   parameters:
-    X-API-TOKEN:
-      name: "X-API-TOKEN"
+    AUTHORIZATION-TOKEN:
+      name: "Authorization"
       in: "header"
       required: true
       description: "auth token"
       schema:
         type: string
-      example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
+      example: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
     USERNAME-PATH:
       name: "username"
       in: path
