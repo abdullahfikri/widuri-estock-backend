@@ -245,7 +245,19 @@ paths:
               $ref: "#/components/schemas/SupplierRequestSchema"
             examples:
               Supplier:
-                $ref: "#/components/examples/SupplierExample"
+                value:
+                  supplierName: "PT Indah Kait"
+                  phone: "62877721"
+                  email: "adminjohn@indah-kait.com"
+                  information: "Supplier for fishing hooks"
+                  address:
+                    street: "JL example"
+                    village: "example 123"
+                    district: "example district"
+                    city: "Jakarta"
+                    province: "DKI Jakarta"
+                    country: "Indonesia"
+                    postalCode: "12312EXAMPLE"
       responses:
         201:
           description: "Success create a supplier record"
@@ -589,6 +601,7 @@ components:
               district: "example district"
               city: "Jakarta"
               province: "DKI Jakarta"
+              country: "Indonesia"
               postalCode: "12312EXAMPLE"
   responses:
     GeneralSuccessResponse:

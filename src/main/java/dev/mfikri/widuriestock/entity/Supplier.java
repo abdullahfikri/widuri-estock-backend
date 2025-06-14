@@ -17,38 +17,21 @@ import java.util.Set;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@Entity(name = "users")
+@Entity(name = "suppliers")
 @EntityListeners({AuditingEntityListener.class})
-public class User {
+public class Supplier {
     @Id
-    private String username;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
 
-    private String password;
-
-    @Column(name = "first_name")
-    private String firstName;
-
-    @Column(name = "last_name")
-    private String lastName;
+    @Column(name = "supplier_name")
+    private String supplierName;
 
     private String phone;
 
     private String email;
 
-    private String photo;
-
-    @Column(name = "date_in")
-    private Instant dateIn;
-
-    @Column(name = "date_out")
-    private Instant dateOut;
-
-    private String role;
-
-    private String token;
-
-    @Column(name = "token_expired_at")
-    private Long tokenExpiredAt;
+    private String information;
 
     @CreatedDate
     @Column(name = "created_at")
@@ -58,9 +41,6 @@ public class User {
     @Column(name = "updated_at")
     private Instant updatedAt;
 
-    @OneToMany(mappedBy = "user")
+    @OneToMany(mappedBy = "supplier")
     private Set<Address> addresses;
-
-    @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE)
-    private List<RefreshToken> refreshTokens;
 }

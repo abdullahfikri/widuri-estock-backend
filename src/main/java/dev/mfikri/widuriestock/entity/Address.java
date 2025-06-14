@@ -43,4 +43,8 @@ public class Address {
     @ManyToOne
     @JoinColumn(name = "user_id", referencedColumnName = "username")
     private User user;
+
+    @ManyToOne
+    @JoinColumn(name = "supplier_id", referencedColumnName = "id")
+    private Supplier supplier;
 }

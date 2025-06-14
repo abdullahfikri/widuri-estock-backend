@@ -1,10 +1,9 @@
 package dev.mfikri.widuriestock.controller;
 
-import dev.mfikri.widuriestock.entity.User;
 import dev.mfikri.widuriestock.model.WebResponse;
-import dev.mfikri.widuriestock.model.user.AddressCreateRequest;
-import dev.mfikri.widuriestock.model.user.AddressResponse;
-import dev.mfikri.widuriestock.model.user.AddressUpdateRequest;
+import dev.mfikri.widuriestock.model.address.AddressCreateRequest;
+import dev.mfikri.widuriestock.model.address.AddressResponse;
+import dev.mfikri.widuriestock.model.address.AddressUpdateRequest;
 import dev.mfikri.widuriestock.service.AddressService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
@@ -13,7 +12,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.util.List;
-import java.util.Set;
 
 @RestController
 @RequestMapping(path = "/api/users")

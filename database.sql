@@ -27,6 +27,12 @@ CREATE TABLE suppliers (
     PRIMARY KEY (id)
 ) engine = InnoDB;
 
+ALTER TABLE suppliers
+    ADD COLUMN created_at TIMESTAMP;
+
+ALTER TABLE suppliers
+    ADD COLUMN updated_at TIMESTAMP;
+
 SELECT * FROM suppliers;
 
 CREATE TABLE addresses (

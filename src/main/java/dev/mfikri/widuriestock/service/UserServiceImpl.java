@@ -2,6 +2,7 @@ package dev.mfikri.widuriestock.service;
 
 import dev.mfikri.widuriestock.entity.Address;
 import dev.mfikri.widuriestock.entity.User;
+import dev.mfikri.widuriestock.model.address.AddressResponse;
 import dev.mfikri.widuriestock.model.user.*;
 import dev.mfikri.widuriestock.repository.AddressRepository;
 import dev.mfikri.widuriestock.repository.UserRepository;
@@ -17,10 +18,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.*;

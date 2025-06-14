@@ -1,4 +1,4 @@
-package dev.mfikri.widuriestock.model.user;
+package dev.mfikri.widuriestock.model.address;
 
 import lombok.*;
 
@@ -16,4 +16,5 @@ public class AddressResponse {
     private String country;
     private String postalCode;
     private String usernameId;
+    private Integer supplierId;
 }

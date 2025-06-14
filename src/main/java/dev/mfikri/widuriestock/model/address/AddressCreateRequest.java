@@ -1,8 +1,8 @@
-package dev.mfikri.widuriestock.model.user;
+package dev.mfikri.widuriestock.model.address;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Null;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,15 +13,14 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class AddressUpdateRequest {
-
-    @NotBlank
+public class AddressCreateRequest {
     @JsonIgnore
+    @Null
+    private Integer id;
+
+    @JsonIgnore
+    @Size(max = 100, min = 5)
     private String username;
-
-    @PositiveOrZero
-    @JsonIgnore
-    private Integer addressId;
 
     @NotBlank
     @Size(max = 100, min = 1)

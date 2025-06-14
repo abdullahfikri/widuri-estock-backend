@@ -1,8 +1,8 @@
 package dev.mfikri.widuriestock.service;
 
-import dev.mfikri.widuriestock.model.user.AddressCreateRequest;
-import dev.mfikri.widuriestock.model.user.AddressResponse;
-import dev.mfikri.widuriestock.model.user.AddressUpdateRequest;
+import dev.mfikri.widuriestock.model.address.AddressCreateRequest;
+import dev.mfikri.widuriestock.model.address.AddressResponse;
+import dev.mfikri.widuriestock.model.address.AddressUpdateRequest;
 
 import java.util.List;
 

@@ -6,9 +6,9 @@ import dev.mfikri.widuriestock.entity.Address;
 import dev.mfikri.widuriestock.entity.Role;
 import dev.mfikri.widuriestock.entity.User;
 import dev.mfikri.widuriestock.model.WebResponse;
-import dev.mfikri.widuriestock.model.user.AddressCreateRequest;
-import dev.mfikri.widuriestock.model.user.AddressResponse;
-import dev.mfikri.widuriestock.model.user.AddressUpdateRequest;
+import dev.mfikri.widuriestock.model.address.AddressCreateRequest;
+import dev.mfikri.widuriestock.model.address.AddressResponse;
+import dev.mfikri.widuriestock.model.address.AddressUpdateRequest;
 import dev.mfikri.widuriestock.repository.AddressRepository;
 import dev.mfikri.widuriestock.repository.RefreshTokenRepository;
 import dev.mfikri.widuriestock.repository.UserRepository;
@@ -25,13 +25,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.springframework.test.web.servlet.MockMvcBuilder.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.*;
 
 @Slf4j
 @SpringBootTest

@@ -1,46 +1,38 @@
-package dev.mfikri.widuriestock.model.user;
+package dev.mfikri.widuriestock.model.supplier;
 
-import dev.mfikri.widuriestock.constraint.CheckRole;
 import dev.mfikri.widuriestock.model.address.AddressCreateRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.web.multipart.MultipartFile;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class UserCreateRequest {
-    @NotBlank
-    @Size(min = 5, max = 100)
-    private String username;
+public class SupplierCreateRequest {
 
     @NotBlank
-    @Size(min = 8, max = 100)
-    private String password;
+    @Size(min = 2, max = 100)
+    private String supplierName;
 
     @NotBlank
-    private String firstName;
-    private String lastName;
-
-    @NotBlank
+    @Size(min = 5, max = 20)
     private String phone;
 
     @Email
+    @Size(max = 100)
     private String email;
 
-    private MultipartFile photo;
+    @Size(max = 255)
+    private String information;
 
-    @NotBlank
-    @CheckRole
-    private String role;
-
+    @NotNull
     @Valid
     private AddressCreateRequest address;
 

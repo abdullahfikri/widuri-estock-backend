@@ -1,4 +1,4 @@
-package dev.mfikri.widuriestock.model.user;
+package dev.mfikri.widuriestock.model.supplier;
 
 import dev.mfikri.widuriestock.model.address.AddressResponse;
 import lombok.AllArgsConstructor;
@@ -12,13 +12,11 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class UserResponse {
-    private String username;
-    private String firstName;
-    private String lastName;
+public class SupplierResponse {
+    private Integer id;
+    private String supplierName;
     private String phone;
     private String email;
-    private String photo;
-    private String role;
+    private String information;
     private Set<AddressResponse> addresses;
 }
