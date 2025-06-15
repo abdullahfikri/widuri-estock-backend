@@ -208,9 +208,9 @@ public class ProductServiceImpl implements ProductService {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.asc("name")));
 
-        Page<ProductSummary> products = productRepository.findBy(pageable);
+        Page<ProductSummary> productsPage = productRepository.findBy(pageable);
 
-        List<ProductsGetListResponse> productsListResponse = products.getContent().stream().map(productSummary -> {
+        List<ProductsGetListResponse> productsListResponse = productsPage.getContent().stream().map(productSummary -> {
             ProductsGetListResponse product = new ProductsGetListResponse();
             product.setId(productSummary.getId());
             product.setName(productSummary.getName());
@@ -230,7 +230,7 @@ public class ProductServiceImpl implements ProductService {
         }).toList();
 
 
-        return new PageImpl<>(productsListResponse, pageable, products.getTotalElements());
+        return new PageImpl<>(productsListResponse, pageable, productsPage.getTotalElements());
     }
 
     @Override

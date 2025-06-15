@@ -81,8 +81,13 @@ ALTER TABLE addresses
     ADD COLUMN supplier_id INT;
 
 ALTER TABLE addresses
+    ADD CONSTRAINT uc_supplier UNIQUE (supplier_id);
+
+ALTER TABLE addresses
     ADD CONSTRAINT fk_supplier_addresses
     FOREIGN KEY (supplier_id) REFERENCES suppliers (id);
+
+SELECT * FROM addresses;
 
 CREATE TABLE refresh_token (
     id INT NOT NULL AUTO_INCREMENT,

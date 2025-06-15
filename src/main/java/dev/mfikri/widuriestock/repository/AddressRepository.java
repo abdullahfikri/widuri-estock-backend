@@ -25,7 +25,9 @@ public interface AddressRepository extends JpaRepository<Address, Integer> {
 
     int deleteAddressByIdAndUser(int id, User user);
 
-    void deleteAllBySupplier(Supplier supplier);
+    void deleteBySupplier(Supplier supplier);
 
     Address findBySupplier(Supplier supplier);
+
+    Optional<Address> findAddressByIdAndSupplier(int id, Supplier supplier);
 }

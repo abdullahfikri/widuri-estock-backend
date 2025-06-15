@@ -41,6 +41,6 @@ public class Supplier {
     @Column(name = "updated_at")
     private Instant updatedAt;
 
-    @OneToMany(mappedBy = "supplier")
-    private Set<Address> addresses;
+    @OneToOne(mappedBy = "supplier")
+    private Address address;
 }

@@ -44,7 +44,7 @@ public class Address {
     @JoinColumn(name = "user_id", referencedColumnName = "username")
     private User user;
 
-    @ManyToOne
+    @OneToOne
     @JoinColumn(name = "supplier_id", referencedColumnName = "id")
     private Supplier supplier;
 }
