@@ -8,9 +8,7 @@ import dev.mfikri.widuriestock.entity.User;
 import dev.mfikri.widuriestock.model.WebResponse;
 import dev.mfikri.widuriestock.model.product.CategoryCreateRequest;
 import dev.mfikri.widuriestock.model.product.CategoryUpdateRequest;
-import dev.mfikri.widuriestock.repository.CategoryRepository;
-import dev.mfikri.widuriestock.repository.RefreshTokenRepository;
-import dev.mfikri.widuriestock.repository.UserRepository;
+import dev.mfikri.widuriestock.repository.*;
 import dev.mfikri.widuriestock.util.BCrypt;
 import dev.mfikri.widuriestock.util.JwtUtil;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,6 +36,12 @@ class CategoryControllerTest {
     private CategoryRepository categoryRepository;
 
     @Autowired
+    private ProductRepository productRepository;
+
+    @Autowired
+    private ProductPhotoRepository productPhotoRepository;
+
+    @Autowired
     private UserRepository userRepository;
 
     @Autowired
@@ -56,6 +60,8 @@ class CategoryControllerTest {
     void setUp() {
         refreshTokenRepository.deleteAll();
         userRepository.deleteAll();
+        productPhotoRepository.deleteAll();
+        productRepository.deleteAll();
         categoryRepository.deleteAll();
 
         User user = new User();
@@ -247,7 +253,7 @@ class CategoryControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("Argument path type is wrong.", response.getErrors());
+            assertEquals("categoryId type data is wrong.", response.getErrors());
         });
     }
 
@@ -428,7 +434,7 @@ class CategoryControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("Argument path type is wrong.", response.getErrors());
+            assertEquals("categoryId type data is wrong.", response.getErrors());
         });
     }
 
