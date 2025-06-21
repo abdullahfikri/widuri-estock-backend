@@ -6,7 +6,7 @@ import dev.mfikri.widuriestock.entity.Address;
 import dev.mfikri.widuriestock.entity.Role;
 import dev.mfikri.widuriestock.entity.User;
 import dev.mfikri.widuriestock.model.WebResponse;
-import dev.mfikri.widuriestock.model.user.AddressResponse;
+import dev.mfikri.widuriestock.model.address.AddressResponse;
 import dev.mfikri.widuriestock.model.user.UserResponse;
 import dev.mfikri.widuriestock.model.user.UserSearchResponse;
 import dev.mfikri.widuriestock.repository.AddressRepository;

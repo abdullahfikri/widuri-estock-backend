@@ -1,5 +1,7 @@
-package dev.mfikri.widuriestock.entity;
+package dev.mfikri.widuriestock.entity.incoming_product;
 
+
+import dev.mfikri.widuriestock.entity.product.ProductVariant;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -15,22 +17,20 @@ import java.time.Instant;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@Entity(name = "addresses")
+@Entity(name = "incoming_product_variant_details")
 @EntityListeners({AuditingEntityListener.class})
-public class Address {
+public class IncomingProductVariantDetail {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private Integer id;
 
-    private String street;
-    private String village;
-    private String district;
-    private String city;
-    private String province;
-    private String country;
+    @Column(name = "price_per_unit")
+    private Integer pricePerUnit;
 
-    @Column(name = "postal_code")
-    private String postalCode;
+    private Integer quantity;
+
+    @Column(name = "total_price")
+    private Integer totalPrice;
 
     @CreatedDate
     @Column(name = "created_at")
@@ -41,10 +41,11 @@ public class Address {
     private Instant updatedAt;
 
     @ManyToOne
-    @JoinColumn(name = "user_id", referencedColumnName = "username")
-    private User user;
+    @JoinColumn(name = "incoming_product_detail_id", referencedColumnName = "id")
+    private IncomingProductDetail incomingProductDetail;
 
-    @OneToOne
-    @JoinColumn(name = "supplier_id", referencedColumnName = "id")
-    private Supplier supplier;
+    @ManyToOne
+    @JoinColumn(name = "product_variant_id", referencedColumnName = "id")
+    private ProductVariant productVariant;
+
 }

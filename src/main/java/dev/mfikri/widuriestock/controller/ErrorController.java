@@ -70,12 +70,12 @@ public class ErrorController {
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<WebResponse<String>> methodArgumentPathTypeMismatch(MethodArgumentTypeMismatchException exception) {
         log.info(exception.getClass().getName());
-
+        log.info(exception.getPropertyName());
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(WebResponse
                         .<String>builder()
-                        .errors("Argument path type is wrong.")
+                        .errors(exception.getPropertyName() + " type data is wrong.")
                         .build());
     }
 

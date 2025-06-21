@@ -758,7 +758,7 @@ class ProductControllerTest {
             });
             assertNull(response.getData());
             assertNotNull(response.getErrors());
-            assertEquals("Argument path type is wrong.", response.getErrors());
+            assertEquals("productId type data is wrong.", response.getErrors());
         });
     }
 
@@ -976,7 +976,7 @@ class ProductControllerTest {
             });
             assertNull(response.getData());
             assertNotNull(response.getErrors());
-            assertEquals("Argument path type is wrong.", response.getErrors());
+            assertEquals("productId type data is wrong.", response.getErrors());
         });
     }
 
@@ -1085,7 +1085,7 @@ class ProductControllerTest {
             });
             assertNull(response.getData());
             assertNotNull(response.getErrors());
-            assertEquals("Argument path type is wrong.", response.getErrors());
+            assertEquals("productId type data is wrong.", response.getErrors());
         });
     }
 

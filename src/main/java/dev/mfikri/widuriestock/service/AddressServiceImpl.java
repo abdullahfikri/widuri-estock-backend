@@ -2,9 +2,9 @@ package dev.mfikri.widuriestock.service;
 
 import dev.mfikri.widuriestock.entity.Address;
 import dev.mfikri.widuriestock.entity.User;
-import dev.mfikri.widuriestock.model.user.AddressCreateRequest;
-import dev.mfikri.widuriestock.model.user.AddressResponse;
-import dev.mfikri.widuriestock.model.user.AddressUpdateRequest;
+import dev.mfikri.widuriestock.model.address.AddressCreateRequest;
+import dev.mfikri.widuriestock.model.address.AddressResponse;
+import dev.mfikri.widuriestock.model.address.AddressUpdateRequest;
 import dev.mfikri.widuriestock.repository.AddressRepository;
 import dev.mfikri.widuriestock.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -14,11 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -99,7 +95,7 @@ public class AddressServiceImpl implements AddressService {
         }
     }
 
-    private void setAddress(Address address, String street, String village, String district, String city, String province, String country, String postalCode) {
+    public static void setAddress(Address address, String street, String village, String district, String city, String province, String country, String postalCode) {
         address.setStreet(street);
         address.setVillage(village);
         address.setDistrict(district);
@@ -118,7 +114,7 @@ public class AddressServiceImpl implements AddressService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Address is not found."));
     }
 
-    static AddressResponse toAddressResponse(Address address) {
+    public static AddressResponse toAddressResponse(Address address) {
         return AddressResponse.builder()
                 .id(address.getId())
                 .street(address.getStreet())
@@ -128,7 +124,8 @@ public class AddressServiceImpl implements AddressService {
                 .province(address.getProvince())
                 .country(address.getCountry())
                 .postalCode(address.getPostalCode())
-                .usernameId(address.getUser().getUsername())
+                .usernameId(address.getUser() == null ? null : address.getUser().getUsername())
+                .supplierId(address.getSupplier() == null ? null : address.getSupplier().getId())
                 .build();
     }
 }

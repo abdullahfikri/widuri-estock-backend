@@ -17,6 +17,8 @@ CREATE TABLE users (
     UNIQUE (token, email)
 ) engine = InnoDB;
 
+SELECT * FROM users;
+
 CREATE TABLE suppliers (
     id INT NOT NULL AUTO_INCREMENT,
     supplier_name VARCHAR(100) NOT NULL,
@@ -26,6 +28,12 @@ CREATE TABLE suppliers (
     UNIQUE (supplier_name, email),
     PRIMARY KEY (id)
 ) engine = InnoDB;
+
+ALTER TABLE suppliers
+    ADD COLUMN created_at TIMESTAMP;
+
+ALTER TABLE suppliers
+    ADD COLUMN updated_at TIMESTAMP;
 
 SELECT * FROM suppliers;
 
@@ -49,7 +57,6 @@ CREATE TABLE addresses (
 #     foreign key fk_addresses__user_addresses (address_id) REFERENCES addresses(id)
 # ) ENGINE = InnoDB;
 
-SELECT * FROM users;
 SELECT * FROM addresses;
 
 # INSERT INTO users (username, password, first_name, phone, role) VALUES ('testing', 'testing', 'john', '623213123', 'ADM_WAREHOUSE');
@@ -75,8 +82,13 @@ ALTER TABLE addresses
     ADD COLUMN supplier_id INT;
 
 ALTER TABLE addresses
+    ADD CONSTRAINT uc_supplier UNIQUE (supplier_id);
+
+ALTER TABLE addresses
     ADD CONSTRAINT fk_supplier_addresses
     FOREIGN KEY (supplier_id) REFERENCES suppliers (id);
+
+SELECT * FROM addresses;
 
 CREATE TABLE refresh_token (
     id INT NOT NULL AUTO_INCREMENT,
@@ -204,7 +216,78 @@ RENAME TABLE variant_attributes TO product_variant_attributes;
 
 SELECT * FROM product_variant_attributes;
 
+CREATE TABLE incoming_products (
+    id INT NOT NULL AUTO_INCREMENT,
+    date_in TIMESTAMP,
+    supplier_id INT NOT NULL ,
+    user_username VARCHAR(100) NOT NULL,
+    total_products INT NOT NULL,
+    note VARCHAR(255),
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    PRIMARY KEY (id)
+) ENGINE = InnoDB;
 
+ALTER TABLE incoming_products
+    ADD CONSTRAINT fk_supplier_incoming_products
+    FOREIGN KEY (supplier_id) REFERENCES suppliers (id);
 
-# ADD FOREIGN KEY
- 
+ALTER TABLE incoming_products
+    ADD CONSTRAINT fk_user_incoming_products
+    FOREIGN KEY (user_username) REFERENCES users (username);
+
+ALTER TABLE incoming_products
+    MODIFY date_in DATE;
+
+SELECT * FROM incoming_products;
+desc incoming_products;
+
+CREATE TABLE incoming_product_details (
+    id INT NOT NULL AUTO_INCREMENT,
+    incoming_products_id INT NOT NULL ,
+    product_id INT NOT NULL ,
+    price_per_unit INT,
+    quantity SMALLINT,
+    total_price INT,
+    has_variant BOOLEAN NOT NULL,
+    total_variant_quantity SMALLINT,
+    total_variant_price INT,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    PRIMARY KEY (id)
+) ENGINE = InnoDB;
+
+ALTER TABLE incoming_product_details
+    ADD CONSTRAINT fk_incoming_products_incoming_product_details
+    FOREIGN KEY (incoming_products_id) REFERENCES incoming_products (id);
+
+ALTER TABLE incoming_product_details
+    ADD CONSTRAINT fk_products_incoming_product_details
+    FOREIGN KEY (product_id) REFERENCES products (id);
+
+ALTER TABLE incoming_product_details
+    RENAME COLUMN incoming_products_id TO incoming_product_id;
+
+SELECT * FROM incoming_product_details;
+
+CREATE TABLE incoming_product_variant_details (
+    id INT NOT NULL AUTO_INCREMENT,
+    incoming_product_detail_id INT NOT NULL ,
+    product_variant_id INT NOT NULL,
+    price_per_unit INT,
+    quantity SMALLINT,
+    total_price INT,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    PRIMARY KEY (id)
+) ENGINE = InnoDB;
+
+ALTER TABLE incoming_product_variant_details
+    ADD CONSTRAINT fk_incoming_product_details_to_incoming_product_variant_details
+    FOREIGN KEY (incoming_product_detail_id) REFERENCES incoming_product_details (id);
+
+ALTER TABLE incoming_product_variant_details
+    ADD CONSTRAINT fk_product_variants_to_incoming_product_variant_details
+    FOREIGN KEY (product_variant_id) REFERENCES product_variants (id);
+
+SELECT * FROM incoming_product_variant_details;
