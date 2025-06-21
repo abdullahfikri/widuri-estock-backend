@@ -1,5 +1,6 @@
 package dev.mfikri.widuriestock.entity;
 
+import dev.mfikri.widuriestock.entity.incoming_product.IncomingProduct;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -58,9 +59,12 @@ public class User {
     @Column(name = "updated_at")
     private Instant updatedAt;
 
-    @OneToMany(mappedBy = "user")
+    @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE)
     private Set<Address> addresses;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE)
     private List<RefreshToken> refreshTokens;
+
+    @OneToMany(mappedBy = "user")
+    private List<IncomingProduct> incomingProducts;
 }

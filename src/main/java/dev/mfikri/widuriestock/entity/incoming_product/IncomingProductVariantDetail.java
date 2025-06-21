@@ -1,6 +1,7 @@
-package dev.mfikri.widuriestock.entity;
+package dev.mfikri.widuriestock.entity.incoming_product;
 
-import dev.mfikri.widuriestock.entity.incoming_product.IncomingProduct;
+
+import dev.mfikri.widuriestock.entity.product.ProductVariant;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -11,28 +12,25 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
-import java.util.List;
-import java.util.Set;
 
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@Entity(name = "suppliers")
+@Entity(name = "incoming_product_variant_details")
 @EntityListeners({AuditingEntityListener.class})
-public class Supplier {
+public class IncomingProductVariantDetail {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(name = "supplier_name")
-    private String supplierName;
+    @Column(name = "price_per_unit")
+    private Integer pricePerUnit;
 
-    private String phone;
+    private Integer quantity;
 
-    private String email;
-
-    private String information;
+    @Column(name = "total_price")
+    private Integer totalPrice;
 
     @CreatedDate
     @Column(name = "created_at")
@@ -42,9 +40,12 @@ public class Supplier {
     @Column(name = "updated_at")
     private Instant updatedAt;
 
-    @OneToOne(mappedBy = "supplier", cascade = CascadeType.REMOVE)
-    private Address address;
+    @ManyToOne
+    @JoinColumn(name = "incoming_product_detail_id", referencedColumnName = "id")
+    private IncomingProductDetail incomingProductDetail;
 
-    @OneToMany(mappedBy = "supplier")
-    private List<IncomingProduct> incomingProducts;
+    @ManyToOne
+    @JoinColumn(name = "product_variant_id", referencedColumnName = "id")
+    private ProductVariant productVariant;
+
 }

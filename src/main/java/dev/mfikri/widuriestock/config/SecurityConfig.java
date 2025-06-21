@@ -94,6 +94,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/suppliers/*").hasRole(Role.ADMIN_WAREHOUSE.name())
                         .requestMatchers(HttpMethod.DELETE, "/api/suppliers/*").hasRole(Role.ADMIN_WAREHOUSE.name())
 
+                        // incoming-product api
+                        .requestMatchers(HttpMethod.POST, "/api/incoming-products").hasRole(Role.ADMIN_WAREHOUSE.name())
                         .anyRequest().denyAll()
                 )
                 .exceptionHandling(handler-> handler.authenticationEntryPoint(entryPoint)

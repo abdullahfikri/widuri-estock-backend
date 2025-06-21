@@ -1,5 +1,6 @@
 package dev.mfikri.widuriestock.entity.product;
 
+import dev.mfikri.widuriestock.entity.incoming_product.IncomingProductVariantDetail;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -28,4 +29,7 @@ public class ProductVariant {
 
     @OneToMany(mappedBy = "productVariant", cascade = CascadeType.REMOVE)
     private List<ProductVariantAttribute> productVariantAttributes;
+
+    @OneToMany(mappedBy = "productVariant")
+    private List<IncomingProductVariantDetail> incomingProductVariantDetails;
 }

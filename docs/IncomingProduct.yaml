@@ -17,18 +17,39 @@ paths:
             schema:
               $ref: "#/components/schemas/IncomingProducts"
             example:
-              date: "2025-11-25-14:32"
+              dateIn: "2025-11-25-14:32"
               supplierId: 3221
-              totalProduct: 1
+              totalProducts: 2
               note: "Product is on good condition..."
-              incomingItemsDetail:
+              incomingProductDetails:
                 - productId: 3451
                   pricePerUnit: 120000
                   quantity: 25
                   totalPrice: 3000000
+                  hasVariant: false
+                - productId: 1234
+                  hasVariant: true
+                  totalVariantQuantity: 35
+                  totalVariantPrice: 367500
+                  incomingProductVariantDetails:
+                    - variantId: 321
+                      pricePerUnit: 10500
+                      quantity: 25
+                      totalPrice: 262500
+                    - variantId: 322
+                      pricePerUnit: 10500
+                      quantity: 10
+                      totalPrice: 105000
       responses:
         201:
-          $ref: "#/components/responses/GeneralSuccessResponse"
+          description: "Success create Incoming Product record."
+          content: 
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IncomingProductsResponse"
+              examples:
+                IncomingProducts:
+                  $ref: "#/components/examples/IncomingProductsResponse"
         400:
           $ref: "#/components/responses/BadRequestIncomingProductResponse"
         401:
@@ -82,13 +103,17 @@ paths:
                       properties:
                         id:
                           type: string
-                        date:
+                        dateIn:
                           type: string
                         supplier:
-                          type: string
+                          properties:
+                            id:
+                              type: integer
+                            name:
+                              type: string
                         username:
                           type: string
-                        totalProduct:
+                        totalProducts:
                           type: number
                         note:
                           type: string
@@ -107,16 +132,20 @@ paths:
                     data:
                       - id: 111
                         date: "2025-11-25-20:00"
-                        supplierId: 321
-                        userUsername: "admin-warehouse123"
-                        totalProduct: 1
-                        note: "Product is not in good condition"
-                        incomingItemsDetail:
-                          - incomingProductsId: 111
-                            productId: 3451
-                            pricePerUnit: 120000
-                            quantity: 25
-                            totalPrice: 3000000
+                        supplier:
+                          id: 3221
+                          name: "PT Paus Reels"
+                        username: "johnbengkel"
+                        totalProduct: 2
+                        note: "Product is not in good condition."
+                      - id: 112
+                        date: "2025-11-27-20:00"
+                        supplier:
+                          id: 3225
+                          name: "PT Sejahtera Hooks"
+                        username: "johnbengkel"
+                        totalProduct: 10
+                        note: "Product is not in good condition."
                     paging:
                       currentPage: 0
                       totalPage: 10
@@ -150,7 +179,7 @@ paths:
               schema:
                 properties:
                   data:
-                    $ref: "#/components/schemas/IncomingProducts"
+                    $ref: "#/components/schemas/IncomingProductsResponse"
               examples:
                 IncomingProducts:
                   $ref: "#/components/examples/IncomingProductsResponse"
@@ -162,59 +191,59 @@ paths:
           $ref: "#/components/responses/IncomingProductsNotFoundResponse"
         500:
           $ref: "#/components/responses/ServerErrorResponse"
-    put:
-      summary: "Update the incoming product record"
-      parameters:
-        - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
-        - $ref: "#/components/parameters/INCOMING-PRODUCTS-ID"
-      requestBody: 
-        content: 
-          application/json:
-            schema: 
-              $ref: "#/components/schemas/IncomingProducts"
-            example:
-              id: 111
-              date: "2025-11-25-20:00"
-              supplierId: 321
-              totalProduct: 1
-              note: "Product is not in good condition"
-              incomingItemsDetail:
-                - incomingProductsId: 111
-                  productId: 3451
-                  pricePerUnit: 120000
-                  quantity: 25
-                  totalPrice: 3000000
-      responses:
-        200:
-          description: "Success updated incoming product record"
-          content:
-            application/json:
-              schema:
-                properties:
-                  data:
-                    $ref: "#/components/schemas/IncomingProducts"
-              examples:
-                IncomingProducts:
-                  $ref: "#/components/examples/IncomingProductsResponse"
-        401:
-          $ref: "#/components/responses/UnauthenticatedErrorResponse"
-        403:
-          $ref: "#/components/responses/UnauthorizedErrorResponse"
-        404:
-          description: "Not Found Error"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GeneralErrorSchema"
-              examples:
-                ProductNotFound:
-                  value:
-                    errors: "Incoming Product is not found."
-                SupplierNotFound:
-                  value:
-                    errors: "Supplier is not found."
-        500:
-          $ref: "#/components/responses/ServerErrorResponse"
+#    put:
+#      summary: "Update the incoming product record"
+#      parameters:
+#        - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
+#        - $ref: "#/components/parameters/INCOMING-PRODUCTS-ID"
+#      requestBody: 
+#        content: 
+#          application/json:
+#            schema: 
+#              $ref: "#/components/schemas/IncomingProducts"
+#            example:
+#              id: 111
+#              date: "2025-11-25-20:00"
+#              supplierId: 321
+#              totalProduct: 1
+#              note: "Product is not in good condition"
+#              incomingItemsDetail:
+#                - incomingProductsId: 111
+#                  productId: 3451
+#                  pricePerUnit: 120000
+#                  quantity: 25
+#                  totalPrice: 3000000
+#      responses:
+#        200:
+#          description: "Success updated incoming product record"
+#          content:
+#            application/json:
+#              schema:
+#                properties:
+#                  data:
+#                    $ref: "#/components/schemas/IncomingProducts"
+#              examples:
+#                IncomingProducts:
+#                  $ref: "#/components/examples/IncomingProductsResponse"
+#        401:
+#          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+#        403:
+#          $ref: "#/components/responses/UnauthorizedErrorResponse"
+#        404:
+#          description: "Not Found Error"
+#          content:
+#            application/json:
+#              schema:
+#                $ref: "#/components/schemas/GeneralErrorSchema"
+#              examples:
+#                ProductNotFound:
+#                  value:
+#                    errors: "Incoming Product is not found."
+#                SupplierNotFound:
+#                  value:
+#                    errors: "Supplier is not found."
+#        500:
+#          $ref: "#/components/responses/ServerErrorResponse"
     delete:
       summary: "Delete the incoming product record"
       parameters:
@@ -366,14 +395,15 @@ paths:
                   phone: "62877721"
                   email: "adminjohn@indah-kait.com"
                   information: "Supplier for fishing hooks"
-                  addresses:
-                    - id: 123
-                      street: "JL example"
-                      village: "example 123"
-                      district: "example district"
-                      city: "Jakarta"
-                      province: "DKI Jakarta"
-                      postalCode: "12312EXAMPLE"
+                  address:
+                    id: 123
+                    street: "JL example"
+                    village: "example 123"
+                    district: "example district"
+                    city: "Jakarta"
+                    province: "DKI Jakarta"
+                    country: "Indonesia"
+                    postalCode: "12312EXAMPLE"
       responses:
         200:
           description: "Success update a supplier record"
@@ -447,23 +477,23 @@ components:
       properties:
         id:
           type: integer
-        date:
+        dateIn:
           type: string
         supplierId:
           type: integer
         userUsername:
-          type: integer
-        totalProduct:
+          type: string
+        totalProducts:
           type: integer
         note:
           type: string
-        incomingItemsDetail:
+        incomingProductDetails:
           type: array
           items:
-            $ref: "#/components/schemas/IncomingItemsDetail"
-    IncomingItemsDetail:
+            $ref: "#/components/schemas/IncomingProductDetails"
+    IncomingProductDetails:
       properties:
-        incomingProductsId:
+        id:
           type: integer
         productId:
           type: integer
@@ -473,6 +503,94 @@ components:
           type: integer
         totalPrice:
           type: integer
+        hasVariant:
+          type: boolean
+        totalVariantQuantity:
+          type: integer
+        totalVariantPrice:
+          type: integer
+        incomingProductVariantDetails:
+          type: array
+          items:
+            $ref: "#/components/schemas/IncomingProductVariantDetails"
+    IncomingProductVariantDetails:
+      properties:
+        id:
+          type: integer
+        variantId:
+          type: integer
+        pricePerUnit:
+          type: integer
+        quantity:
+          type: integer
+        totalPrice:
+          type: integer
+    # schema response
+    IncomingProductsResponse:
+      properties:
+        id:
+          type: integer
+        dateIn:
+          type: string
+        supplier:
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+        username:
+          type: string
+        totalProducts:
+          type: integer
+        note:
+          type: string
+        incomingProductDetails:
+          type: array
+          items:
+            $ref: "#/components/schemas/IncomingProductDetailsResponse"
+    IncomingProductDetailsResponse:
+      properties:
+        id:
+          type: integer
+        product:
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+        pricePerUnit:
+          type: integer
+        quantity:
+          type: integer
+        totalPrice:
+          type: integer
+        hasVariant:
+          type: boolean
+        totalVariantQuantity:
+          type: integer
+        totalVariantPrice:
+          type: integer
+        incomingProductVariantDetails:
+          type: array
+          items:
+            $ref: "#/components/schemas/IncomingProductVariantDetailsResponse"
+    IncomingProductVariantDetailsResponse:
+      properties:
+        id:
+          type: integer
+        variant:
+          properties:
+            id:
+              type: integer
+            sku:
+              type: string
+        pricePerUnit:
+          type: integer
+        quantity:
+          type: integer
+        totalPrice:
+          type: integer
+
     SupplierRequestSchema:
       properties:
         supplierName:
@@ -561,31 +679,64 @@ components:
     IncomingProductsResponse:
       value:
         data:
-          id: 111
-          date: "2025-11-25-20:00"
-          supplierId: 321
-          userUsername: "admin-warehouse123"
-          totalProduct: 1
-          note: "Product is not in good condition"
-          incomingItemsDetail:
-            - incomingProductsId: 111
-              productId: 3451
+          id: 5512
+          dateIn: "2025-11-25-14:32"
+          supplier:
+            id: 3221
+            name: "PT Timah Nusantara"
+          username: "johnbengkel"
+          totalProduct: 2
+          note: "Product is on good condition..."
+          incomingProductDetails:
+            - id: 331
+              product:
+                id: 3451
+                name: "Joran Pancing FIBER 210-CM"
               pricePerUnit: 120000
               quantity: 25
               totalPrice: 3000000
+              hasVariant: false
+              totalVariantQuantity: null
+              totalVariantPrice: null
+              incomingProductVariantDetails: null
+            - id: 332
+              product:
+                id: 1234
+                name: "Mata Kail Daichi"
+              pricePerUnit: null
+              quantity: null
+              totalPrice: null
+              hasVariant: true
+              totalVariantQuantity: 35
+              totalVariantPrice: 367500
+              incomingProductVariantDetails:
+                - id: 501
+                  variant:
+                    id: 321
+                    sku: "mata-kail-daichi-hitam-10"
+                  pricePerUnit: 10500
+                  quantity: 25
+                  totalPrice: 262500
+                - id: 502
+                  variant:
+                    id: 322
+                    sku: "mata-kail-daichi-hitam-11"
+                  pricePerUnit: 10500
+                  quantity: 10
+                  totalPrice: 105000
     SupplierExample:
       value:
         supplierName: "PT Indah Kait"
         phone: "62877721"
         email: "adminjohn@indah-kait.com"
         information: "Supplier for fishing hooks"
-        addresses:
-          - street: "JL example"
-            village: "example 123"
-            district: "example district"
-            city: "Jakarta"
-            province: "DKI Jakarta"
-            postalCode: "12312EXAMPLE"
+        address:
+          street: "JL example"
+          village: "example 123"
+          district: "example district"
+          city: "Jakarta"
+          province: "DKI Jakarta"
+          postalCode: "12312EXAMPLE"
     SupplierResponseExample:
       value:
         data:
@@ -594,15 +745,15 @@ components:
           phone: "62877721"
           email: "adminjohn@indah-kait.com"
           information: "Supplier for fishing hooks"
-          addresses:
-            - id: 190
-              street: "JL example"
-              village: "example 123"
-              district: "example district"
-              city: "Jakarta"
-              province: "DKI Jakarta"
-              country: "Indonesia"
-              postalCode: "12312EXAMPLE"
+          address:
+            id: 190
+            street: "JL example"
+            village: "example 123"
+            district: "example district"
+            city: "Jakarta"
+            province: "DKI Jakarta"
+            country: "Indonesia"
+            postalCode: "12312EXAMPLE"
   responses:
     GeneralSuccessResponse:
       description: "Success"
