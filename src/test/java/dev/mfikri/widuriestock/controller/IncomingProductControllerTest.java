@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.mfikri.widuriestock.entity.Role;
 import dev.mfikri.widuriestock.entity.Supplier;
 import dev.mfikri.widuriestock.entity.User;
+import dev.mfikri.widuriestock.entity.incoming_product.IncomingProduct;
+import dev.mfikri.widuriestock.entity.incoming_product.IncomingProductDetail;
 import dev.mfikri.widuriestock.entity.incoming_product.IncomingProductVariantDetail;
 import dev.mfikri.widuriestock.entity.product.Category;
 import dev.mfikri.widuriestock.entity.product.Product;
@@ -65,6 +67,9 @@ class IncomingProductControllerTest {
 
     @Autowired
     private IncomingProductRepository incomingProductRepository;
+
+    @Autowired
+    private IncomingProductDetailRepository incomingProductDetailRepository;
 
     @Autowired
     private IncomingProductVariantDetailRepository incomingProductVariantDetailRepository;
@@ -1043,6 +1048,121 @@ class IncomingProductControllerTest {
                     assertEquals(incomingProductVariantDetail.getTotalPrice(), incomingProductVariantDetailResponse.getTotalPrice());
                 }
             });
+        });
+    }
+
+    @Test
+    void getFailedTokenNotSend() throws Exception {
+        mockMvc.perform(
+                get("/api/incoming-products/123")
+                        .accept(MediaType.APPLICATION_JSON)
+        ).andExpectAll(
+                status().isUnauthorized()
+        ).andExpect(result -> {
+            WebResponse<IncomingProductResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getData());
+            assertNull(response.getPaging());
+            assertNotNull(response.getErrors());
+            assertEquals("Authentication failed", response.getErrors());
+        });
+    }
+
+    @Test
+    void getFailedPathIdNotNumberFormat() throws Exception {
+        mockMvc.perform(
+                get("/api/incoming-products/abc")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("Authorization", authorizationToken)
+        ).andExpectAll(
+                status().isBadRequest()
+        ).andExpect(result -> {
+            WebResponse<IncomingProductResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getData());
+            assertNull(response.getPaging());
+            assertNotNull(response.getErrors());
+            assertEquals("incomingProductId type data is wrong.", response.getErrors());
+        });
+    }
+
+    @Test
+    void getFailedIncomingProductIsNotFound() throws Exception {
+        mockMvc.perform(
+                get("/api/incoming-products/999999")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("Authorization", authorizationToken)
+        ).andExpectAll(
+                status().isNotFound()
+        ).andExpect(result -> {
+            WebResponse<IncomingProductResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getData());
+            assertNull(response.getPaging());
+            assertNotNull(response.getErrors());
+            assertEquals("Incoming Product is not found.", response.getErrors());
+        });
+    }
+
+    @Test
+    void getSuccessForIncomingProductWithoutVariantProduct() throws Exception {
+        Supplier supplier = supplierRepository.findById(supplierId).orElse(null);
+        assertNotNull(supplier);
+
+        User user = userRepository.findById("admin_warehouse").orElse(null);
+        assertNotNull(user);
+
+        IncomingProduct incomingProduct = new IncomingProduct();
+        incomingProduct.setDateIn(LocalDate.parse("2025-06-22"));
+        incomingProduct.setSupplier(supplier);
+        incomingProduct.setUser(user);
+        incomingProduct.setTotalProducts(1);
+        incomingProduct.setNote("Product is well condition");
+        incomingProductRepository.save(incomingProduct);
+
+        IncomingProductDetail incomingProductDetail = new IncomingProductDetail();
+        incomingProductDetail.setIncomingProduct(incomingProduct);
+        incomingProductDetail.setProduct(productWithVariant);
+        incomingProductDetail.setPricePerUnit(40500);
+        incomingProductDetail.setQuantity(100);
+        incomingProductDetail.setTotalPrice(incomingProductDetail.getPricePerUnit() * incomingProductDetail.getQuantity());
+        incomingProductDetail.setHasVariant(false);
+        incomingProductDetailRepository.save(incomingProductDetail);
+
+        mockMvc.perform(
+                get("/api/incoming-products/" + incomingProduct.getId())
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("Authorization", authorizationToken)
+        ).andExpectAll(
+                status().isOk()
+        ).andExpect(result -> {
+            WebResponse<IncomingProductResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getErrors());
+            assertNull(response.getPaging());
+            assertNotNull(response.getData());
+
+            assertEquals(incomingProduct.getId(),response.getData().getId());
+            assertEquals(supplier.getId(), response.getData().getSupplier().getId());
+            assertEquals(supplier.getSupplierName(), response.getData().getSupplier().getName());
+            assertEquals(user.getUsername(), response.getData().getUsername());
+            assertEquals(incomingProduct.getTotalProducts(), response.getData().getTotalProduct());
+            assertEquals(incomingProduct.getNote(), response.getData().getNote());
+            assertEquals(incomingProduct.getTotalProducts(), response.getData().getIncomingProductDetails().size());
+            assertEquals(incomingProductDetail.getId(), response.getData().getIncomingProductDetails().getFirst().getId());
+            assertEquals(incomingProductDetail.getProduct().getId(), response.getData().getIncomingProductDetails().getFirst().getProduct().getId());
+            assertEquals(incomingProductDetail.getProduct().getName(), response.getData().getIncomingProductDetails().getFirst().getProduct().getName());
+            assertEquals(incomingProductDetail.getPricePerUnit(), response.getData().getIncomingProductDetails().getFirst().getPricePerUnit());
+            assertEquals(incomingProductDetail.getQuantity(), response.getData().getIncomingProductDetails().getFirst().getQuantity());
+            assertEquals(incomingProductDetail.getTotalPrice(), response.getData().getIncomingProductDetails().getFirst().getTotalPrice());
+            assertEquals(incomingProductDetail.getHasVariant(), response.getData().getIncomingProductDetails().getFirst().getHasVariant());
+            assertNull(response.getData().getIncomingProductDetails().getFirst().getTotalVariantQuantity());
+            assertNull(response.getData().getIncomingProductDetails().getFirst().getTotalVariantPrice());
+            assertNull(response.getData().getIncomingProductDetails().getFirst().getIncomingProductVariantDetails());
         });
     }
 }

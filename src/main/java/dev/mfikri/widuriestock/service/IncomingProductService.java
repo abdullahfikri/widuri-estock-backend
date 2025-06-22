@@ -6,5 +6,5 @@ import dev.mfikri.widuriestock.model.incoming_product.IncomingProductResponse;
 
 public interface IncomingProductService {
     IncomingProductResponse create(IncomingProductCreateRequest request);
-    IncomingProductResponse get(Integer id);
+    IncomingProductResponse get(Integer incomingProductId);
 }

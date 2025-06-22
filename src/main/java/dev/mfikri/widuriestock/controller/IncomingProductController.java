@@ -7,7 +7,6 @@ import dev.mfikri.widuriestock.service.IncomingProductService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -32,6 +31,17 @@ public class IncomingProductController {
         request.setUsername(userPrincipal.getName());
 
         IncomingProductResponse response = incomingProductService.create(request);
+
+        return WebResponse.<IncomingProductResponse>builder()
+                .data(response)
+                .build();
+    }
+
+    @GetMapping(path = "/incoming-products/{incomingProductId}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public WebResponse<IncomingProductResponse> get(@PathVariable Integer incomingProductId) {
+        IncomingProductResponse response = incomingProductService.get(incomingProductId);
 
         return WebResponse.<IncomingProductResponse>builder()
                 .data(response)

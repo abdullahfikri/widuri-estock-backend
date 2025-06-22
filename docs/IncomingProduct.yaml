@@ -165,7 +165,7 @@ paths:
 
         500:
           $ref: "#/components/responses/ServerErrorResponse"
-  /incoming-products/{incomingProductsId}:
+  /incoming-products/{incomingProductId}:
     get:
       summary: "Retrieve the incoming a product record"
       parameters:

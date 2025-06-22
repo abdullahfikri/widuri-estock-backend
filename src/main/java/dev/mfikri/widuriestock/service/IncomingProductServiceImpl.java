@@ -274,14 +274,14 @@ public class IncomingProductServiceImpl implements IncomingProductService {
     }
 
     @Override
-    public IncomingProductResponse get(Integer id) {
-        // check id null
-        if (id == null) {
+    public IncomingProductResponse get(Integer incomingProductId) {
+        // check incomingProductId null
+        if (incomingProductId == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Id must be not null.");
         }
 
         // find incomingProductEntity
-        IncomingProduct incomingProductEntity = incomingProductRepository.findById(id).orElse(null);
+        IncomingProduct incomingProductEntity = incomingProductRepository.findById(incomingProductId).orElse(null);
         if (incomingProductEntity == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Incoming Product is not found.");
         }
