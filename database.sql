@@ -237,6 +237,9 @@ ALTER TABLE incoming_products
     FOREIGN KEY (user_username) REFERENCES users (username);
 
 ALTER TABLE incoming_products
+    ADD COLUMN update_reason VARCHAR(255);
+
+ALTER TABLE incoming_products
     MODIFY date_in DATE;
 
 SELECT * FROM incoming_products;

@@ -136,7 +136,7 @@ paths:
                           id: 3221
                           name: "PT Paus Reels"
                         username: "johnbengkel"
-                        totalProduct: 2
+                        totalProducts: 2
                         note: "Product is not in good condition."
                       - id: 112
                         date: "2025-11-27-20:00"
@@ -144,7 +144,7 @@ paths:
                           id: 3225
                           name: "PT Sejahtera Hooks"
                         username: "johnbengkel"
-                        totalProduct: 10
+                        totalProducts: 10
                         note: "Product is not in good condition."
                     paging:
                       currentPage: 0
@@ -191,75 +191,261 @@ paths:
           $ref: "#/components/responses/IncomingProductsNotFoundResponse"
         500:
           $ref: "#/components/responses/ServerErrorResponse"
-#    put:
-#      summary: "Update the incoming product record"
-#      parameters:
-#        - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
-#        - $ref: "#/components/parameters/INCOMING-PRODUCTS-ID"
-#      requestBody: 
-#        content: 
-#          application/json:
-#            schema: 
-#              $ref: "#/components/schemas/IncomingProducts"
-#            example:
-#              id: 111
-#              date: "2025-11-25-20:00"
-#              supplierId: 321
-#              totalProduct: 1
-#              note: "Product is not in good condition"
-#              incomingItemsDetail:
-#                - incomingProductsId: 111
-#                  productId: 3451
-#                  pricePerUnit: 120000
-#                  quantity: 25
-#                  totalPrice: 3000000
-#      responses:
-#        200:
-#          description: "Success updated incoming product record"
-#          content:
-#            application/json:
-#              schema:
-#                properties:
-#                  data:
-#                    $ref: "#/components/schemas/IncomingProducts"
-#              examples:
-#                IncomingProducts:
-#                  $ref: "#/components/examples/IncomingProductsResponse"
-#        401:
-#          $ref: "#/components/responses/UnauthenticatedErrorResponse"
-#        403:
-#          $ref: "#/components/responses/UnauthorizedErrorResponse"
-#        404:
-#          description: "Not Found Error"
-#          content:
-#            application/json:
-#              schema:
-#                $ref: "#/components/schemas/GeneralErrorSchema"
-#              examples:
-#                ProductNotFound:
-#                  value:
-#                    errors: "Incoming Product is not found."
-#                SupplierNotFound:
-#                  value:
-#                    errors: "Supplier is not found."
-#        500:
-#          $ref: "#/components/responses/ServerErrorResponse"
-    delete:
-      summary: "Delete the incoming product record"
+    put:
+      summary: "Update the incoming product record"
       parameters:
         - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
         - $ref: "#/components/parameters/INCOMING-PRODUCTS-ID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IncomingProducts"
+            examples:
+              Update Incoming Product:
+                value:
+                  id: 111
+                  dateIn: "2025-11-25"
+                  supplierId: 321
+                  totalProducts: 2
+                  note: "Product is not in good condition"
+                  updateReason: "Update quantity for incoming product 111. And add incoming product variant for incoming product 332"
+                  incomingProductDetails:
+                    - id: 111
+                      productId: 3451
+                      pricePerUnit: 120000
+                      quantity: 25
+                      totalPrice: 3000000
+                      hasVariant: false
+                      totalVariantQuantity: null,
+                      totalVariantPrice: null,
+                      incomingProductVariantDetails: null
+                    - id: 332
+                      productId: 1234
+                      pricePerUnit: null
+                      quantity: null
+                      totalPrice: null
+                      hasVariant: true
+                      totalVariantQuantity: 45
+                      totalVariantPrice: 472500
+                      incomingProductVariantDetails:
+                        - id: 501
+                          variantId: 321
+                          pricePerUnit: 10500
+                          quantity: 25
+                          totalPrice: 262500
+                        - id: 502
+                          variantId: 322
+                          pricePerUnit: 10500
+                          quantity: 10
+                          totalPrice: 105000
+                        - variantId: 323
+                          pricePerUnit: 10500
+                          quantity: 10
+                          totalPrice: 105000
+              Add Incoming Product Items:
+                value:
+                  id: 111
+                  dateIn: "2025-11-25"
+                  supplierId: 321
+                  totalProducts: 3
+                  note: "Product is not in good condition"
+                  updateReason: "Add new incoming items, because admin forget to add the items"
+                  incomingItemsDetail:
+                    - id: 111
+                      productId: 3451
+                      pricePerUnit: 120000
+                      quantity: 25
+                      totalPrice: 3000000
+                      hasVariant: false
+                      totalVariantQuantity: null,
+                      totalVariantPrice: null,
+                      incomingProductVariantDetails: null
+                    - id: 332
+                      productId: 1234
+                      pricePerUnit: null
+                      quantity: null
+                      totalPrice: null
+                      hasVariant: true
+                      totalVariantQuantity: 35
+                      totalVariantPrice: 367500
+                      incomingProductVariantDetails:
+                        - id: 501
+                          variantId: 321
+                          pricePerUnit: 10500
+                          quantity: 25
+                          totalPrice: 262500
+                        - id: 502
+                          variantId: 322
+                          pricePerUnit: 10500
+                          quantity: 10
+                          totalPrice: 105000
+                    - productId: 34512
+                      pricePerUnit: 120000
+                      quantity: 10
+                      totalPrice: 3000000
+                      hasVariant: false
+                      totalVariantQuantity: null,
+                      totalVariantPrice: null,
+                      incomingProductVariantDetails: null
+                    - productId: 3212
+                      pricePerUnit: null
+                      quantity: null
+                      totalPrice: null
+                      hasVariant: true
+                      totalVariantQuantity: 10
+                      totalVariantPrice: 262500
+                      incomingProductVariantDetails:
+                        - variantId: 321
+                          pricePerUnit: 10500
+                          quantity: 10
+                          totalPrice: 262500
       responses:
         200:
-          $ref: "#/components/responses/GeneralSuccessResponse"
+          description: "Success updated incoming product record"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IncomingProductsResponse"
+              examples:
+                Update Incoming Product:
+                  value:
+                    id: 111
+                    dateIn: "2025-11-25"
+                    supplierId: 321
+                    totalProducts: 2
+                    note: "Product is not in good condition"
+                    updateReason: "Update quantity for incoming product 111. And add incoming product variant for incoming product 332"
+                    incomingItemsDetail:
+                      - id: 111
+                        productId: 3451
+                        pricePerUnit: 120000
+                        quantity: 25
+                        totalPrice: 3000000
+                        hasVariant: false
+                        totalVariantQuantity: null,
+                        totalVariantPrice: null,
+                        incomingProductVariantDetails: null
+                      - id: 332
+                        productId: 1234
+                        pricePerUnit: null
+                        quantity: null
+                        totalPrice: null
+                        hasVariant: true
+                        totalVariantQuantity: 45
+                        totalVariantPrice: 472500
+                        incomingProductVariantDetails:
+                          - id: 501
+                            variantId: 321
+                            pricePerUnit: 10500
+                            quantity: 25
+                            totalPrice: 262500
+                          - id: 502
+                            variantId: 322
+                            pricePerUnit: 10500
+                            quantity: 10
+                            totalPrice: 105000
+                          - id: 601
+                            variantId: 323
+                            pricePerUnit: 10500
+                            quantity: 10
+                            totalPrice: 105000
+                Add Incoming Product Items:
+                  value:
+                    id: 111
+                    dateIn: "2025-11-25"
+                    supplierId: 321
+                    totalProducts: 3
+                    note: "Product is not in good condition"
+                    updateReason: "Add new incoming items, because admin forget to add the items"
+                    incomingItemsDetail:
+                      - id: 111
+                        productId: 3451
+                        pricePerUnit: 120000
+                        quantity: 25
+                        totalPrice: 3000000
+                        hasVariant: false
+                        totalVariantQuantity: null,
+                        totalVariantPrice: null,
+                        incomingProductVariantDetails: null
+                      - id: 332
+                        productId: 1234
+                        pricePerUnit: null
+                        quantity: null
+                        totalPrice: null
+                        hasVariant: true
+                        totalVariantQuantity: 35
+                        totalVariantPrice: 367500
+                        incomingProductVariantDetails:
+                          - id: 501
+                            variantId: 321
+                            pricePerUnit: 10500
+                            quantity: 25
+                            totalPrice: 262500
+                          - id: 502
+                            variantId: 322
+                            pricePerUnit: 10500
+                            quantity: 10
+                            totalPrice: 105000
+                      - id: 402
+                        productId: 34512
+                        pricePerUnit: 120000
+                        quantity: 10
+                        totalPrice: 3000000
+                        hasVariant: false
+                        totalVariantQuantity: null,
+                        totalVariantPrice: null,
+                        incomingProductVariantDetails: null
+                      - id: 403
+                        productId: 3212
+                        pricePerUnit: null
+                        quantity: null
+                        totalPrice: null
+                        hasVariant: true
+                        totalVariantQuantity: 10
+                        totalVariantPrice: 262500
+                        incomingProductVariantDetails:
+                          - id: 601
+                            variantId: 321
+                            pricePerUnit: 10500
+                            quantity: 10
+                            totalPrice: 262500
+
         401:
           $ref: "#/components/responses/UnauthenticatedErrorResponse"
         403:
           $ref: "#/components/responses/UnauthorizedErrorResponse"
         404:
-          $ref: "#/components/responses/IncomingProductsNotFoundResponse"
+          description: "Not Found Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneralErrorSchema"
+              examples:
+                ProductNotFound:
+                  value:
+                    errors: "Incoming Product is not found."
+                SupplierNotFound:
+                  value:
+                    errors: "Supplier is not found."
         500:
           $ref: "#/components/responses/ServerErrorResponse"
+#    delete:
+#      summary: "Delete the incoming product record"
+#      parameters:
+#        - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
+#        - $ref: "#/components/parameters/INCOMING-PRODUCTS-ID"
+#      responses:
+#        200:
+#          $ref: "#/components/responses/GeneralSuccessResponse"
+#        401:
+#          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+#        403:
+#          $ref: "#/components/responses/UnauthorizedErrorResponse"
+#        404:
+#          $ref: "#/components/responses/IncomingProductsNotFoundResponse"
+#        500:
+#          $ref: "#/components/responses/ServerErrorResponse"
   /suppliers:
     post:
       tags:
@@ -685,7 +871,7 @@ components:
             id: 3221
             name: "PT Timah Nusantara"
           username: "johnbengkel"
-          totalProduct: 2
+          totalProducts: 2
           note: "Product is on good condition..."
           incomingProductDetails:
             - id: 331

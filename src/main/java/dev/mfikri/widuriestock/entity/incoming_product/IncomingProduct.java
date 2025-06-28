@@ -32,6 +32,9 @@ public class IncomingProduct {
 
     private String note;
 
+    @Column(name = "update_reason")
+    private String updateReason;
+
     @CreatedDate
     @Column(name = "created_at")
     private Instant createdAt;

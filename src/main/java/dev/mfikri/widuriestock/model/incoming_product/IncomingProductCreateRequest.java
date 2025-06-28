@@ -60,8 +60,8 @@ public class IncomingProductCreateRequest {
         @NotNull
         private Boolean hasVariant;
 
-        @Positive
-        private Integer totalVariantQuantity;
+//        @Positive
+//        private Integer totalVariantQuantity;
 
 //        @Positive
 //        private Integer totalVariantPrice;
