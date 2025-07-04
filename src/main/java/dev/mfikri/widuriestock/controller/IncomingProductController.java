@@ -92,4 +92,68 @@ public class IncomingProductController {
                 .build();
     }
 
+    @PostMapping(path = "/incoming-products/{incomingProductId}/incoming-product-details",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public WebResponse<IncomingProductDetailResponse> createIncomingProductDetail(@PathVariable Integer incomingProductId,
+                                                                                  @RequestBody IncomingProductDetailCreateRequest request
+                                                                               ) {
+        request.setIncomingProductId(incomingProductId);
+        IncomingProductDetailResponse response = incomingProductService.createIncomingProductDetails(request);
+
+        return WebResponse.<IncomingProductDetailResponse>builder()
+                .data(response)
+                .build();
+    }
+
+    @PostMapping(path = "/incoming-product-details/{incomingProductDetailId}/incoming-product-variant-detail",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public WebResponse<IncomingProductVariantDetailResponse> createIncomingProductVariantDetail(@PathVariable Integer incomingProductDetailId,
+                                                                                  @RequestBody IncomingProductVariantDetailCreateRequest request
+    ) {
+        request.setIncomingProductDetailId(incomingProductDetailId);
+        IncomingProductVariantDetailResponse response = incomingProductService.createIncomingProductVariantDetails(request);
+
+        return WebResponse.<IncomingProductVariantDetailResponse>builder()
+                .data(response)
+                .build();
+    }
+
+    @DeleteMapping(path = "/incoming-product-variant-details/{incomingProductVariantDetailId}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public WebResponse<String> deleteIncomingProductVariantDetail(@PathVariable Integer incomingProductVariantDetailId) {
+        incomingProductService.deleteIncomingProductVariantDetails(incomingProductVariantDetailId);
+
+        return WebResponse.<String>builder()
+                .data("OK")
+                .build();
+    }
+
+    @DeleteMapping(path = "/incoming-product-details/{incomingProductDetailId}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public WebResponse<String> deleteIncomingProductDetail(@PathVariable Integer incomingProductDetailId) {
+        incomingProductService.deleteIncomingProductDetails(incomingProductDetailId);
+
+        return WebResponse.<String>builder()
+                .data("OK")
+                .build();
+    }
+
+
+    @DeleteMapping(path = "/incoming-products/{incomingProductId}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public WebResponse<String> deleteIncomingProduct(@PathVariable Integer incomingProductId) {
+        incomingProductService.deleteIncomingProduct(incomingProductId);
+
+        return WebResponse.<String>builder()
+                .data("OK")
+                .build();
+    }
+
 }

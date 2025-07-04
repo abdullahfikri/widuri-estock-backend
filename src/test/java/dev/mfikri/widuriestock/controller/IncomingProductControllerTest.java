@@ -13,10 +13,7 @@ import dev.mfikri.widuriestock.entity.product.Product;
 import dev.mfikri.widuriestock.entity.product.ProductVariant;
 import dev.mfikri.widuriestock.entity.product.ProductVariantAttribute;
 import dev.mfikri.widuriestock.model.WebResponse;
-import dev.mfikri.widuriestock.model.incoming_product.IncomingProductCreateRequest;
-import dev.mfikri.widuriestock.model.incoming_product.IncomingProductGetListResponse;
-import dev.mfikri.widuriestock.model.incoming_product.IncomingProductResponse;
-import dev.mfikri.widuriestock.model.incoming_product.IncomingProductUpdateRequest;
+import dev.mfikri.widuriestock.model.incoming_product.*;
 import dev.mfikri.widuriestock.repository.*;
 import dev.mfikri.widuriestock.util.BCrypt;
 import dev.mfikri.widuriestock.util.JwtUtil;
@@ -34,6 +31,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -3142,7 +3140,6 @@ class IncomingProductControllerTest {
 
 
             // assert incomingProductDetail
-
             response.getData().getIncomingProductDetails().forEach(incomingProductDetailResponse -> {
 
                 IncomingProductUpdateRequest.IncomingProductDetail incomingProductDetailRequestCurrent = request.getIncomingProductDetails()
@@ -3258,13 +3255,1367 @@ class IncomingProductControllerTest {
                     log.info(String.valueOf(productVariant.getStock()));
                     log.info(String.valueOf(updatedProductVariant.getStock()));
                 }
-
-
-
-
             });
 
         });
     }
 
+
+    @Test
+    void createIncomingProductDetailsFailedTokenNotSend() throws Exception {
+        mockMvc.perform(
+                post("/api/incoming-products/123/incoming-product-details")
+                        .accept(MediaType.APPLICATION_JSON)
+        ).andExpectAll(
+                status().isUnauthorized()
+        ).andExpect(result -> {
+            WebResponse<IncomingProductGetListResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getData());
+            assertNull(response.getPaging());
+            assertNotNull(response.getErrors());
+            assertEquals("Authentication failed", response.getErrors());
+        });
+    }
+
+    @Test
+    void createIncomingProductDetailsFailedIncomingProductIdIsNotNumber() throws Exception {
+        mockMvc.perform(
+                post("/api/incoming-products/abc/incoming-product-details")
+                        .header("Authorization", authorizationToken)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new IncomingProductDetailCreateRequest()))
+        ).andExpectAll(
+                status().isBadRequest()
+        ).andExpect(result -> {
+            WebResponse<IncomingProductGetListResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getData());
+            assertNull(response.getPaging());
+            assertNotNull(response.getErrors());
+            assertEquals("incomingProductId type data is wrong.", response.getErrors());
+        });
+    }
+
+    @Test
+    void createIncomingProductDetailsFailedValidation() throws Exception {
+        mockMvc.perform(
+                post("/api/incoming-products/123/incoming-product-details")
+                        .header("Authorization", authorizationToken)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new IncomingProductDetailCreateRequest()))
+        ).andExpectAll(
+                status().isBadRequest()
+        ).andExpect(result -> {
+            WebResponse<IncomingProductGetListResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getData());
+            assertNull(response.getPaging());
+            assertNotNull(response.getErrors());
+            log.info(response.getErrors());
+        });
+    }
+
+    @Test
+    void createIncomingProductDetailsFailedIncomingProductNotFound() throws Exception {
+
+        IncomingProductDetailCreateRequest request = new IncomingProductDetailCreateRequest();
+        request.setProductId(productWithoutVariant.getId());
+        request.setPricePerUnit(100);
+        request.setQuantity(10);
+        request.setHasVariant(false);
+        request.setIncomingProductVariantDetails(null);
+
+
+        mockMvc.perform(
+                post("/api/incoming-products/99999/incoming-product-details")
+                        .header("Authorization", authorizationToken)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+        ).andExpectAll(
+                status().isNotFound()
+        ).andExpect(result -> {
+            WebResponse<IncomingProductGetListResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getData());
+            assertNull(response.getPaging());
+            assertNotNull(response.getErrors());
+            assertEquals("IncomingProduct is not found. Please check IncomingProduct id again.", response.getErrors());
+        });
+    }
+
+
+    @Test
+    void createIncomingProductDetailsFailedProductNotFound() throws Exception {
+        Supplier supplier = supplierRepository.findById(supplierId).orElse(null);
+        assertNotNull(supplier);
+
+        User user = userRepository.findById("admin_warehouse").orElse(null);
+        assertNotNull(user);
+
+
+        IncomingProduct incomingProduct = new IncomingProduct();
+        incomingProduct.setDateIn(LocalDate.parse("2025-06-30"));
+        incomingProduct.setTotalProducts(1);
+        incomingProduct.setSupplier(supplier);
+        incomingProduct.setUser(user);
+        incomingProductRepository.save(incomingProduct);
+
+        IncomingProductDetailCreateRequest request = new IncomingProductDetailCreateRequest();
+        request.setProductId(99999);
+        request.setPricePerUnit(100);
+        request.setQuantity(10);
+        request.setHasVariant(false);
+        request.setIncomingProductVariantDetails(null);
+
+        mockMvc.perform(
+                post("/api/incoming-products/" + incomingProduct.getId() + "/incoming-product-details")
+                        .header("Authorization", authorizationToken)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+        ).andExpectAll(
+                status().isNotFound()
+        ).andExpect(result -> {
+            WebResponse<IncomingProductGetListResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getData());
+            assertNull(response.getPaging());
+            assertNotNull(response.getErrors());
+            assertEquals("Product is not found. Please check Product id again.", response.getErrors());
+        });
+    }
+
+    @Test
+    void createIncomingProductDetailsFailedHasVariantIsConflict() throws Exception {
+        Supplier supplier = supplierRepository.findById(supplierId).orElse(null);
+        assertNotNull(supplier);
+
+        User user = userRepository.findById("admin_warehouse").orElse(null);
+        assertNotNull(user);
+
+        IncomingProduct incomingProduct = new IncomingProduct();
+        incomingProduct.setDateIn(LocalDate.parse("2025-06-30"));
+        incomingProduct.setTotalProducts(1);
+        incomingProduct.setSupplier(supplier);
+        incomingProduct.setUser(user);
+        incomingProductRepository.save(incomingProduct);
+
+        IncomingProductDetailCreateRequest request = new IncomingProductDetailCreateRequest();
+        request.setProductId(productWithoutVariant.getId());
+        request.setHasVariant(true);
+
+
+        IncomingProductDetailCreateRequest.IncomingProductVariantDetail incomingProductVariantDetailRequest = IncomingProductDetailCreateRequest.IncomingProductVariantDetail.builder()
+                .variantId(productVariant.getId())
+                .pricePerUnit(109)
+                .quantity(10)
+                .build();
+
+        request.setIncomingProductVariantDetails(List.of(incomingProductVariantDetailRequest));
+
+        mockMvc.perform(
+                post("/api/incoming-products/" + incomingProduct.getId() + "/incoming-product-details")
+                        .header("Authorization", authorizationToken)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+        ).andExpectAll(
+                status().isBadRequest()
+        ).andExpect(result -> {
+            WebResponse<IncomingProductGetListResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getData());
+            assertNull(response.getPaging());
+            assertNotNull(response.getErrors());
+            assertEquals("Product id: " + productWithoutVariant.getId() + " hasVariant is false, please check hasVariant again.", response.getErrors());
+        });
+    }
+
+
+    @Test
+    void createIncomingProductDetailsFailedProductVariantDuplicate() throws Exception {
+        Supplier supplier = supplierRepository.findById(supplierId).orElse(null);
+        assertNotNull(supplier);
+
+        User user = userRepository.findById("admin_warehouse").orElse(null);
+        assertNotNull(user);
+
+        IncomingProduct incomingProduct = new IncomingProduct();
+        incomingProduct.setDateIn(LocalDate.parse("2025-06-30"));
+        incomingProduct.setTotalProducts(1);
+        incomingProduct.setSupplier(supplier);
+        incomingProduct.setUser(user);
+        incomingProductRepository.save(incomingProduct);
+
+        IncomingProductDetailCreateRequest request = new IncomingProductDetailCreateRequest();
+        request.setProductId(productWithVariant.getId());
+        request.setHasVariant(true);
+
+
+        IncomingProductDetailCreateRequest.IncomingProductVariantDetail incomingProductVariantDetailRequest = IncomingProductDetailCreateRequest.IncomingProductVariantDetail.builder()
+                .variantId(123)
+                .pricePerUnit(109)
+                .quantity(10)
+                .build();
+
+        IncomingProductDetailCreateRequest.IncomingProductVariantDetail incomingProductVariantDetailRequest2 = IncomingProductDetailCreateRequest.IncomingProductVariantDetail.builder()
+                .variantId(123)
+                .pricePerUnit(109)
+                .quantity(10)
+                .build();
+
+        request.setIncomingProductVariantDetails(List.of(incomingProductVariantDetailRequest, incomingProductVariantDetailRequest2));
+
+        mockMvc.perform(
+                post("/api/incoming-products/" + incomingProduct.getId() + "/incoming-product-details")
+                        .header("Authorization", authorizationToken)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+        ).andExpectAll(
+                status().isBadRequest()
+        ).andExpect(result -> {
+            WebResponse<IncomingProductGetListResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getData());
+            assertNull(response.getPaging());
+            assertNotNull(response.getErrors());
+            assertEquals("ProductVariants id must not duplicate in a single ProductVariantDetails.", response.getErrors());
+        });
+    }
+
+    @Test
+    void createIncomingProductDetailsFailedProductVariantIsNotFound() throws Exception {
+        Supplier supplier = supplierRepository.findById(supplierId).orElse(null);
+        assertNotNull(supplier);
+
+        User user = userRepository.findById("admin_warehouse").orElse(null);
+        assertNotNull(user);
+
+        IncomingProduct incomingProduct = new IncomingProduct();
+        incomingProduct.setDateIn(LocalDate.parse("2025-06-30"));
+        incomingProduct.setTotalProducts(1);
+        incomingProduct.setSupplier(supplier);
+        incomingProduct.setUser(user);
+        incomingProductRepository.save(incomingProduct);
+
+        IncomingProductDetailCreateRequest request = new IncomingProductDetailCreateRequest();
+        request.setProductId(productWithVariant.getId());
+        request.setHasVariant(true);
+
+
+        IncomingProductDetailCreateRequest.IncomingProductVariantDetail incomingProductVariantDetailRequest = IncomingProductDetailCreateRequest.IncomingProductVariantDetail.builder()
+                .variantId(123)
+                .pricePerUnit(109)
+                .quantity(10)
+                .build();
+
+        request.setIncomingProductVariantDetails(List.of(incomingProductVariantDetailRequest));
+
+        mockMvc.perform(
+                post("/api/incoming-products/" + incomingProduct.getId() + "/incoming-product-details")
+                        .header("Authorization", authorizationToken)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+        ).andExpectAll(
+                status().isNotFound()
+        ).andExpect(result -> {
+            WebResponse<IncomingProductGetListResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getData());
+            assertNull(response.getPaging());
+            assertNotNull(response.getErrors());
+            assertEquals("ProductVariant with id " + incomingProductVariantDetailRequest.getVariantId() + " is not found. please check ProductVariant id again.", response.getErrors());
+        });
+    }
+
+    @Test
+    void createIncomingProductDetailsFailedProductVariantIsNotBelongsToProduct() throws Exception {
+        Supplier supplier = supplierRepository.findById(supplierId).orElse(null);
+        assertNotNull(supplier);
+
+        User user = userRepository.findById("admin_warehouse").orElse(null);
+        assertNotNull(user);
+
+        IncomingProduct incomingProduct = new IncomingProduct();
+        incomingProduct.setDateIn(LocalDate.parse("2025-06-30"));
+        incomingProduct.setTotalProducts(1);
+        incomingProduct.setSupplier(supplier);
+        incomingProduct.setUser(user);
+        incomingProductRepository.save(incomingProduct);
+
+        Category category = categoryRepository.findById(categoryId).orElse(null);
+        assertNotNull(category);
+
+        Product product = new Product();
+        product.setCategory(category);
+        product.setName("Product test 22");
+        product.setDescription("product description");
+        product.setHasVariant(true);
+        productRepository.save(product);
+
+        IncomingProductDetailCreateRequest request = new IncomingProductDetailCreateRequest();
+        request.setProductId(product.getId());
+        request.setHasVariant(true);
+
+
+        IncomingProductDetailCreateRequest.IncomingProductVariantDetail incomingProductVariantDetailRequest = IncomingProductDetailCreateRequest.IncomingProductVariantDetail.builder()
+                .variantId(productVariant.getId())
+                .pricePerUnit(109)
+                .quantity(10)
+                .build();
+
+        request.setIncomingProductVariantDetails(List.of(incomingProductVariantDetailRequest));
+
+        mockMvc.perform(
+                post("/api/incoming-products/" + incomingProduct.getId() + "/incoming-product-details")
+                        .header("Authorization", authorizationToken)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+        ).andExpectAll(
+                status().isConflict()
+        ).andExpect(result -> {
+            WebResponse<IncomingProductGetListResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getData());
+            assertNull(response.getPaging());
+            assertNotNull(response.getErrors());
+            assertEquals("ProductVariant with id " + productVariant.getId() + " is not product variant for Product with id " + product.getId() + ".", response.getErrors());
+        });
+    }
+
+    @Test
+    void createIncomingProductDetailsSuccessWithoutVariant() throws Exception {
+        Supplier supplier = supplierRepository.findById(supplierId).orElse(null);
+        assertNotNull(supplier);
+
+        User user = userRepository.findById("admin_warehouse").orElse(null);
+        assertNotNull(user);
+
+        IncomingProduct incomingProduct = new IncomingProduct();
+        incomingProduct.setDateIn(LocalDate.parse("2025-06-30"));
+        incomingProduct.setTotalProducts(1);
+        incomingProduct.setSupplier(supplier);
+        incomingProduct.setUser(user);
+        incomingProductRepository.save(incomingProduct);
+
+        IncomingProductDetailCreateRequest request = new IncomingProductDetailCreateRequest();
+        request.setPricePerUnit(60000);
+        request.setQuantity(10);
+        request.setProductId(productWithoutVariant.getId());
+        request.setHasVariant(false);
+        request.setIncomingProductVariantDetails(null);
+
+        mockMvc.perform(
+                post("/api/incoming-products/" + incomingProduct.getId() + "/incoming-product-details")
+                        .header("Authorization", authorizationToken)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+        ).andExpectAll(
+                status().isOk()
+        ).andExpect(result -> {
+            WebResponse<IncomingProductDetailResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getErrors());
+            assertNull(response.getPaging());
+            assertNotNull(response.getData());
+            assertNotNull(response.getData().getId());
+            assertEquals(productWithoutVariant.getId(), response.getData().getProduct().getId());
+            assertEquals(productWithoutVariant.getName(), response.getData().getProduct().getName());
+            assertEquals(request.getPricePerUnit(), response.getData().getPricePerUnit());
+            assertEquals(request.getQuantity(), response.getData().getQuantity());
+            assertEquals(request.getPricePerUnit() * request.getQuantity(), response.getData().getTotalPrice());
+            assertEquals(false, response.getData().getHasVariant());
+            assertNull(response.getData().getTotalVariantPrice());
+            assertNull(response.getData().getTotalVariantQuantity());
+            assertNull(response.getData().getIncomingProductVariantDetails());
+
+            // check product quantity updated
+
+            Product productUpdated = productRepository.findById(productWithoutVariant.getId()).orElse(null);
+            assertNotNull(productUpdated);
+
+            assertEquals(productWithoutVariant.getStock() + response.getData().getQuantity(), productUpdated.getStock());
+
+            log.info(String.valueOf(response.getData().getQuantity()));
+            log.info(String.valueOf(productWithoutVariant.getStock()));
+            log.info(String.valueOf(productUpdated.getStock()));
+        });
+    }
+
+    @Test
+    void createIncomingProductDetailsSuccessWithVariant() throws Exception {
+        Supplier supplier = supplierRepository.findById(supplierId).orElse(null);
+        assertNotNull(supplier);
+
+        User user = userRepository.findById("admin_warehouse").orElse(null);
+        assertNotNull(user);
+
+        IncomingProduct incomingProduct = new IncomingProduct();
+        incomingProduct.setDateIn(LocalDate.parse("2025-06-30"));
+        incomingProduct.setTotalProducts(1);
+        incomingProduct.setSupplier(supplier);
+        incomingProduct.setUser(user);
+        incomingProductRepository.save(incomingProduct);
+
+        IncomingProductDetailCreateRequest request = new IncomingProductDetailCreateRequest();
+        request.setProductId(productWithVariant.getId());
+        request.setHasVariant(true);
+
+
+        IncomingProductDetailCreateRequest.IncomingProductVariantDetail incomingProductVariantDetailRequest = IncomingProductDetailCreateRequest.IncomingProductVariantDetail.builder()
+                .variantId(productVariant.getId())
+                .pricePerUnit(109)
+                .quantity(10)
+                .build();
+
+        request.setIncomingProductVariantDetails(List.of(incomingProductVariantDetailRequest));
+
+        mockMvc.perform(
+                post("/api/incoming-products/" + incomingProduct.getId() + "/incoming-product-details")
+                        .header("Authorization", authorizationToken)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+        ).andExpectAll(
+                status().isOk()
+        ).andExpect(result -> {
+            WebResponse<IncomingProductDetailResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getErrors());
+            assertNull(response.getPaging());
+            assertNotNull(response.getData());
+            assertNotNull(response.getData().getId());
+            assertEquals(productWithVariant.getId(), response.getData().getProduct().getId());
+            assertEquals(productWithVariant.getName(), response.getData().getProduct().getName());
+            assertNull(response.getData().getPricePerUnit());
+            assertNull(response.getData().getQuantity());
+            assertNull(response.getData().getTotalPrice());
+            assertEquals(true, response.getData().getHasVariant());
+            assertEquals(incomingProductVariantDetailRequest.getPricePerUnit() * incomingProductVariantDetailRequest.getQuantity() ,response.getData().getTotalVariantPrice());
+            assertEquals(incomingProductVariantDetailRequest.getQuantity(), response.getData().getTotalVariantQuantity());
+            assertNotNull(response.getData().getIncomingProductVariantDetails());
+            assertEquals(1, response.getData().getIncomingProductVariantDetails().size());
+
+            // check IncomingProductVariant
+            IncomingProductDetailResponse.IncomingProductVariantDetail incomingProductVariantDetailResponse = response.getData().getIncomingProductVariantDetails().getFirst();
+            assertNotNull(incomingProductVariantDetailResponse.getId());
+            assertEquals(productVariant.getId(), incomingProductVariantDetailResponse.getVariant().getId());
+            assertEquals(productVariant.getSku(), incomingProductVariantDetailResponse.getVariant().getSku());
+            assertEquals(incomingProductVariantDetailRequest.getPricePerUnit(), incomingProductVariantDetailResponse.getPricePerUnit());
+            assertEquals(incomingProductVariantDetailRequest.getQuantity(), incomingProductVariantDetailResponse.getQuantity());
+
+
+            ProductVariant productVariantUpdated = productVariantRepository.findById(productVariant.getId()).orElse(null);
+            assertNotNull(productVariantUpdated);
+
+            assertEquals(productVariant.getStock() + incomingProductVariantDetailRequest.getQuantity(), productVariantUpdated.getStock());
+
+            log.info(String.valueOf(incomingProductVariantDetailResponse.getQuantity()));
+            log.info(String.valueOf(productVariant.getStock()));
+            log.info(String.valueOf(productVariantUpdated.getStock()));
+        });
+    }
+
+    @Test
+    void createIncomingProductDetailsSuccessWithMultipleVariant() throws Exception {
+        Supplier supplier = supplierRepository.findById(supplierId).orElse(null);
+        assertNotNull(supplier);
+
+        User user = userRepository.findById("admin_warehouse").orElse(null);
+        assertNotNull(user);
+
+        IncomingProduct incomingProduct = new IncomingProduct();
+        incomingProduct.setDateIn(LocalDate.parse("2025-06-30"));
+        incomingProduct.setTotalProducts(1);
+        incomingProduct.setSupplier(supplier);
+        incomingProduct.setUser(user);
+        incomingProductRepository.save(incomingProduct);
+
+        IncomingProductDetailCreateRequest request = new IncomingProductDetailCreateRequest();
+        request.setProductId(productWithVariant.getId());
+        request.setHasVariant(true);
+
+
+        IncomingProductDetailCreateRequest.IncomingProductVariantDetail incomingProductVariantDetailRequest = IncomingProductDetailCreateRequest.IncomingProductVariantDetail.builder()
+                .variantId(productVariant.getId())
+                .pricePerUnit(109)
+                .quantity(10)
+                .build();
+
+        ProductVariant productVariant2 = new ProductVariant();
+        productVariant2.setProduct(productWithVariant);
+        productVariant2.setSku("product-test-black2");
+        productVariant2.setPrice(101000);
+        productVariant2.setStock(60);
+        productVariantRepository.save(productVariant2);
+
+        IncomingProductDetailCreateRequest.IncomingProductVariantDetail incomingProductVariantDetailRequest2 = IncomingProductDetailCreateRequest.IncomingProductVariantDetail.builder()
+                .variantId(productVariant2.getId())
+                .pricePerUnit(109)
+                .quantity(20)
+                .build();
+
+        request.setIncomingProductVariantDetails(List.of(incomingProductVariantDetailRequest, incomingProductVariantDetailRequest2));
+
+        mockMvc.perform(
+                post("/api/incoming-products/" + incomingProduct.getId() + "/incoming-product-details")
+                        .header("Authorization", authorizationToken)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+        ).andExpectAll(
+                status().isOk()
+        ).andExpect(result -> {
+            WebResponse<IncomingProductDetailResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getErrors());
+            assertNull(response.getPaging());
+            assertNotNull(response.getData());
+            assertNotNull(response.getData().getId());
+            assertEquals(productWithVariant.getId(), response.getData().getProduct().getId());
+            assertEquals(productWithVariant.getName(), response.getData().getProduct().getName());
+            assertNull(response.getData().getPricePerUnit());
+            assertNull(response.getData().getQuantity());
+            assertNull(response.getData().getTotalPrice());
+            assertEquals(true, response.getData().getHasVariant());
+            assertEquals((incomingProductVariantDetailRequest.getPricePerUnit() * incomingProductVariantDetailRequest.getQuantity()) +
+                            (incomingProductVariantDetailRequest2.getPricePerUnit() * incomingProductVariantDetailRequest2.getQuantity())
+                    ,response.getData().getTotalVariantPrice());
+            assertEquals(incomingProductVariantDetailRequest.getQuantity() + incomingProductVariantDetailRequest2.getQuantity(), response.getData().getTotalVariantQuantity());
+            assertNotNull(response.getData().getIncomingProductVariantDetails());
+            assertEquals(2, response.getData().getIncomingProductVariantDetails().size());
+
+            // check IncomingProductVariant
+            List<ProductVariant> productVariantList = List.of(productVariant, productVariant2);
+
+            for (int i = 0; i < response.getData().getIncomingProductVariantDetails().size(); i++) {
+                IncomingProductDetailCreateRequest.IncomingProductVariantDetail incomingProductVariantDetailCurrentRequest = request.getIncomingProductVariantDetails()
+                        .get(i);
+
+                IncomingProductDetailResponse.IncomingProductVariantDetail incomingProductVariantDetailResponse = response.getData().getIncomingProductVariantDetails().get(i);
+                ProductVariant productVariant = productVariantList.get(i);
+
+                assertNotNull(incomingProductVariantDetailResponse.getId());
+                assertEquals(productVariant.getId(), incomingProductVariantDetailResponse.getVariant().getId());
+                assertEquals(productVariant.getSku(), incomingProductVariantDetailResponse.getVariant().getSku());
+                assertEquals(incomingProductVariantDetailCurrentRequest.getPricePerUnit(), incomingProductVariantDetailResponse.getPricePerUnit());
+                assertEquals(incomingProductVariantDetailCurrentRequest.getQuantity(), incomingProductVariantDetailResponse.getQuantity());
+
+                ProductVariant productVariantUpdated = productVariantRepository.findById(productVariant.getId()).orElse(null);
+                assertNotNull(productVariantUpdated);
+
+                assertEquals(productVariant.getStock() + incomingProductVariantDetailCurrentRequest .getQuantity(), productVariantUpdated.getStock());
+
+                log.info(String.valueOf(incomingProductVariantDetailResponse.getQuantity()));
+                log.info(String.valueOf(productVariant.getStock()));
+                log.info(String.valueOf(productVariantUpdated.getStock()));
+            }
+        });
+    }
+
+    @Test
+    void createIncomingProductVariantDetailsFailedTokenNotSend() throws Exception {
+        mockMvc.perform(
+                post("/incoming-product-details/123/incoming-product-variant-detail")
+                        .accept(MediaType.APPLICATION_JSON)
+        ).andExpectAll(
+                status().isUnauthorized()
+        ).andExpect(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getData());
+            assertNull(response.getPaging());
+            assertNotNull(response.getErrors());
+            assertEquals("Authentication failed", response.getErrors());
+        });
+    }
+
+    @Test
+    void createIncomingProductVariantDetailsFailedIncomingProductDetailsIdIsNotNumber() throws Exception {
+        mockMvc.perform(
+                post("/api/incoming-product-details/abc/incoming-product-variant-detail")
+                        .header("Authorization", authorizationToken)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new IncomingProductDetailCreateRequest()))
+        ).andExpectAll(
+                status().isBadRequest()
+        ).andExpect(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getData());
+            assertNull(response.getPaging());
+            assertNotNull(response.getErrors());
+            assertEquals("incomingProductDetailId type data is wrong.", response.getErrors());
+        });
+    }
+
+    @Test
+    void createIncomingProductVariantDetailsFailedValidation() throws Exception {
+        mockMvc.perform(
+                post("/api/incoming-product-details/321/incoming-product-variant-detail")
+                        .header("Authorization", authorizationToken)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new IncomingProductVariantDetailCreateRequest()))
+        ).andExpectAll(
+                status().isBadRequest()
+        ).andExpect(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getData());
+            assertNull(response.getPaging());
+            assertNotNull(response.getErrors());
+            log.info(response.getErrors());
+        });
+    }
+
+    @Test
+    void createIncomingProductVariantDetailsFailedIncomingProductDetailIsNotFound() throws Exception {
+        IncomingProductVariantDetailCreateRequest request = new IncomingProductVariantDetailCreateRequest();
+        request.setVariantId(99999);
+        request.setPricePerUnit(10123);
+        request.setQuantity(10);
+
+        mockMvc.perform(
+                post("/api/incoming-product-details/999999/incoming-product-variant-detail")
+                        .header("Authorization", authorizationToken)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+        ).andExpectAll(
+                status().isNotFound()
+        ).andExpect(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getData());
+            assertNull(response.getPaging());
+            assertNotNull(response.getErrors());
+            assertEquals("IncomngProductDetail is not found, please check IncomngProductDetail id again.", response.getErrors());
+        });
+    }
+
+    @Test
+    void createIncomingProductVariantDetailsFailedIncomingProductVariantHasVariantIsFalse() throws Exception {
+        Supplier supplier = supplierRepository.findById(supplierId).orElse(null);
+        assertNotNull(supplier);
+
+        User user = userRepository.findById("admin_warehouse").orElse(null);
+        assertNotNull(user);
+
+
+        IncomingProduct incomingProduct = new IncomingProduct();
+        incomingProduct.setDateIn(LocalDate.parse("2025-06-30"));
+        incomingProduct.setTotalProducts(1);
+        incomingProduct.setSupplier(supplier);
+        incomingProduct.setUser(user);
+        incomingProductRepository.save(incomingProduct);
+
+        IncomingProductDetail incomingProductDetail = new IncomingProductDetail();
+        incomingProductDetail.setProduct(productWithVariant);
+        incomingProductDetail.setIncomingProduct(incomingProduct);
+        incomingProductDetail.setHasVariant(false);
+        incomingProductDetailRepository.save(incomingProductDetail);
+
+
+        IncomingProductVariantDetailCreateRequest request = new IncomingProductVariantDetailCreateRequest();
+        request.setVariantId(999999);
+        request.setPricePerUnit(10123);
+        request.setQuantity(10);
+
+        mockMvc.perform(
+                post("/api/incoming-product-details/" + incomingProductDetail.getId() + "/incoming-product-variant-detail")
+                        .header("Authorization", authorizationToken)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+        ).andExpectAll(
+                status().isBadRequest()
+        ).andExpect(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getData());
+            assertNull(response.getPaging());
+            assertNotNull(response.getErrors());
+            assertEquals("Failed to create IncomingProductDetail, since IncomingProductDetail hasVariant is false.", response.getErrors());
+        });
+    }
+
+    @Test
+    void createIncomingProductVariantDetailsFailedProductVariantIsNotFound() throws Exception {
+        Supplier supplier = supplierRepository.findById(supplierId).orElse(null);
+        assertNotNull(supplier);
+
+        User user = userRepository.findById("admin_warehouse").orElse(null);
+        assertNotNull(user);
+
+
+        IncomingProduct incomingProduct = new IncomingProduct();
+        incomingProduct.setDateIn(LocalDate.parse("2025-06-30"));
+        incomingProduct.setTotalProducts(1);
+        incomingProduct.setSupplier(supplier);
+        incomingProduct.setUser(user);
+        incomingProductRepository.save(incomingProduct);
+
+        IncomingProductDetail incomingProductDetail = new IncomingProductDetail();
+        incomingProductDetail.setProduct(productWithVariant);
+        incomingProductDetail.setIncomingProduct(incomingProduct);
+        incomingProductDetail.setHasVariant(false);
+        incomingProductDetailRepository.save(incomingProductDetail);
+
+
+        IncomingProductVariantDetailCreateRequest request = new IncomingProductVariantDetailCreateRequest();
+        request.setVariantId(99999);
+        request.setPricePerUnit(10123);
+        request.setQuantity(10);
+
+        mockMvc.perform(
+                post("/api/incoming-product-details/" + incomingProductDetail.getId() + "/incoming-product-variant-detail")
+                        .header("Authorization", authorizationToken)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+        ).andExpectAll(
+                status().isNotFound()
+        ).andExpect(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getData());
+            assertNull(response.getPaging());
+            assertNotNull(response.getErrors());
+            assertEquals("ProductVariant is not found, please check ProductVariant id again.", response.getErrors());
+        });
+    }
+
+    @Test
+    void createIncomingProductVariantDetailsFailedProductVariantIsAlreadyPresentInIncomingProductDetail() throws Exception {
+        Supplier supplier = supplierRepository.findById(supplierId).orElse(null);
+        assertNotNull(supplier);
+
+        User user = userRepository.findById("admin_warehouse").orElse(null);
+        assertNotNull(user);
+
+
+        IncomingProduct incomingProduct = new IncomingProduct();
+        incomingProduct.setDateIn(LocalDate.parse("2025-06-30"));
+        incomingProduct.setTotalProducts(1);
+        incomingProduct.setSupplier(supplier);
+        incomingProduct.setUser(user);
+        incomingProductRepository.save(incomingProduct);
+
+        IncomingProductDetail incomingProductDetail = new IncomingProductDetail();
+        incomingProductDetail.setProduct(productWithVariant);
+        incomingProductDetail.setIncomingProduct(incomingProduct);
+        incomingProductDetail.setHasVariant(true);
+        incomingProductDetailRepository.save(incomingProductDetail);
+
+        IncomingProductVariantDetail incomingProductVariantDetail = new IncomingProductVariantDetail();
+        incomingProductVariantDetail.setProductVariant(productVariant);
+        incomingProductVariantDetail.setIncomingProductDetail(incomingProductDetail);
+        incomingProductVariantDetail.setTotalPrice(10020);
+        incomingProductVariantDetail.setQuantity(10);
+        incomingProductVariantDetail.setTotalPrice(10020 * 10);
+        incomingProductVariantDetailRepository.save(incomingProductVariantDetail);
+
+
+        IncomingProductVariantDetailCreateRequest request = new IncomingProductVariantDetailCreateRequest();
+        request.setVariantId(productVariant.getId());
+        request.setPricePerUnit(10123);
+        request.setQuantity(10);
+
+        mockMvc.perform(
+                post("/api/incoming-product-details/" + incomingProductDetail.getId() + "/incoming-product-variant-detail")
+                        .header("Authorization", authorizationToken)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+        ).andExpectAll(
+                status().isBadRequest()
+        ).andExpect(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getData());
+            assertNull(response.getPaging());
+            assertNotNull(response.getErrors());
+            assertEquals("ProductVariant is already present in the IcomingProductDetail, please check ProductVarian id again.", response.getErrors());
+        });
+    }
+
+
+    @Test
+    void createIncomingProductVariantDetailsSuccess() throws Exception {
+        Supplier supplier = supplierRepository.findById(supplierId).orElse(null);
+        assertNotNull(supplier);
+
+        User user = userRepository.findById("admin_warehouse").orElse(null);
+        assertNotNull(user);
+
+
+        IncomingProduct incomingProduct = new IncomingProduct();
+        incomingProduct.setDateIn(LocalDate.parse("2025-06-30"));
+        incomingProduct.setTotalProducts(1);
+        incomingProduct.setSupplier(supplier);
+        incomingProduct.setUser(user);
+        incomingProductRepository.save(incomingProduct);
+
+        IncomingProductDetail incomingProductDetail = new IncomingProductDetail();
+        incomingProductDetail.setProduct(productWithVariant);
+        incomingProductDetail.setIncomingProduct(incomingProduct);
+        incomingProductDetail.setHasVariant(true);
+        incomingProductDetailRepository.save(incomingProductDetail);
+
+        IncomingProductVariantDetailCreateRequest request = new IncomingProductVariantDetailCreateRequest();
+        request.setVariantId(productVariant.getId());
+        request.setPricePerUnit(10123);
+        request.setQuantity(10);
+
+        mockMvc.perform(
+                post("/api/incoming-product-details/" + incomingProductDetail.getId() + "/incoming-product-variant-detail")
+                        .header("Authorization", authorizationToken)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+        ).andExpectAll(
+                status().isOk()
+        ).andExpect(result -> {
+            WebResponse<IncomingProductVariantDetailResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getErrors());
+            assertNull(response.getPaging());
+            assertNotNull(response.getData());
+            assertNotNull(response.getData().getId());
+            assertEquals(productVariant.getId(), response.getData().getVariant().getId());
+            assertEquals(productVariant.getSku(), response.getData().getVariant().getSku());
+            assertEquals(request.getPricePerUnit(), response.getData().getPricePerUnit());
+            assertEquals(request.getQuantity(), response.getData().getQuantity());
+            assertEquals(request.getPricePerUnit() * request.getQuantity(), response.getData().getTotalPrice());
+
+            ProductVariant productVariantUpdated = productVariantRepository.findById(response.getData().getVariant().getId()).orElse(null);
+            assertNotNull(productVariantUpdated);
+
+            assertEquals(productVariant.getStock() + request.getQuantity(), productVariantUpdated.getStock());
+        });
+    }
+
+    @Test
+    void deleteFailedIncomingProductVariantDetailIdIsNotNumber() throws Exception {
+        mockMvc.perform(
+                delete("/api/incoming-product-variant-details/abc")
+                        .header("Authorization", authorizationToken)
+                        .accept(MediaType.APPLICATION_JSON)
+        ).andExpectAll(
+                status().isBadRequest()
+        ).andExpect(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getData());
+            assertNull(response.getPaging());
+            assertNotNull(response.getErrors());
+            assertEquals("incomingProductVariantDetailId type data is wrong.", response.getErrors());
+        });
+    }
+
+    @Test
+    void deleteFailedIncomingProductVariantDetailIsNotFound() throws Exception {
+        mockMvc.perform(
+                delete("/api/incoming-product-variant-details/123")
+                        .header("Authorization", authorizationToken)
+                        .accept(MediaType.APPLICATION_JSON)
+        ).andExpectAll(
+                status().isNotFound()
+        ).andExpect(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getData());
+            assertNull(response.getPaging());
+            assertNotNull(response.getErrors());
+            assertEquals("IncomingProductVariantDetails is not found, please check the IncomingProductVariantDetails id again.", response.getErrors());
+        });
+    }
+
+    @Test
+    void deleteSuccessIncomingProductVariantDetail() throws Exception {
+        Supplier supplier = supplierRepository.findById(supplierId).orElse(null);
+        assertNotNull(supplier);
+
+        User user = userRepository.findById("admin_warehouse").orElse(null);
+        assertNotNull(user);
+
+
+        IncomingProduct incomingProduct = new IncomingProduct();
+        incomingProduct.setDateIn(LocalDate.parse("2025-06-30"));
+        incomingProduct.setTotalProducts(1);
+        incomingProduct.setSupplier(supplier);
+        incomingProduct.setUser(user);
+        incomingProductRepository.save(incomingProduct);
+
+        IncomingProductDetail incomingProductDetail = new IncomingProductDetail();
+        incomingProductDetail.setProduct(productWithVariant);
+        incomingProductDetail.setIncomingProduct(incomingProduct);
+        incomingProductDetail.setHasVariant(true);
+        incomingProductDetail.setTotalVariantQuantity(10);
+        incomingProductDetail.setTotalVariantPrice(1000 * 10);
+        incomingProductDetailRepository.save(incomingProductDetail);
+
+        IncomingProductVariantDetail incomingProductVariantDetail = new IncomingProductVariantDetail();
+        incomingProductVariantDetail.setIncomingProductDetail(incomingProductDetail);
+        incomingProductVariantDetail.setProductVariant(productVariant);
+        incomingProductVariantDetail.setPricePerUnit(1000);
+        incomingProductVariantDetail.setQuantity(10);
+        incomingProductVariantDetail.setTotalPrice(1000 * 10);
+        incomingProductVariantDetailRepository.save(incomingProductVariantDetail);
+
+        mockMvc.perform(
+                delete("/api/incoming-product-variant-details/" + incomingProductVariantDetail.getId())
+                        .header("Authorization", authorizationToken)
+                        .accept(MediaType.APPLICATION_JSON)
+        ).andExpectAll(
+                status().isOk()
+        ).andExpect(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getErrors());
+            assertNull(response.getPaging());
+            assertNotNull(response.getData());
+            assertEquals("OK", response.getData());
+
+            IncomingProductDetail incomingProductDetailUpdated = incomingProductDetailRepository.findById(incomingProductDetail.getId()).orElse(null);
+            assertNotNull(incomingProductDetailUpdated);
+            assertEquals(incomingProductDetail.getTotalVariantQuantity() - incomingProductVariantDetail.getQuantity(), incomingProductDetailUpdated.getTotalVariantQuantity());
+            assertEquals(incomingProductDetail.getTotalVariantPrice() - incomingProductVariantDetail.getTotalPrice(), incomingProductDetailUpdated.getTotalVariantPrice());
+
+            ProductVariant productVariantUpdated = productVariantRepository.findById(productVariant.getId()).orElse(null);
+            assertNotNull(productVariantUpdated);
+            assertEquals(productVariant.getStock() - incomingProductVariantDetail.getQuantity(), productVariantUpdated.getStock());
+
+            IncomingProductVariantDetail deletedIncomingProductVariantDetail = incomingProductVariantDetailRepository.findById(incomingProductVariantDetail.getId()).orElse(null);
+            assertNull(deletedIncomingProductVariantDetail);
+
+        });
+    }
+
+
+    @Test
+    void deleteFailedIncomingProductDetailIdIsNotNumber() throws Exception {
+        mockMvc.perform(
+                delete("/api/incoming-product-details/abc")
+                        .header("Authorization", authorizationToken)
+                        .accept(MediaType.APPLICATION_JSON)
+        ).andExpectAll(
+                status().isBadRequest()
+        ).andExpect(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getData());
+            assertNull(response.getPaging());
+            assertNotNull(response.getErrors());
+            assertEquals("incomingProductDetailId type data is wrong.", response.getErrors());
+        });
+    }
+
+    @Test
+    void deleteFailedIncomingProductDetailIsNotFound() throws Exception {
+        mockMvc.perform(
+                delete("/api/incoming-product-details/123")
+                        .header("Authorization", authorizationToken)
+                        .accept(MediaType.APPLICATION_JSON)
+        ).andExpectAll(
+                status().isNotFound()
+        ).andExpect(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getData());
+            assertNull(response.getPaging());
+            assertNotNull(response.getErrors());
+            assertEquals("IncomingProductDetails is not found, please check the IncomingProductDetails id again.", response.getErrors());
+
+
+        });
+    }
+
+    @Test
+    void deleteSuccessIncomingProductDetailWithoutVariant() throws Exception {
+        Supplier supplier = supplierRepository.findById(supplierId).orElse(null);
+        assertNotNull(supplier);
+
+        User user = userRepository.findById("admin_warehouse").orElse(null);
+        assertNotNull(user);
+
+
+        IncomingProduct incomingProduct = new IncomingProduct();
+        incomingProduct.setDateIn(LocalDate.parse("2025-06-30"));
+        incomingProduct.setTotalProducts(1);
+        incomingProduct.setSupplier(supplier);
+        incomingProduct.setUser(user);
+        incomingProductRepository.save(incomingProduct);
+
+        IncomingProductDetail incomingProductDetail = new IncomingProductDetail();
+        incomingProductDetail.setPricePerUnit(1000);
+        incomingProductDetail.setQuantity(10);
+        incomingProductDetail.setTotalPrice(1000 * 10);
+        incomingProductDetail.setProduct(productWithoutVariant);
+        incomingProductDetail.setIncomingProduct(incomingProduct);
+        incomingProductDetail.setHasVariant(false);
+        incomingProductDetailRepository.save(incomingProductDetail);
+
+        mockMvc.perform(
+                delete("/api/incoming-product-details/" + incomingProductDetail.getId())
+                        .header("Authorization", authorizationToken)
+                        .accept(MediaType.APPLICATION_JSON)
+        ).andExpectAll(
+                status().isOk()
+        ).andExpect(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getErrors());
+            assertNull(response.getPaging());
+            assertNotNull(response.getData());
+            assertEquals("OK", response.getData());
+
+            IncomingProductDetail deletedIncomingProductDetail = incomingProductDetailRepository.findById(incomingProductDetail.getId()).orElse(null);
+            assertNull(deletedIncomingProductDetail);
+
+            Product productUpdated = productRepository.findById(productWithoutVariant.getId()).orElse(null);
+            assertNotNull(productUpdated);
+            assertEquals(productWithoutVariant.getStock() - incomingProductDetail.getQuantity(), productUpdated.getStock());
+
+            IncomingProduct incomingProductUpdated = incomingProductRepository.findById(incomingProduct.getId()).orElse(null);
+            assertNotNull(incomingProductUpdated);
+            assertEquals(incomingProduct.getTotalProducts() - 1, incomingProductUpdated.getTotalProducts());
+        });
+    }
+
+    @Test
+    void deleteSuccessIncomingProductDetailWithVariant() throws Exception {
+        Supplier supplier = supplierRepository.findById(supplierId).orElse(null);
+        assertNotNull(supplier);
+
+        User user = userRepository.findById("admin_warehouse").orElse(null);
+        assertNotNull(user);
+
+
+        IncomingProduct incomingProduct = new IncomingProduct();
+        incomingProduct.setDateIn(LocalDate.parse("2025-06-30"));
+        incomingProduct.setTotalProducts(1);
+        incomingProduct.setSupplier(supplier);
+        incomingProduct.setUser(user);
+        incomingProductRepository.save(incomingProduct);
+
+        IncomingProductDetail incomingProductDetail = new IncomingProductDetail();
+        incomingProductDetail.setProduct(productWithVariant);
+        incomingProductDetail.setIncomingProduct(incomingProduct);
+        incomingProductDetail.setHasVariant(true);
+        incomingProductDetail.setTotalVariantQuantity(10);
+        incomingProductDetail.setTotalVariantPrice(1000 * 10);
+        incomingProductDetailRepository.save(incomingProductDetail);
+
+        IncomingProductVariantDetail incomingProductVariantDetail = new IncomingProductVariantDetail();
+        incomingProductVariantDetail.setIncomingProductDetail(incomingProductDetail);
+        incomingProductVariantDetail.setProductVariant(productVariant);
+        incomingProductVariantDetail.setPricePerUnit(1000);
+        incomingProductVariantDetail.setQuantity(10);
+        incomingProductVariantDetail.setTotalPrice(1000 * 10);
+        incomingProductVariantDetailRepository.save(incomingProductVariantDetail);
+
+        mockMvc.perform(
+                delete("/api/incoming-product-details/" + incomingProductDetail.getId())
+                        .header("Authorization", authorizationToken)
+                        .accept(MediaType.APPLICATION_JSON)
+        ).andExpectAll(
+                status().isOk()
+        ).andExpect(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getErrors());
+            assertNull(response.getPaging());
+            assertNotNull(response.getData());
+            assertEquals("OK", response.getData());
+
+            ProductVariant productVariantUpdated = productVariantRepository.findById(productVariant.getId()).orElse(null);
+            assertNotNull(productVariantUpdated);
+            assertEquals(productVariant.getStock() - incomingProductVariantDetail.getQuantity(), productVariantUpdated.getStock());
+
+            IncomingProduct incomingProductUpdated = incomingProductRepository.findById(incomingProduct.getId()).orElse(null);
+            assertNotNull(incomingProductUpdated);
+            assertEquals(incomingProduct.getTotalProducts() - 1, incomingProductUpdated.getTotalProducts());
+
+            IncomingProductDetail deletedIncomingProductDetail = incomingProductDetailRepository.findById(incomingProductDetail.getId()).orElse(null);
+            assertNull(deletedIncomingProductDetail);
+
+            IncomingProductVariantDetail deletedIncomingProductVariantDetail = incomingProductVariantDetailRepository.findById(incomingProductVariantDetail.getId()).orElse(null);
+            assertNull(deletedIncomingProductVariantDetail);
+
+
+        });
+    }
+
+    @Test
+    void deleteFailedIncomingProductIdIsNotNumber() throws Exception {
+        mockMvc.perform(
+                delete("/api/incoming-products/abc")
+                        .header("Authorization", authorizationToken)
+                        .accept(MediaType.APPLICATION_JSON)
+        ).andExpectAll(
+                status().isBadRequest()
+        ).andExpect(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getData());
+            assertNull(response.getPaging());
+            assertNotNull(response.getErrors());
+            assertEquals("incomingProductId type data is wrong.", response.getErrors());
+        });
+    }
+
+    @Test
+    void deleteFailedIncomingProductIsNotFound() throws Exception {
+        mockMvc.perform(
+                delete("/api/incoming-products/123")
+                        .header("Authorization", authorizationToken)
+                        .accept(MediaType.APPLICATION_JSON)
+        ).andExpectAll(
+                status().isNotFound()
+        ).andExpect(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getData());
+            assertNull(response.getPaging());
+            assertNotNull(response.getErrors());
+            assertEquals("IncomingProduct is not found. Please check IncomingProduct id again.", response.getErrors());
+        });
+    }
+
+    @Test
+    void deleteSuccessIncomingProductWithoutVariant() throws Exception {
+        Supplier supplier = supplierRepository.findById(supplierId).orElse(null);
+        assertNotNull(supplier);
+
+        User user = userRepository.findById("admin_warehouse").orElse(null);
+        assertNotNull(user);
+
+
+        IncomingProduct incomingProduct = new IncomingProduct();
+        incomingProduct.setDateIn(LocalDate.parse("2025-06-30"));
+        incomingProduct.setTotalProducts(1);
+        incomingProduct.setSupplier(supplier);
+        incomingProduct.setUser(user);
+        incomingProductRepository.save(incomingProduct);
+
+        IncomingProductDetail incomingProductDetail = new IncomingProductDetail();
+        incomingProductDetail.setPricePerUnit(1000);
+        incomingProductDetail.setQuantity(10);
+        incomingProductDetail.setTotalPrice(1000 * 10);
+        incomingProductDetail.setProduct(productWithoutVariant);
+        incomingProductDetail.setIncomingProduct(incomingProduct);
+        incomingProductDetail.setHasVariant(false);
+        incomingProductDetailRepository.save(incomingProductDetail);
+
+        mockMvc.perform(
+                delete("/api/incoming-products/" + incomingProduct.getId())
+                        .header("Authorization", authorizationToken)
+                        .accept(MediaType.APPLICATION_JSON)
+        ).andExpectAll(
+                status().isOk()
+        ).andExpect(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getErrors());
+            assertNull(response.getPaging());
+            assertNotNull(response.getData());
+            assertEquals("OK", response.getData());
+
+            IncomingProduct deletedIncomingProduct = incomingProductRepository.findById(incomingProduct.getId()).orElse(null);
+            assertNull(deletedIncomingProduct);
+
+            IncomingProductDetail deletedIncomingProductDetail = incomingProductDetailRepository.findById(incomingProductDetail.getId()).orElse(null);
+            assertNull(deletedIncomingProductDetail);
+
+
+            Product productUpdated = productRepository.findById(productWithoutVariant.getId()).orElse(null);
+            assertNotNull(productUpdated);
+            assertEquals(productWithoutVariant.getStock() - incomingProductDetail.getQuantity(), productUpdated.getStock());
+
+        });
+    }
+
+    @Test
+    void deleteSuccessIncomingProductWithVariant() throws Exception {
+        Supplier supplier = supplierRepository.findById(supplierId).orElse(null);
+        assertNotNull(supplier);
+
+        User user = userRepository.findById("admin_warehouse").orElse(null);
+        assertNotNull(user);
+
+
+        IncomingProduct incomingProduct = new IncomingProduct();
+        incomingProduct.setDateIn(LocalDate.parse("2025-06-30"));
+        incomingProduct.setTotalProducts(1);
+        incomingProduct.setSupplier(supplier);
+        incomingProduct.setUser(user);
+        incomingProductRepository.save(incomingProduct);
+
+        IncomingProductDetail incomingProductDetail = new IncomingProductDetail();
+        incomingProductDetail.setProduct(productWithVariant);
+        incomingProductDetail.setIncomingProduct(incomingProduct);
+        incomingProductDetail.setHasVariant(true);
+        incomingProductDetail.setTotalVariantQuantity(10);
+        incomingProductDetail.setTotalVariantPrice(1000 * 10);
+        incomingProductDetailRepository.save(incomingProductDetail);
+
+        IncomingProductVariantDetail incomingProductVariantDetail = new IncomingProductVariantDetail();
+        incomingProductVariantDetail.setIncomingProductDetail(incomingProductDetail);
+        incomingProductVariantDetail.setProductVariant(productVariant);
+        incomingProductVariantDetail.setPricePerUnit(1000);
+        incomingProductVariantDetail.setQuantity(10);
+        incomingProductVariantDetail.setTotalPrice(1000 * 10);
+        incomingProductVariantDetailRepository.save(incomingProductVariantDetail);
+
+        mockMvc.perform(
+                delete("/api/incoming-products/" + incomingProduct.getId())
+                        .header("Authorization", authorizationToken)
+                        .accept(MediaType.APPLICATION_JSON)
+        ).andExpectAll(
+                status().isOk()
+        ).andExpect(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getErrors());
+            assertNull(response.getPaging());
+            assertNotNull(response.getData());
+            assertEquals("OK", response.getData());
+
+            ProductVariant productVariantUpdated = productVariantRepository.findById(productVariant.getId()).orElse(null);
+            assertNotNull(productVariantUpdated);
+            assertEquals(productVariant.getStock() - incomingProductVariantDetail.getQuantity(), productVariantUpdated.getStock());
+
+            IncomingProduct deletedIncomingProduct = incomingProductRepository.findById(incomingProduct.getId()).orElse(null);
+            assertNull(deletedIncomingProduct);
+
+            IncomingProductDetail deletedIncomingProductDetail = incomingProductDetailRepository.findById(incomingProductDetail.getId()).orElse(null);
+            assertNull(deletedIncomingProductDetail);
+
+            IncomingProductVariantDetail deletedIncomingProductVariantDetail = incomingProductVariantDetailRepository.findById(incomingProductVariantDetail.getId()).orElse(null);
+            assertNull(deletedIncomingProductVariantDetail);
+
+
+        });
+    }
+    @Test
+    void deleteSuccessIncomingProductWithMultipleIncomingProductDetail() throws Exception {
+        Supplier supplier = supplierRepository.findById(supplierId).orElse(null);
+        assertNotNull(supplier);
+
+        User user = userRepository.findById("admin_warehouse").orElse(null);
+        assertNotNull(user);
+
+
+        IncomingProduct incomingProduct = new IncomingProduct();
+        incomingProduct.setDateIn(LocalDate.parse("2025-06-30"));
+        incomingProduct.setTotalProducts(1);
+        incomingProduct.setSupplier(supplier);
+        incomingProduct.setUser(user);
+        incomingProductRepository.save(incomingProduct);
+
+        IncomingProductDetail incomingProductDetail = new IncomingProductDetail();
+        incomingProductDetail.setProduct(productWithVariant);
+        incomingProductDetail.setIncomingProduct(incomingProduct);
+        incomingProductDetail.setHasVariant(true);
+        incomingProductDetail.setTotalVariantQuantity(10);
+        incomingProductDetail.setTotalVariantPrice(1000 * 10);
+        incomingProductDetailRepository.save(incomingProductDetail);
+
+        IncomingProductVariantDetail incomingProductVariantDetail = new IncomingProductVariantDetail();
+        incomingProductVariantDetail.setIncomingProductDetail(incomingProductDetail);
+        incomingProductVariantDetail.setProductVariant(productVariant);
+        incomingProductVariantDetail.setPricePerUnit(1000);
+        incomingProductVariantDetail.setQuantity(10);
+        incomingProductVariantDetail.setTotalPrice(1000 * 10);
+        incomingProductVariantDetailRepository.save(incomingProductVariantDetail);
+
+        IncomingProductDetail incomingProductDetail2 = new IncomingProductDetail();
+        incomingProductDetail2.setPricePerUnit(1000);
+        incomingProductDetail2.setQuantity(15);
+        incomingProductDetail2.setTotalPrice(1000 * 10);
+        incomingProductDetail2.setProduct(productWithoutVariant);
+        incomingProductDetail2.setIncomingProduct(incomingProduct);
+        incomingProductDetail2.setHasVariant(false);
+        incomingProductDetailRepository.save(incomingProductDetail2);
+
+
+        mockMvc.perform(
+                delete("/api/incoming-products/" + incomingProduct.getId())
+                        .header("Authorization", authorizationToken)
+                        .accept(MediaType.APPLICATION_JSON)
+        ).andExpectAll(
+                status().isOk()
+        ).andExpect(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getErrors());
+            assertNull(response.getPaging());
+            assertNotNull(response.getData());
+            assertEquals("OK", response.getData());
+
+            ProductVariant productVariantUpdated = productVariantRepository.findById(productVariant.getId()).orElse(null);
+            assertNotNull(productVariantUpdated);
+            assertEquals(productVariant.getStock() - incomingProductVariantDetail.getQuantity(), productVariantUpdated.getStock());
+
+            IncomingProduct deletedIncomingProduct = incomingProductRepository.findById(incomingProduct.getId()).orElse(null);
+            assertNull(deletedIncomingProduct);
+
+            IncomingProductDetail deletedIncomingProductDetail = incomingProductDetailRepository.findById(incomingProductDetail.getId()).orElse(null);
+            assertNull(deletedIncomingProductDetail);
+
+            IncomingProductVariantDetail deletedIncomingProductVariantDetail = incomingProductVariantDetailRepository.findById(incomingProductVariantDetail.getId()).orElse(null);
+            assertNull(deletedIncomingProductVariantDetail);
+
+            // incomingProductDetail without variant
+            IncomingProductDetail deletedIncomingProductDetail2 = incomingProductDetailRepository.findById(incomingProductDetail2.getId()).orElse(null);
+            assertNull(deletedIncomingProductDetail2);
+
+            Product productUpdated = productRepository.findById(productWithoutVariant.getId()).orElse(null);
+            assertNotNull(productUpdated);
+            assertEquals(productWithoutVariant.getStock() - incomingProductDetail2.getQuantity(), productUpdated.getStock());
+        });
+    }
 }

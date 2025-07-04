@@ -128,7 +128,7 @@ CREATE TABLE products (
     id INT NOT NULL AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
     description TEXT NOT NULL,
-    has_variant BOOLEAN,
+    has_variant BOOLEAN  ,
     stock SMALLINT,
     price INT,
     category_id INT NOT NULL,
@@ -141,6 +141,9 @@ ALTER TABLE products
 
 ALTER TABLE products
     ADD COLUMN updated_at TIMESTAMP;
+
+ALTER TABLE products
+    MODIFY has_variant BOOLEAN NOT NULL ;
 
 ALTER TABLE products
     ADD CONSTRAINT fk_category_product
