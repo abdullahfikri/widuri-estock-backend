@@ -54,17 +54,9 @@ public class IncomingProductCreateRequest {
         @Positive
         private Integer quantity;
 
-//        @Positive
-//        private Integer totalPrice;
 
         @NotNull
         private Boolean hasVariant;
-
-        @Positive
-        private Integer totalVariantQuantity;
-
-//        @Positive
-//        private Integer totalVariantPrice;
 
         @Valid
         private List<IncomingProductVariantDetail> incomingProductVariantDetails;
@@ -86,9 +78,5 @@ public class IncomingProductCreateRequest {
         @NotNull
         @Positive
         private Integer quantity;
-
-//        @NotNull
-//        @Positive
-//        private Integer totalPrice;
     }
 }

@@ -96,6 +96,19 @@ public class SecurityConfig {
 
                         // incoming-product api
                         .requestMatchers(HttpMethod.POST, "/api/incoming-products").hasRole(Role.ADMIN_WAREHOUSE.name())
+                        .requestMatchers(HttpMethod.GET, "/api/incoming-products").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/incoming-products/*").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/incoming-products/*").hasRole(Role.ADMIN_WAREHOUSE.name())
+
+                        // incoming-product-detail api
+                        .requestMatchers(HttpMethod.POST, "/api/incoming-products/*/incoming-product-details").hasRole(Role.ADMIN_WAREHOUSE.name())
+
+                        // incoming-product-variant-detail api
+                        .requestMatchers(HttpMethod.POST, "/api/incoming-product-details/*/incoming-product-variant-detail").hasRole(Role.ADMIN_WAREHOUSE.name())
+
+                        .requestMatchers(HttpMethod.DELETE, "/api/incoming-products/*").hasRole(Role.ADMIN_WAREHOUSE.name())
+                        .requestMatchers(HttpMethod.DELETE, "/api/incoming-product-details/*").hasRole(Role.ADMIN_WAREHOUSE.name())
+                        .requestMatchers(HttpMethod.DELETE, "/api/incoming-product-variant-details/*").hasRole(Role.ADMIN_WAREHOUSE.name())
                         .anyRequest().denyAll()
                 )
                 .exceptionHandling(handler-> handler.authenticationEntryPoint(entryPoint)

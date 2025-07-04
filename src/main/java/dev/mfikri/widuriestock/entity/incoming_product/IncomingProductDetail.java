@@ -57,6 +57,8 @@ public class IncomingProductDetail {
     @JoinColumn(name = "product_id", referencedColumnName = "id")
     private Product product;
 
-    @OneToMany(mappedBy = "incomingProductDetail", cascade = CascadeType.REMOVE)
+    @OneToMany(mappedBy = "incomingProductDetail", cascade = CascadeType.REMOVE, fetch = FetchType.EAGER)
     private List<IncomingProductVariantDetail> incomingProductVariantDetails;
+
+
 }
