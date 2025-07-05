@@ -1,0 +1,1434 @@
+openapi: 3.0.0
+info:
+  title: Incoming Product API Spesification
+  description: Incoming Product API Spesification
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080/api'
+paths:
+  /incoming-products:
+    post:
+      tags:
+        - "IncomingProduct"
+      summary: "Create Incoming Product"
+      parameters:
+        - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IncomingProducts"
+            example:
+              dateIn: "2025-11-25-14:32"
+              supplierId: 3221
+              totalProducts: 2
+              note: "Product is on good condition..."
+              incomingProductDetails:
+                - productId: 3451
+                  pricePerUnit: 120000
+                  quantity: 25
+                  hasVariant: false
+                - productId: 1234
+                  hasVariant: true
+                  incomingProductVariantDetails:
+                    - variantId: 321
+                      pricePerUnit: 10500
+                      quantity: 25
+                    - variantId: 322
+                      pricePerUnit: 10500
+                      quantity: 10
+      responses:
+        201:
+          description: "Success create Incoming Product record."
+          content: 
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IncomingProductsResponse"
+              examples:
+                IncomingProducts:
+                  $ref: "#/components/examples/IncomingProductsResponse"
+        400:
+          description: "Bad Request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneralErrorSchema"
+              examples:
+                ValidationBadRequest:
+                  value:
+                    errors: "date must not blank, supplierId must not blank..."
+                ProductDuplicate:
+                  value:
+                    errors: "'Product id' must not duplicate in one IncomingProduct."
+                ProductVariantDuplicate:
+                  value:
+                    errors: "ProductVariants id must not duplicate in a single ProductVariantDetails."
+                Send pricePerUnit or quantity when hasVariant true:
+                  value:
+                    errors: "incomingProductDetails 'pricePerUnit', and 'quantity' properties must not send when 'hasVariant' is true."
+                Not send IncomingProductVariantDetails when hasVariant true:
+                  value:
+                    errors: "incomingProductDetails 'IncomingProductVariantDetails' properties must not null when 'hasVariant' is true."
+                Not send pricePerUnit or quantity when hasVariant false:
+                  value:
+                    errors: "incomingProductDetails 'pricePerUnit', and 'quantity' properties must not null when 'hasVariant' is false."
+                Send IncomingProductVariantDetails When HasVariantFalse:
+                  value:
+                    errors: "incomingProductDetails 'IncomingProductVariantDetails' properties must not send when 'hasVariant' is false."
+
+
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        404:
+          description: "Not Found Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneralErrorSchema"
+              examples:
+                UserNotFound:
+                  value:
+                    errors: "User is not found."
+                ProductNotFound:
+                  value:
+                    errors: "Some of 'products' is not found, please check the productId again."
+                ProductVariantNotFound:
+                  value:
+                    errors: "Some of ProductVariant is not found, please check ProductVariant id again."
+                ProductVariantNotFound2:
+                  value:
+                    errors: "ProductVariant with id 123 is not found, please check ProductVariant id again."
+                SupplierNotFound:
+                  value:
+                    errors: "Supplier is not found."
+        409:
+          description: "Product variant is not from current product."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneralErrorSchema"
+              example:
+                errors: "ProductVariant with id 3231 is not ProductVariant for Product with id 123."
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+    get:
+      tags:
+        - "IncomingProduct"
+      summary: "Retrieve incoming product all records or within a specific date range"
+      parameters:
+        - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
+        - in: query
+          name: start_date
+          description: "Start of the date range"
+          schema:
+            type: string
+            format: "YYYY-MM-DD"
+          example: "2024-01-01"
+        - in: query
+          name: end_date
+          description: "End of the date range"
+          schema:
+            type: string
+            format: "YYYY-MM-DD"
+          example: "2024-05-01"
+        - in: query
+          name: page
+          description: "Current page number"
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: size
+          description: "Maximum data users per page"
+          schema:
+            type: integer
+            default: 10
+      responses:
+        200:
+          description: "Success retrieve history of incoming product record"
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    type: array
+                    items:
+                      properties:
+                        id:
+                          type: string
+                        dateIn:
+                          type: string
+                        supplier:
+                          properties:
+                            id:
+                              type: integer
+                            name:
+                              type: string
+                        username:
+                          type: string
+                        totalProducts:
+                          type: number
+                        note:
+                          type: string
+                  paging:
+                    type: object
+                    properties:
+                      currentPage:
+                        type: integer
+                      totalPage:
+                        type: integer
+                      size:
+                        type: integer
+              examples:
+                IncomingProducts:
+                  value:
+                    data:
+                      - id: 111
+                        date: "2025-11-25-20:00"
+                        supplier:
+                          id: 3221
+                          name: "PT Paus Reels"
+                        username: "johnbengkel"
+                        totalProducts: 2
+                        note: "Product is not in good condition."
+                      - id: 112
+                        date: "2025-11-27-20:00"
+                        supplier:
+                          id: 3225
+                          name: "PT Sejahtera Hooks"
+                        username: "johnbengkel"
+                        totalProducts: 10
+                        note: "Product is not in good condition."
+                    paging:
+                      currentPage: 0
+                      totalPage: 10
+                      sizePerPage: 10
+        400:
+          description: "Bad parameter request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneralErrorSchema"
+              examples:
+                Size is not number format:
+                  value:
+                    errors: "size type data is wrong."
+                Page is not number format:
+                  value:
+                    errors: "page type data is wrong."
+                Start_date is not date format:
+                  value:
+                    errors: "start_date type data is wrong."
+                End_date is not date format:
+                  value:
+                    errors: "end_date type data is wrong."
+                Start_date overlapping End_date:
+                  value:
+                    errors: "Start date 2025-01-10 must be before or equal to end date 2025-01-01."
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+  /incoming-products/{incomingProductId}:
+    get:
+      tags:
+        - "IncomingProduct"
+      summary: "Retrieve the incoming a product record"
+      parameters:
+        - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
+        - $ref: "#/components/parameters/INCOMING-PRODUCTS-ID"
+      responses:
+        200:
+          description: "Success retrieve the data"
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    $ref: "#/components/schemas/IncomingProductsResponse"
+              examples:
+                IncomingProducts:
+                  $ref: "#/components/examples/IncomingProductsResponse"
+        400:
+          description: "IncomingProduct Id bad request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneralErrorSchema"
+              examples:
+                IncomingProduct Id is null:
+                  value:
+                    errors: "Id must be not null."
+                IncomingProduct id is not number format:
+                  value:
+                    errors: "incomingProductId type data is wrong."
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        404:
+          $ref: "#/components/responses/IncomingProductsNotFoundResponse"
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+    put:
+      tags:
+        - "IncomingProduct"
+      summary: "Update the incoming product record"
+      parameters:
+        - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
+        - $ref: "#/components/parameters/INCOMING-PRODUCTS-ID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IncomingProducts"
+            examples:
+              Update Incoming Product:
+                value:
+                  id: 111
+                  dateIn: "2025-11-25"
+                  supplierId: 321
+                  totalProducts: 2
+                  note: "Product is not in good condition"
+                  updateReason: "Update quantity for incoming product 111. And add incoming product variant for incoming product 332"
+                  incomingProductDetails:
+                    - id: 111
+                      productId: 3451
+                      pricePerUnit: 120000
+                      quantity: 25
+                      hasVariant: false
+                      incomingProductVariantDetails: null
+                    - id: 332
+                      productId: 1234
+                      pricePerUnit: null
+                      quantity: null
+                      hasVariant: true
+                      incomingProductVariantDetails:
+                        - id: 501
+                          variantId: 321
+                          pricePerUnit: 10500
+                          quantity: 25
+                        - id: 502
+                          variantId: 322
+                          pricePerUnit: 10500
+                          quantity: 10
+                        - variantId: 323
+                          pricePerUnit: 10500
+                          quantity: 10
+      responses:
+        200:
+          description: "Success updated incoming product record"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IncomingProductsResponse"
+              examples:
+                Update Incoming Product:
+                  value:
+                    data:
+                      id: 111
+                      dateIn: "2025-11-25"
+                      supplierId: 321
+                      totalProducts: 2
+                      note: "Product is not in good condition"
+                      updateReason: "Update quantity for incoming product 111. And add incoming product variant for incoming product 332"
+                      incomingItemsDetail:
+                        - id: 111
+                          productId: 3451
+                          pricePerUnit: 120000
+                          quantity: 25
+                          totalPrice: 3000000
+                          hasVariant: false
+                          totalVariantQuantity: null,
+                          totalVariantPrice: null,
+                          incomingProductVariantDetails: null
+                        - id: 332
+                          productId: 1234
+                          pricePerUnit: null
+                          quantity: null
+                          totalPrice: null
+                          hasVariant: true
+                          totalVariantQuantity: 45
+                          totalVariantPrice: 472500
+                          incomingProductVariantDetails:
+                            - id: 501
+                              variantId: 321
+                              pricePerUnit: 10500
+                              quantity: 25
+                              totalPrice: 262500
+                            - id: 502
+                              variantId: 322
+                              pricePerUnit: 10500
+                              quantity: 10
+                              totalPrice: 105000
+                            - id: 601
+                              variantId: 323
+                              pricePerUnit: 10500
+                              quantity: 10
+                              totalPrice: 105000
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        400:
+          description: "Bad request update Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneralErrorSchema"
+              examples:
+                ValidationBadRequest:
+                  value:
+                    errors: "dateIn must not blank, supplierId must not blank..."
+                Total Product not match:
+                  value:
+                    errors: "Total products 'IncomingProduct' is wrong."
+                IncomingProductDetail not match:
+                  value:
+                    errors: "IncomingProductDetails size is not same. Please check the IncomingProductDetails again."
+                IncomingProductDetail is duplicate:
+                  value:
+                    errors: "IncomingProductDetail is duplicate, please check IncomingProductDetails again."
+                IncomingProductDetail hasVariant is not match:
+                  value:
+                    errors: "IncomingProductDetails 'id': 123 has status 'hasVariant': false, please input valid IncomingProductDetail hasVariant."
+                Send pricePerUnit or quantity when hasVariant true:
+                  value:
+                    errors: "incomingProductDetails 'pricePerUnit', and 'quantity' properties must not send when 'hasVariant' is true."
+                Not send IncomingProductVariantDetails when hasVariant true:
+                  value:
+                    errors: "incomingProductDetails 'IncomingProductVariantDetails' properties must not null when 'hasVariant' is true."
+                Not send pricePerUnit or quantity when hasVariant false:
+                  value:
+                    errors: "incomingProductDetails 'pricePerUnit', and 'quantity' properties must not null when 'hasVariant' is false."
+                Send IncomingProductVariantDetails When HasVariantFalse:
+                  value:
+                    errors: "incomingProductDetails 'IncomingProductVariantDetails' properties must not send when 'hasVariant' is false."
+                Product hasVariant is already change when this update occurs:
+                  value:
+                    errors: "Product id: 123 is already change hasVariant status, please delete and create new IncomingProductDetail for this IncomingProduct."
+                IncomingProductVariantDetails size is not match:
+                  value:
+                    errors: "IncomingProductVariantDetails size is not same. Please check the IncomingProductVariantDetails again."
+
+
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        404:
+          description: "Not Found Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneralErrorSchema"
+              examples:
+                IncomingProductNotFound:
+                  value:
+                    errors: "IncomingProduct is not found. Please check IncomingProduct id again."
+                SupplierNotFound:
+                  value:
+                    errors: "Supplier is not found."
+                UserNotFound:
+                  value:
+                    errors: "User is not found."
+                IncomingProductDetailNotFound:
+                  value:
+                    errors: "IncomingProductDetail is not found, please check IncomingProductDetail id again."
+                Product id in IncomingProductDetail is wrong:
+                  value:
+                    errors: "Product id: 123 is wrong, please check Product id again."
+                IncomingProductVariantDetailNotFound:
+                  value:
+                    errors: "IncomingProductVariantDetail is not found, please check IncomingProductVariantDetail id again."
+                ProductVariant id is IncomingProductVariantDetail is wrong:
+                  value:
+                    errors: "ProductVariant id: 123 is wrong, please check ProductVariant id again."
+
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+    delete:
+      tags:
+        - "IncomingProduct delete"
+      parameters:
+        - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
+        - $ref: "#/components/parameters/INCOMING-PRODUCTS-ID"
+      responses:
+        200:
+          $ref: "#/components/responses/GeneralSuccessResponse"
+        400:
+          description: "IncomingProduct Id bad request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneralErrorSchema"
+              examples:
+                IncomingProduct Id is null:
+                  value:
+                    errors: "Id must be not null."
+                IncomingProduct id is not number format:
+                  value:
+                    errors: "incomingProductId type data is wrong."
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        404:
+          $ref: "#/components/responses/IncomingProductsNotFoundResponse"
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+  /incoming-products/{incomingProductId}/incoming-product-details:
+    post:
+      parameters:
+        - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
+        - $ref: "#/components/parameters/INCOMING-PRODUCTS-ID"
+      summary: "Create IncomingProductDetails"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                productId:
+                  type: integer
+                pricePerUnit:
+                  type: integer
+                quantity:
+                  type: integer
+                hasVariant:
+                  type: boolean
+                incomingProductVariantDetails:
+                  type: array
+                  items:
+                    properties:
+                      variantId:
+                        type: integer
+                      pricePerUnit:
+                        type: integer
+                      quantity:
+                        type: integer
+            examples:
+              Create IncomingProductDetail without Variant:
+                value:
+                  productId: 123
+                  pricePerUnit: 100200
+                  quantity: 10
+                  hasVariant: false
+              Create IncomingProductDetail with Variant:
+                value: 
+                  productId: 124
+                  hasVariant: true
+                  incomingProductVariantDetails:
+                    - variantId: 1111
+                      pricePerUnit: 5000
+                      quantity: 50
+                    - variantId: 1112
+                      pricePerUnit: 5500
+                      quantity: 40
+      responses:
+        201:
+          description: "Success create IncomingProductDetail"
+          content: 
+            application/json:
+              schema:
+                properties:
+                  data:
+                    properties: 
+                      id:
+                        type: integer
+                      product:
+                        properties: 
+                          id: 
+                            type: integer
+                          name:
+                            type: string
+                      pricePerUnit:
+                        type: integer
+                      quantity:
+                        type: integer
+                      totalPrice:
+                        type: integer
+                      hasVariant:
+                        type: boolean
+                      totalVariantQuantity:
+                        type: integer
+                      totalVariantPrice:
+                        type: integer
+                      incomingProductVariantDetails:
+                        type: array
+                        items: 
+                          properties: 
+                            id:
+                              type: integer
+                            variant:
+                              properties:
+                                id:
+                                  type: integer
+                                sku:
+                                  type: string
+                            pricePerUnit:
+                              type: integer
+                            quantity:
+                              type: integer
+                            totalPrice:
+                              type: integer
+                                  
+              examples:
+                IncomingProduct without variant:
+                  value: 
+                    data:
+                      id: 123
+                      product:
+                        id: 591
+                        name: "Product test 123"
+                      pricePerUnit: 5000
+                      quantity: 50
+                      totalPrice: 250000
+                      hasVariant: false
+                      totalVariantQuantity: null
+                      totalVariantPrice: null
+                      incomingProductVariantDetails: null
+                IncomingProduct with variant:
+                  value:
+                    data:
+                      id: 123
+                      product:
+                        id: 591
+                        name: "Product test 123"
+                      pricePerUnit: null
+                      quantity: null
+                      totalPrice: null
+                      hasVariant: false
+                      totalVariantQuantity: 90
+                      totalVariantPrice: 100000000
+                      incomingProductVariantDetails: 
+                        - id: 1512
+                          variant:
+                            id: 120
+                            sku: "prduct-test-black-123"
+                          pricePerUnit: 5000
+                          quantity: 50
+                          totalPrice: 2500000
+                        - id: 1512
+                          variant:
+                            id: 120
+                            sku: "prduct-test-black-123"
+                          pricePerUnit: 5000
+                          quantity: 50
+                          totalPrice: 2500000
+                    
+        400:
+          description: "Bad request error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneralErrorSchema"
+              examples:
+                IncomingProductId parameter is not number:
+                  value:
+                    errors: "incomingProductId type data is wrong."
+                ValidationBadRequest:
+                  value:
+                    errors: "hasVariant must not null, id must not null..."
+                hasVariant conflict:
+                  value:
+                    errors: "Product id: 1232 hasVariant is false, please check hasVariant again."
+                ProductVariants id duplicate:
+                  value:
+                    errors: "ProductVariants id must not duplicate in a single ProductVariantDetails."
+
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        404:
+          description: "Not Found error"
+          content: 
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/GeneralErrorSchema"
+              examples:
+                IncomingProduct not found:
+                  value:
+                    errors: "IncomingProduct is not found. Please check IncomingProduct id again."
+                Product not found:
+                  value:
+                    errors: "Product is not found. Please check Product id again."
+                ProductVariant not found:
+                  value:
+                    errors: "ProductVariant with id 1233 is not found. please check ProductVariant id again."
+        409:
+          description: "Conflict error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneralErrorSchema"
+              examples:
+                ProductVariant is not belongs to Product:
+                  value:
+                    errors: "ProductVariant with id 1231 is not product variant for Product with id 123."
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+        
+  /incoming-product-details/{incomingProductDetailId}/incoming-product-variant-detail:
+    post:
+      summary: "Create IncomingProductVariantDetail"
+      parameters:
+        - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
+        - name: "incomingProductDetailId"
+          in: path
+          required: true
+          schema:
+            type: string
+            format: number
+            example: 1321
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                variantId:
+                  type: integer
+                pricePerUnit:
+                  type: integer
+                quantity:
+                  type: integer
+            example:
+              variantId: 123
+              pricePerUnit: 50500
+              quantity: 50
+      responses:
+        201:
+          description: "Create IncomingProductDetail"
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    properties:
+                      id:
+                        type: integer
+                      variant:
+                        properties:
+                          id:
+                            type: integer
+                          sku:
+                            type: string
+                      pricePerUnit:
+                        type: integer
+                      quantity:
+                        type: integer
+                      totalPrice:
+                        type: integer
+              example:
+                data:
+                  id: 1233
+                  variant:
+                    id: 11
+                    sku: "product-test-black"
+                  pricePerUnit: 50500
+                  quantity: 50
+                  totalPrice: 275000
+        400:
+          description: "Bad request error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneralErrorSchema"
+              examples:
+                IncomingProductId parameter is not number:
+                  value:
+                    errors: "incomingProductDetailId type data is wrong."
+                ValidationBadRequest:
+                  value:
+                    errors: "hasVariant must not null, id must not null..."
+                hasVariant conflict:
+                  value:
+                    errors: "Product id: 1232 hasVariant is false, please check hasVariant again."
+                ProductVariants id duplicate:
+                  value:
+                    errors: "ProductVariants id must not duplicate in a single ProductVariantDetails."
+                IncomingProductVariant hasVariant is false:
+                  value:
+                    errors: "Failed to create IncomingProductVariantDetail, since IncomingProductDetail hasVariant is false."
+                ProductVariant already present on current IncomingProductDetail:
+                  value:
+                    errors: "ProductVariant is already present in the IcomingProductDetail, please check ProductVarian id again."
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        404:
+          description: "Not Found error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneralErrorSchema"
+              examples:
+                IncomingProductDetail not found:
+                  value:
+                    errors: "IncomingProductDetail is not found, please check IncomingProductDetail id again."
+                ProductVariant not found:
+                  value:
+                    errors: "ProductVariant is not found, please check ProductVariant id again."
+        409:
+          description: "Conflict error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneralErrorSchema"
+              examples:
+                ProductVariant is not belongs to Product:
+                  value:
+                    errors: "ProductVariant with id 1231 is not product variant for Product with id 123."
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+
+  /incoming-product-details/{incomingProductDetailId}:
+    delete:
+      tags:
+        - "IncomingProduct delete"
+      parameters:
+        - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
+        - name: "incomingProductDetailId"
+          in: path
+          required: true
+          schema:
+            type: string
+            format: number
+            example: 1321
+      responses:
+        200:
+          $ref: "#/components/responses/GeneralSuccessResponse"
+        400:
+          description: "IncomingProduct Id bad request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneralErrorSchema"
+              examples:
+                IncomingProduct Id is null:
+                  value:
+                    errors: "Id must be not null."
+                IncomingProduct id is not number format:
+                  value:
+                    errors: "incomingProductDetailId type data is wrong."
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        404:
+          description: "Incoming Product Variant is not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneralErrorSchema"
+              example:
+                errors: "IncomingProductDetails is not found, please check the IncomingProductDetails id again."
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+  /incoming-product-variant-details/{incomingProductVariantDetailId}:
+    delete:
+      tags:
+        - "IncomingProduct delete"
+      parameters:
+        - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
+        - name: "incomingProductVariantDetailId"
+          in: path
+          required: true
+          schema:
+            type: string
+            format: number
+            example: 1321
+      responses:
+        200:
+          $ref: "#/components/responses/GeneralSuccessResponse"
+        400:
+          description: "IncomingProduct Id bad request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneralErrorSchema"
+              examples:
+                IncomingProduct Id is null:
+                  value:
+                    errors: "Id must be not null."
+                IncomingProduct id is not number format:
+                  value:
+                    errors: "incomingProductVariantDetailId type data is wrong."
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        404:
+          description: "Incoming Product Variant is not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneralErrorSchema"
+              example:
+                errors: "IncomingProductVariantDetails is not found, please check the IncomingProductVariantDetails id again."
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+
+
+  /suppliers:
+    post:
+      tags:
+        - "Suppliers"
+      summary: "Create a Supplier record"
+      parameters:
+        - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SupplierRequestSchema"
+            examples:
+              Supplier:
+                value:
+                  supplierName: "PT Indah Kait"
+                  phone: "62877721"
+                  email: "adminjohn@indah-kait.com"
+                  information: "Supplier for fishing hooks"
+                  address:
+                    street: "JL example"
+                    village: "example 123"
+                    district: "example district"
+                    city: "Jakarta"
+                    province: "DKI Jakarta"
+                    country: "Indonesia"
+                    postalCode: "12312EXAMPLE"
+      responses:
+        201:
+          description: "Success create a supplier record"
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    $ref: "#/components/schemas/SupplierResponseSchema"
+              examples:
+                Supplier:
+                  $ref: "#/components/examples/SupplierResponseExample"
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+    get:
+      tags:
+        - "Suppliers"
+      summary: "Retrieve the Supplier record"
+      parameters:
+        - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
+        - in: query
+          name: page
+          description: "Current page number"
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: size
+          description: "Maximum data users per page"
+          schema:
+            type: integer
+            default: 10
+      responses:
+        200:
+          description: "Success retrieve the supplier record"
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    type: array
+                    items:
+                      properties:
+                        id:
+                          type: integer
+                        supplierName:
+                          type: string
+                        phone:
+                          type: string
+                        email:
+                          type: string
+                        information:
+                          type: string
+                  paging:
+                    type: object
+                    properties:
+                      currentPage:
+                        type: integer
+                      totalPage:
+                        type: integer
+                      size:
+                        type: integer
+              example:
+                data:
+                  - id: 123
+                    supplierName: "PT Indah Kait"
+                    phone: "62877721"
+                    email: "adminjohn@indah-kait.com"
+                    information: "Supplier for fishing hooks"
+                  - id: 124
+                    supplierName: "PT Indah Kait 2"
+                    phone: "628777212"
+                    email: "adminjohn123@indah-kait.com"
+                    information: "Supplier for fishing rods"
+                paging:
+                  currentPage: 0
+                  totalPage: 10
+                  sizePerPage: 10
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+  /suppliers/{supplierId}:
+    put:
+      tags:
+        - "Suppliers"
+      summary: "Update a supplier record"
+      parameters:
+        - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
+        - $ref: "#/components/parameters/SUPPLIER-ID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SupplierRequestSchema"
+            examples:
+              Supplier:
+                value:
+                  supplierName: "PT Indah Kait"
+                  phone: "62877721"
+                  email: "adminjohn@indah-kait.com"
+                  information: "Supplier for fishing hooks"
+                  address:
+                    id: 123
+                    street: "JL example"
+                    village: "example 123"
+                    district: "example district"
+                    city: "Jakarta"
+                    province: "DKI Jakarta"
+                    country: "Indonesia"
+                    postalCode: "12312EXAMPLE"
+      responses:
+        200:
+          description: "Success update a supplier record"
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    $ref: "#/components/schemas/SupplierResponseSchema"
+              examples:
+                Supplier:
+                  $ref: "#/components/examples/SupplierResponseExample"
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        404:
+          $ref: "#/components/responses/SupplierNotFoundErrorResponse"
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+    get:
+      tags:
+        - "Suppliers"
+      summary: "Retrieve a supplier record"
+      parameters:
+        - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
+        - $ref: "#/components/parameters/SUPPLIER-ID"
+      responses:
+        200:
+          description: "Success retrieve a supplier detail record"
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    $ref: "#/components/schemas/SupplierResponseSchema"
+              examples:
+                Supplier:
+                  $ref: "#/components/examples/SupplierResponseExample"
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        404:
+          $ref: "#/components/responses/SupplierNotFoundErrorResponse"
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+    delete:
+      tags:
+        - "Suppliers"
+      summary: "Delete a supplier record"
+      parameters:
+        - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
+        - $ref: "#/components/parameters/SUPPLIER-ID"
+      responses:
+        200:
+          $ref: "#/components/responses/GeneralSuccessResponse"
+        401:
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        403:
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        404:
+          $ref: "#/components/responses/SupplierNotFoundErrorResponse"
+        500:
+          $ref: "#/components/responses/ServerErrorResponse"
+
+
+components:
+  schemas:
+    IncomingProducts:
+      properties:
+        id:
+          type: integer
+        dateIn:
+          type: string
+        supplierId:
+          type: integer
+        userUsername:
+          type: string
+        totalProducts:
+          type: integer
+        note:
+          type: string
+        incomingProductDetails:
+          type: array
+          items:
+            $ref: "#/components/schemas/IncomingProductDetails"
+    IncomingProductDetails:
+      properties:
+        id:
+          type: integer
+        productId:
+          type: integer
+        pricePerUnit:
+          type: integer
+        quantity:
+          type: integer
+        totalPrice:
+          type: integer
+        hasVariant:
+          type: boolean
+        totalVariantQuantity:
+          type: integer
+        totalVariantPrice:
+          type: integer
+        incomingProductVariantDetails:
+          type: array
+          items:
+            $ref: "#/components/schemas/IncomingProductVariantDetails"
+    IncomingProductVariantDetails:
+      properties:
+        id:
+          type: integer
+        variantId:
+          type: integer
+        pricePerUnit:
+          type: integer
+        quantity:
+          type: integer
+        totalPrice:
+          type: integer
+    # schema response
+    IncomingProductsResponse:
+      properties:
+        id:
+          type: integer
+        dateIn:
+          type: string
+        supplier:
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+        username:
+          type: string
+        totalProducts:
+          type: integer
+        note:
+          type: string
+        updateReason:
+          type: string
+        incomingProductDetails:
+          type: array
+          items:
+            $ref: "#/components/schemas/IncomingProductDetailsResponse"
+    IncomingProductDetailsResponse:
+      properties:
+        id:
+          type: integer
+        product:
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+        pricePerUnit:
+          type: integer
+        quantity:
+          type: integer
+        totalPrice:
+          type: integer
+        hasVariant:
+          type: boolean
+        totalVariantQuantity:
+          type: integer
+        totalVariantPrice:
+          type: integer
+        incomingProductVariantDetails:
+          type: array
+          items:
+            $ref: "#/components/schemas/IncomingProductVariantDetailsResponse"
+    IncomingProductVariantDetailsResponse:
+      properties:
+        id:
+          type: integer
+        variant:
+          properties:
+            id:
+              type: integer
+            sku:
+              type: string
+        pricePerUnit:
+          type: integer
+        quantity:
+          type: integer
+        totalPrice:
+          type: integer
+
+    SupplierRequestSchema:
+      properties:
+        supplierName:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        information:
+          type: string
+        addresses:
+          items:
+            properties:
+              street:
+                type: string
+              village:
+                type: string
+              district:
+                type: string
+              city:
+                type: string
+              province:
+                type: string
+              postalCode:
+                type: string
+    SupplierResponseSchema:
+      properties:
+        id:
+          type: integer
+        supplierName:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        information:
+          type: string
+        addresses:
+          items:
+            properties:
+              id:
+                type: integer
+              street:
+                type: string
+              village:
+                type: string
+              district:
+                type: string
+              city:
+                type: string
+              province:
+                type: string
+              postalCode:
+                type: string
+    GeneralErrorSchema:
+      type: object
+      properties:
+        errors:
+          type: string
+  parameters:
+    AUTHORIZATION-TOKEN:
+      name: "Authorization"
+      in: "header"
+      required: true
+      description: "auth token"
+      schema:
+        type: string
+      example: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
+    INCOMING-PRODUCTS-ID:
+      name: "incomingProductsId"
+      in: path
+      required: true
+      schema:
+        type: string
+        format: number
+        example: 1321
+    SUPPLIER-ID:
+      name: "supplierId"
+      in: path
+      required: true
+      schema:
+        type: string
+        format: number
+        example: 1232
+  examples:
+    IncomingProductsResponse:
+      value:
+        data:
+          id: 5512
+          dateIn: "2025-11-25-14:32"
+          supplier:
+            id: 3221
+            name: "PT Timah Nusantara"
+          username: "johnbengkel"
+          totalProducts: 2
+          note: "Product is on good condition..."
+          incomingProductDetails:
+            - id: 331
+              product:
+                id: 3451
+                name: "Joran Pancing FIBER 210-CM"
+              pricePerUnit: 120000
+              quantity: 25
+              totalPrice: 3000000
+              hasVariant: false
+              totalVariantQuantity: null
+              totalVariantPrice: null
+              incomingProductVariantDetails: null
+            - id: 332
+              product:
+                id: 1234
+                name: "Mata Kail Daichi"
+              pricePerUnit: null
+              quantity: null
+              totalPrice: null
+              hasVariant: true
+              totalVariantQuantity: 35
+              totalVariantPrice: 367500
+              incomingProductVariantDetails:
+                - id: 501
+                  variant:
+                    id: 321
+                    sku: "mata-kail-daichi-hitam-10"
+                  pricePerUnit: 10500
+                  quantity: 25
+                  totalPrice: 262500
+                - id: 502
+                  variant:
+                    id: 322
+                    sku: "mata-kail-daichi-hitam-11"
+                  pricePerUnit: 10500
+                  quantity: 10
+                  totalPrice: 105000
+    SupplierExample:
+      value:
+        supplierName: "PT Indah Kait"
+        phone: "62877721"
+        email: "adminjohn@indah-kait.com"
+        information: "Supplier for fishing hooks"
+        address:
+          street: "JL example"
+          village: "example 123"
+          district: "example district"
+          city: "Jakarta"
+          province: "DKI Jakarta"
+          postalCode: "12312EXAMPLE"
+    SupplierResponseExample:
+      value:
+        data:
+          id: 123
+          supplierName: "PT Indah Kait"
+          phone: "62877721"
+          email: "adminjohn@indah-kait.com"
+          information: "Supplier for fishing hooks"
+          address:
+            id: 190
+            street: "JL example"
+            village: "example 123"
+            district: "example district"
+            city: "Jakarta"
+            province: "DKI Jakarta"
+            country: "Indonesia"
+            postalCode: "12312EXAMPLE"
+  responses:
+    GeneralSuccessResponse:
+      description: "Success"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: string
+          example:
+            data: "OK"
+    BadRequestIncomingProductResponse:
+      description: "Bad Request"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/GeneralErrorSchema"
+          examples:
+            ValidationBadRequest:
+              value:
+                errors: "date must not blank, supplierId must not blank..."
+    UnauthenticatedErrorResponse:
+      description: "Unauthenticated request"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/GeneralErrorSchema"
+          example:
+            errors: "Unauthenticated request"
+    UnauthorizedErrorResponse:
+      description: "User Forbidden to make request to this endpoint"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/GeneralErrorSchema"
+          example:
+            errors: "Unauthorized request"
+    IncomingProductsNotFoundResponse:
+      description: "Incoming Product is not found"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/GeneralErrorSchema"
+          example:
+            errors: "IncomingProduct is not found. Please check IncomingProduct id again."
+    SupplierNotFoundErrorResponse:
+      description: "Not Found Error"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/GeneralErrorSchema"
+          examples:
+            SupplierNotFound:
+              value:
+                errors: "Supplier is not found."
+    ServerErrorResponse:
+      description: "Server error"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/GeneralErrorSchema"
+          example:
+            errors: "Server unavailable, try again later"

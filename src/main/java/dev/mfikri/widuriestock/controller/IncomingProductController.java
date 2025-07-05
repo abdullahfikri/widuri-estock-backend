@@ -96,6 +96,7 @@ public class IncomingProductController {
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE
     )
+    @ResponseStatus(HttpStatus.CREATED)
     public WebResponse<IncomingProductDetailResponse> createIncomingProductDetail(@PathVariable Integer incomingProductId,
                                                                                   @RequestBody IncomingProductDetailCreateRequest request
                                                                                ) {
@@ -111,6 +112,7 @@ public class IncomingProductController {
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE
     )
+    @ResponseStatus(HttpStatus.CREATED)
     public WebResponse<IncomingProductVariantDetailResponse> createIncomingProductVariantDetail(@PathVariable Integer incomingProductDetailId,
                                                                                   @RequestBody IncomingProductVariantDetailCreateRequest request
     ) {

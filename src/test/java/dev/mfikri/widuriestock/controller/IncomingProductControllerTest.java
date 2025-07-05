@@ -480,7 +480,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("'Product id': " + productWithoutVariant.getId() + " is not have variant, please input valid product and valid variant.", response.getErrors());
+            assertEquals("Product id: " + productWithoutVariant.getId() + " hasVariant is false, please check hasVariant again.", response.getErrors());
             log.info(response.getErrors());
         });
     }
@@ -522,7 +522,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("Some of product variant is not found, please check product variant id again.", response.getErrors());
+            assertEquals("Some of ProductVariant is not found, please check ProductVariant id again.", response.getErrors());
         });
     }
 
@@ -587,7 +587,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("'Product Variant' " + productVariant.getId() + " is not product variant for 'Product' " + productWithVariant.getId(), response.getErrors());
+            assertEquals("ProductVariant with id " + productVariant.getId() + " is not ProductVariant for Product with id " + productWithVariant.getId() + ".", response.getErrors());
         });
     }
 
@@ -1100,7 +1100,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("Incoming Product is not found. Please check Incoming Product id again.", response.getErrors());
+            assertEquals("IncomingProduct is not found. Please check IncomingProduct id again.", response.getErrors());
         });
     }
 
@@ -1771,7 +1771,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("Incoming Product is not found. Please check Incoming Product id again.", response.getErrors());
+            assertEquals("IncomingProduct is not found. Please check IncomingProduct id again.", response.getErrors());
         });
     }
 
@@ -2371,7 +2371,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("IncomingProductVariantDetails size is not same. Please check the ncomingProductVariantDetails again.", response.getErrors());
+            assertEquals("IncomingProductVariantDetails size is not same. Please check the IncomingProductVariantDetails again.", response.getErrors());
         });
     }
 
@@ -3628,7 +3628,7 @@ class IncomingProductControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request))
         ).andExpectAll(
-                status().isOk()
+                status().isCreated()
         ).andExpect(result -> {
             WebResponse<IncomingProductDetailResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
@@ -3695,7 +3695,7 @@ class IncomingProductControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request))
         ).andExpectAll(
-                status().isOk()
+                status().isCreated()
         ).andExpect(result -> {
             WebResponse<IncomingProductDetailResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
@@ -3783,7 +3783,7 @@ class IncomingProductControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request))
         ).andExpectAll(
-                status().isOk()
+                status().isCreated()
         ).andExpect(result -> {
             WebResponse<IncomingProductDetailResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
@@ -3836,7 +3836,7 @@ class IncomingProductControllerTest {
     @Test
     void createIncomingProductVariantDetailsFailedTokenNotSend() throws Exception {
         mockMvc.perform(
-                post("/incoming-product-details/123/incoming-product-variant-detail")
+                post("/api/incoming-product-details/123/incoming-product-variant-detail")
                         .accept(MediaType.APPLICATION_JSON)
         ).andExpectAll(
                 status().isUnauthorized()
@@ -3915,7 +3915,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("IncomngProductDetail is not found, please check IncomngProductDetail id again.", response.getErrors());
+            assertEquals("IncomingProductDetail is not found, please check IncomingProductDetail id again.", response.getErrors());
         });
     }
 
@@ -3962,7 +3962,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("Failed to create IncomingProductDetail, since IncomingProductDetail hasVariant is false.", response.getErrors());
+            assertEquals("Failed to create IncomingProductVariantDetail, since IncomingProductDetail hasVariant is false.", response.getErrors());
         });
     }
 
@@ -3985,7 +3985,7 @@ class IncomingProductControllerTest {
         IncomingProductDetail incomingProductDetail = new IncomingProductDetail();
         incomingProductDetail.setProduct(productWithVariant);
         incomingProductDetail.setIncomingProduct(incomingProduct);
-        incomingProductDetail.setHasVariant(false);
+        incomingProductDetail.setHasVariant(true);
         incomingProductDetailRepository.save(incomingProductDetail);
 
 
@@ -4103,7 +4103,7 @@ class IncomingProductControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request))
         ).andExpectAll(
-                status().isOk()
+                status().isCreated()
         ).andExpect(result -> {
             WebResponse<IncomingProductVariantDetailResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
