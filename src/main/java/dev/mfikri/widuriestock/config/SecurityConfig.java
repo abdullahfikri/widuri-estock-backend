@@ -34,6 +34,8 @@ import javax.crypto.SecretKey;
 @Configuration
 @EnableWebSecurity(debug = true)
 public class SecurityConfig {
+
+
     private final SecurityConfigProperties securityConfigProperties;
     private final UserDetailsService userDetailsService;
 
@@ -47,9 +49,16 @@ public class SecurityConfig {
         this.entryPoint = entryPoint;
         this.customAccessDeniedHandler = customAccessDeniedHandler;
     }
-
+    private static final String[] SWAGGER_WHITELIST = {
+            "/swagger-ui/**",
+            "/*.yaml",
+            "/api/v1/**",
+            "/v3/api-docs/swagger-config"
+    };
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
+
+
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(configurer -> configurer
@@ -57,6 +66,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests((authorize) -> authorize
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers("/api/auth/login").permitAll()
+                        .requestMatchers(SWAGGER_WHITELIST).permitAll()
                         .requestMatchers("/api/auth/refresh-token").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/users").hasRole("OWNER")
                         .requestMatchers(HttpMethod.GET, "/api/users").hasRole("OWNER")
