@@ -3628,7 +3628,7 @@ class IncomingProductControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request))
         ).andExpectAll(
-                status().isOk()
+                status().isCreated()
         ).andExpect(result -> {
             WebResponse<IncomingProductDetailResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
@@ -3695,7 +3695,7 @@ class IncomingProductControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request))
         ).andExpectAll(
-                status().isOk()
+                status().isCreated()
         ).andExpect(result -> {
             WebResponse<IncomingProductDetailResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
@@ -3783,7 +3783,7 @@ class IncomingProductControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request))
         ).andExpectAll(
-                status().isOk()
+                status().isCreated()
         ).andExpect(result -> {
             WebResponse<IncomingProductDetailResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
@@ -4103,7 +4103,7 @@ class IncomingProductControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request))
         ).andExpectAll(
-                status().isOk()
+                status().isCreated()
         ).andExpect(result -> {
             WebResponse<IncomingProductVariantDetailResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
