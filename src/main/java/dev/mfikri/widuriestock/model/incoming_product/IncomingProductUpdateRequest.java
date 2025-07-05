@@ -102,14 +102,6 @@ public class IncomingProductUpdateRequest {
         @NotNull
         @PositiveOrZero
         private Integer quantity;
-
-//        @NotNull
-//        @PositiveOrZero
-//        private Integer totalPrice;
-//
-//        @JsonIgnore
-//        @Null
-//        private Integer incomingProductDetailId;
     }
 
 }

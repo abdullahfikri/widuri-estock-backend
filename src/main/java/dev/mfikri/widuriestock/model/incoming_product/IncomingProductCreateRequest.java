@@ -54,7 +54,6 @@ public class IncomingProductCreateRequest {
         @Positive
         private Integer quantity;
 
-
         @NotNull
         private Boolean hasVariant;
 

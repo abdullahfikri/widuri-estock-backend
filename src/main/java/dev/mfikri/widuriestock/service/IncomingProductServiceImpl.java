@@ -187,7 +187,7 @@ public class IncomingProductServiceImpl implements IncomingProductService {
                         }
 
                         if (!Objects.equals(productVariant.getProduct().getId(), product.getId())) {
-                            throw new ResponseStatusException(HttpStatus.CONFLICT,"ProductVariant with id " + productVariant.getId() + " is not product variant for Product with id " + product.getId() + "." );
+                            throw new ResponseStatusException(HttpStatus.CONFLICT,"ProductVariant with id " + productVariant.getId() + " is not ProductVariant for Product with id " + product.getId() + "." );
                         }
 
                         IncomingProductVariantDetail incomingProductVariantDetailEntity = new IncomingProductVariantDetail();
@@ -681,10 +681,10 @@ public class IncomingProductServiceImpl implements IncomingProductService {
 
         IncomingProductDetail incomingProductDetail = incomingProductDetailRepository
                 .findById(request.getIncomingProductDetailId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "IncomngProductDetail is not found, please check IncomngProductDetail id again."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "IncomingProductDetail is not found, please check IncomingProductDetail id again."));
 
         if (!incomingProductDetail.getHasVariant()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Failed to create IncomingProductDetail, since IncomingProductDetail hasVariant is false.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Failed to create IncomingProductVariantDetail, since IncomingProductDetail hasVariant is false.");
         }
 
         ProductVariant productVariant = productVariantRepository.findById(request.getVariantId())
