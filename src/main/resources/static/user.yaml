@@ -21,6 +21,7 @@ paths:
              required:
                - username
                - password
+               - userAgent
              properties:
                username:
                  type: string
@@ -28,9 +29,12 @@ paths:
                password:
                  type: string
                  minLength: 8
+               userAgent:
+                 type: string
            example:
              username: admin
              password: admin
+             userAgent: Ubuntu - Mozilla Firefox
       responses:
         200:
           description: "Success Login"

@@ -67,9 +67,9 @@ class UserControllerTest {
 
         User user = new User();
         user.setUsername("owner");
-        user.setPassword("{bcrypt}" + BCrypt.hashpw("owner_password", BCrypt.gensalt()));
-        user.setFirstName("John Doe");
-        user.setPhone("+6283213121");
+        user.setPassword("{bcrypt}" + BCrypt.hashpw("owner123", BCrypt.gensalt()));
+        user.setFirstName("owner");
+        user.setPhone("+000000000");
         user.setRole("OWNER");
         userRepository.save(user);
 
@@ -598,9 +598,9 @@ class UserControllerTest {
             assertNotNull(response.getData());
 
             assertEquals("owner", response.getData().getUsername());
-            assertEquals("John Doe", response.getData().getFirstName());
+            assertEquals("owner", response.getData().getFirstName());
             assertNull(response.getData().getLastName());
-            assertEquals("+6283213121", response.getData().getPhone());
+            assertEquals("+000000000", response.getData().getPhone());
             assertEquals("OWNER", response.getData().getRole());
 
             assertTrue(userRepository.existsById(response.getData().getUsername()));

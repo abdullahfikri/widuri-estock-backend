@@ -32,7 +32,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import javax.crypto.SecretKey;
 
 @Configuration
-@EnableWebSecurity(debug = true)
+@EnableWebSecurity(debug = false)
 public class SecurityConfig {
 
 
@@ -52,7 +52,8 @@ public class SecurityConfig {
     private static final String[] SWAGGER_WHITELIST = {
             "/swagger-ui/**",
             "/*.yaml",
-            "/api/v1/**",
+            "/api/docs",
+            "/api/swagger-ui/**",
             "/v3/api-docs/swagger-config"
     };
     @Bean

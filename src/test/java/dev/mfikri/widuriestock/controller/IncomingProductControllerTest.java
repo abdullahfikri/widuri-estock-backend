@@ -146,6 +146,14 @@ class IncomingProductControllerTest {
         productVariantAttribute.setAttributeKey("color");
         productVariantAttribute.setAttributeValue("black");
         productVariantAttributeRepository.save(productVariantAttribute);
+
+        User user2 = new User();
+        user2.setUsername("owner");
+        user2.setPassword("{bcrypt}" + BCrypt.hashpw("owner123", BCrypt.gensalt()));
+        user2.setFirstName("owner");
+        user2.setPhone("+000000000");
+        user2.setRole("OWNER");
+        userRepository.save(user2);
     }
 
     @Test

@@ -10,4 +10,6 @@ public class WiduriEstockApplication {
     public static void main(String[] args) {
         SpringApplication.run(WiduriEstockApplication.class, args);
     }
+
+
 }

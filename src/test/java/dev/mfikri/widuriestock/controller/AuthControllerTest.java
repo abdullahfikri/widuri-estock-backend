@@ -53,9 +53,9 @@ class AuthControllerTest {
 
         User user = new User();
         user.setUsername("owner");
-        user.setPassword("{bcrypt}" + BCrypt.hashpw("owner_password", BCrypt.gensalt()));
-        user.setFirstName("John Doe");
-        user.setPhone("+6283213121");
+        user.setPassword("{bcrypt}" + BCrypt.hashpw("owner123", BCrypt.gensalt()));
+        user.setFirstName("owner");
+        user.setPhone("+000000000");
         user.setRole("OWNER");
 
         userRepository.save(user);
@@ -134,7 +134,7 @@ class AuthControllerTest {
     void loginSuccess() throws Exception {
         AuthLoginRequest request =  new AuthLoginRequest();
         request.setUsername("owner");
-        request.setPassword("owner_password");
+        request.setPassword("owner123");
         request.setUserAgent("Android - Mozilla");
 
 

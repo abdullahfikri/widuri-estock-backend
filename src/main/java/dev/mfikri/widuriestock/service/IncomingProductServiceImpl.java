@@ -49,7 +49,7 @@ public class IncomingProductServiceImpl implements IncomingProductService {
     @Transactional
     public IncomingProductResponse create(IncomingProductCreateRequest request) {
         validationService.validate(request);
-        log.info("test invoke");
+//        log.info("test invoke");
         Supplier supplier = findSupplierByIdOrThrows(request.getSupplierId());
 
         User user = userRepository.findById(request.getUsername())
