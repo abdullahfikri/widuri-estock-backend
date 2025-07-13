@@ -1,4 +1,4 @@
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     username VARCHAR(100) NOT NULL,
     password VARCHAR(100) NOT NULL,
     first_name VARCHAR(100) NOT NULL,
@@ -17,9 +17,12 @@ CREATE TABLE users (
     UNIQUE (token, email)
 ) engine = InnoDB;
 
+INSERT INTO users (username, password, first_name, phone, role)
+VALUES ('owner', '{bcrypt}$2a$10$9AWKBR894edWIg/3AXn92eMUCfctjRSTvvaoMfkb0m1h0KgN19e4C', 'owner', '00000000', 'OWNER');
+
 SELECT * FROM users;
 
-CREATE TABLE suppliers (
+CREATE TABLE IF NOT EXISTS suppliers (
     id INT NOT NULL AUTO_INCREMENT,
     supplier_name VARCHAR(100) NOT NULL,
     phone VARCHAR(20) NOT NULL,
@@ -37,7 +40,7 @@ ALTER TABLE suppliers
 
 SELECT * FROM suppliers;
 
-CREATE TABLE addresses (
+CREATE TABLE IF NOT EXISTS addresses (
     id int NOT NULL AUTO_INCREMENT,
     street VARCHAR(100) NOT NULL ,
     village VARCHAR(100),
@@ -49,7 +52,7 @@ CREATE TABLE addresses (
     primary key (id)
 ) engine = InnoDB;
 
-# CREATE TABLE user_addresses (
+# CREATE TABLE IF NOT EXISTS user_addresses (
 #     address_id INT NOT NULL ,
 #     user_username VARCHAR(100) NOT NULL ,
 #     primary key (address_id, user_username),
@@ -90,7 +93,7 @@ ALTER TABLE addresses
 
 SELECT * FROM addresses;
 
-CREATE TABLE refresh_token (
+CREATE TABLE IF NOT EXISTS refresh_token (
     id INT NOT NULL AUTO_INCREMENT,
     refresh_token VARCHAR(255) NOT NULL ,
     expiredAt TIMESTAMP,
@@ -114,7 +117,7 @@ ALTER TABLE refresh_token
 
 SELECT * FROM users;
 
-CREATE TABLE categories (
+CREATE TABLE IF NOT EXISTS categories (
     id INT NOT NULL AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL ,
     description VARCHAR(255),
@@ -124,7 +127,7 @@ CREATE TABLE categories (
 
 SELECT * FROM categories;
 
-CREATE TABLE products (
+CREATE TABLE IF NOT EXISTS products (
     id INT NOT NULL AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
     description TEXT NOT NULL,
@@ -151,10 +154,9 @@ ALTER TABLE products
 
 SELECT * FROM products;
 
-DELETE FROM product_photos;
 DELETE FROM products;
 
-CREATE TABLE product_photos (
+CREATE TABLE IF NOT EXISTS product_photos (
     id VARCHAR(255) NOT NULL,
     image_location VARCHAR(255),
     product_id INT NOT NULL ,
@@ -181,7 +183,7 @@ ALTER TABLE product_photos
 SELECT * FROM product_photos;
 
 
-CREATE TABLE product_variants (
+CREATE TABLE IF NOT EXISTS product_variants (
     id INT NOT NULL AUTO_INCREMENT,
     sku VARCHAR(255) NOT NULL,
     stock SMALLINT NOT NULL,
@@ -201,7 +203,7 @@ ALTER TABLE product_variants
 
 SELECT * FROM product_variants;
 
-CREATE TABLE variant_attributes (
+CREATE TABLE IF NOT EXISTS variant_attributes (
     id INT NOT NULL AUTO_INCREMENT,
     attribute_key VARCHAR(100) NOT NULL,
     attribute_value VARCHAR(100) NOT NULL,
@@ -219,7 +221,7 @@ RENAME TABLE variant_attributes TO product_variant_attributes;
 
 SELECT * FROM product_variant_attributes;
 
-CREATE TABLE incoming_products (
+CREATE TABLE IF NOT EXISTS incoming_products (
     id INT NOT NULL AUTO_INCREMENT,
     date_in TIMESTAMP,
     supplier_id INT NOT NULL ,
@@ -248,7 +250,7 @@ ALTER TABLE incoming_products
 SELECT * FROM incoming_products;
 desc incoming_products;
 
-CREATE TABLE incoming_product_details (
+CREATE TABLE IF NOT EXISTS incoming_product_details (
     id INT NOT NULL AUTO_INCREMENT,
     incoming_products_id INT NOT NULL ,
     product_id INT NOT NULL ,
@@ -276,7 +278,7 @@ ALTER TABLE incoming_product_details
 
 SELECT * FROM incoming_product_details;
 
-CREATE TABLE incoming_product_variant_details (
+CREATE TABLE IF NOT EXISTS incoming_product_variant_details (
     id INT NOT NULL AUTO_INCREMENT,
     incoming_product_detail_id INT NOT NULL ,
     product_variant_id INT NOT NULL,

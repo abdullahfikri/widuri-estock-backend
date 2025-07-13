@@ -15,6 +15,8 @@ import dev.mfikri.widuriestock.repository.UserRepository;
 import dev.mfikri.widuriestock.util.BCrypt;
 import dev.mfikri.widuriestock.util.JwtUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,13 +67,18 @@ class AddressControllerTest {
 
         User user = new User();
         user.setUsername("owner");
-        user.setPassword("{bcrypt}" + BCrypt.hashpw("owner_password", BCrypt.gensalt()));
-        user.setFirstName("John Doe");
-        user.setPhone("+6283213121");
+        user.setPassword("{bcrypt}" + BCrypt.hashpw("owner123", BCrypt.gensalt()));
+        user.setFirstName("owner");
+        user.setPhone("+000000000");
         user.setRole("OWNER");
         userRepository.save(user);
 
         authorizationToken = "Bearer " + jwtUtil.generate(user.getUsername(), jwtTtl);
+    }
+
+    @BeforeAll
+    static void beforeAll() {
+
     }
 
     @Test

@@ -49,7 +49,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // log.info("invoke");
         try {
             final String tokenUsername = jwtUtil.extractUsername(token);
-             log.info(tokenUsername);
+//             log.info(tokenUsername);
 
             if (tokenUsername != null && securityContextHolderStrategy.getContext().getAuthentication() == null) {
                 UserDetails userDetails;
@@ -72,7 +72,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             throw new JwtAuthenticationException("Access Token Expired", e.getCause());
         }
         catch (UsernameNotFoundException | JwtException e) {
-            log.info(e.getMessage());
+//            log.info(e.getMessage());
             throw new JwtAuthenticationException("Invalid Access Token", e.getCause());
         }
 
