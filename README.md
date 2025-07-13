@@ -80,7 +80,7 @@ Untuk proses instalasi Anda dapat menggunakan docker atau juga dengan menggunaka
 
 ### Alternative Instalasi dan Konfingurasi menggunakan Java JDK.
 
-*Untuk menjalankan aplikasi ini tanpa docker, anda harus sudah menginstall Java JDK 21 ke atas dan MYSQL Server 8.0 ke atas. 
+Untuk menjalankan aplikasi ini tanpa docker, anda harus sudah menginstall Java JDK 21 ke atas dan MYSQL Server 8.0 ke atas. 
 
 1. **Clone repository ini**:
 
@@ -91,30 +91,29 @@ Untuk proses instalasi Anda dapat menggunakan docker atau juga dengan menggunaka
 2. **Setup database**
 
     Anda harus mengkonfigurasi database yang digunakan untuk menyimpan data dari aplikasi.
-   * Buat Database Kosong
+* Buat Database Kosong
    
-     Buka tool manajemen database Anda (Command Line, phpMyAdmin, MySQL Workbench, dll.) dan buat sebuah database baru dengan nama widuri_estore atau nama lain yang anda pilih sendiri.
-     ```mysql
-     CREATE DATABASE widuri_estore;
-      ```
-     * Buat Tabel Database
+    Buka tool manajemen database Anda (Command Line, phpMyAdmin, MySQL          Workbench, dll.) dan buat sebuah database baru dengan nama widuri_estore atau nama lain yang anda pilih sendiri.
+    ```mysql
+    CREATE DATABASE widuri_estore;
+    ```
+* Buat Tabel Database
+   
+    Selanjutnya anda perlu mengimpor skema tabel yang sudah disediakan. File skema ini berisi semua perintah ``CREATE TABLE`` yang diperlukan.
      
-        Selanjutnya anda perlu mengimpor skema tabel yang sudah disediakan. File skema ini berisi semua perintah ``CREATE TABLE`` yang diperlukan.
-       <br/>
-       <br/> 
-        Gunakan file database.sql yang ada pada folder proyek untuk mengisi database yang sudah dibuat tadi. Anda dapat menggunakan command line dengan perintah sebagai berikut:
-       
-        ```bash
-        # Format: mysql -u [username] -p [nama_database] < [file_sql]
-        mysql -u root -p widuri_estore < database.sql
-       ```
-        Setelah menjalankan perintah di atas, anda akan diminta memasukkan password user database Anda. Dan jika berhasil, maka semua tabel yang dibutuhkan akan dibuat di dalam database ``widuri_estore``.
-       <br/>
-       <br/>
-        _Alternatif: Anda juga bisa menggunakan fitur "Import" pada tool GUI seperti phpMyAdmin atau MySQL Workbench. Fitur import tersebut akan meminta anda memilih file ``.sql`` yang akan dijalankan dan Anda dapat memilih file ``database.sql`` yang telah disediakan_
+    Gunakan file database.sql yang ada pada folder proyek untuk mengisi database yang sudah dibuat tadi. Anda dapat menggunakan command line dengan perintah sebagai berikut:
+     
+    ```bash
+    # Format: mysql -u [username] -p [nama_database] < [file_sql]
+    mysql -u root -p widuri_estore < database.sql
+    ```
+    Setelah menjalankan perintah di atas, anda akan diminta memasukkan password user database Anda. Dan jika berhasil, maka semua tabel yang dibutuhkan akan dibuat di dalam database `widuri_estore`.
+    
+    _Alternatif: Anda juga bisa menggunakan fitur "Import" pada tool GUI seperti phpMyAdmin atau MySQL Workbench. Fitur import tersebut akan meminta anda memilih file ``.sql`` yang akan dijalankan dan Anda dapat memilih file ``database.sql`` yang telah disediakan_
 
 
-3 **Setup Environment Variables**
+3. **Setup Environment Variables**
+
 ```bash
   export DATABASE_USERNAME=java
   export DATABASE_PASSWORD=java
@@ -125,8 +124,9 @@ Untuk proses instalasi Anda dapat menggunakan docker atau juga dengan menggunaka
 *Pastikan konfigurasi environment variables sudah sesuai dengan konfigurasi MYSQL Server yang sudah dikonfigurasi sebelumnya. 
 
 4. **Testing & Build**
-<br/>
+
 Jalankan perintah berikut untuk memastikan semua fungsi sudah berjalan dan membuat build aplikasi yang akan dijalankan. 
+
 ```bash
   ./mvnw clean package
 ```
@@ -136,50 +136,55 @@ Jalankan perintah berikut untuk memastikan semua fungsi sudah berjalan dan membu
 ```bash
   java -jar ./target/widuri-estock-0.0.1-SNAPSHOT.jar
 ```
-*Anda dapat mengakses API dengan ``Base URL`` http://localhost:8080/api dan ``Dokumentasi`` API di http://localhost:8080/api/docs
+*Anda dapat mengakses API dengan `Base URL` http://localhost:8080/api dan `Dokumentasi` API di http://localhost:8080/api/docs
 
 ## Contoh Penggunaan API
 Saat pertamakali aplikasi dijalankan, Anda sudah disediakan akun `owner` sebagai super user pada aplikasi ini. Akun owner akan digunakan untuk membuat dan mengelola akun lain pada aplikasi.
 1. **Login pada akun owner**
-<br/>
-    * Request: ``POST /auth/login``
-    * Body: **JSON**
-    ```json
-    {
+    
+* Request: ``POST /auth/login``
+* Body: **JSON**
+  ```json
+  {
       "username": "owner",
       "password": "owner123",
       "userAgent": "Ubuntu - Mozilla Firefox"
-    }
-    ```
-   Jika berhasil, server akan mengembalikan ``JWT token`` dan waktu expired dalam millisecond yang akan digunakan untuk melakukan request ke semua Endpoint.
-   <br/>
-    * Success Response (**200 OK**):
-    * Body: **JSON**
-    ```json
-    {
+  }
+  ```
+    
+Jika berhasil, server akan mengembalikan ``JWT token`` dan waktu expired dalam millisecond yang akan digunakan untuk melakukan request ke semua Endpoint.
+
+
+* Success Response (**200 OK**):
+* Body: **JSON**
+
+  ```json
+  {
       "data": {
-        "token": "randomstring12321312kwjlasdj",
-        "expiredAt": 3801299 
+      "token": "randomstring12321312kwjlasdj",
+      "expiredAt": 3801299 
       }
-    }
-    ```
+  }
+  ```
+
 2. **Menggunakan JWT Token**
-<br/>
-Token yang didapat akan disertakan sebagai ``Authorization Header`` dan menambahkan prefix ``Bearer`` sebelum ``token``  disetiap kali melakukan request ke Endpoint. Berikut adalah contoh yang menyertakan ``JWT Token`` untuk melakukan request ke ``Endpoint`` create category:
-    * Request: ``POST /categories``
-    * **Header**:
+
+Token yang didapat akan disertakan sebagai `Authorization Header` dan menambahkan prefix `Bearer` sebelum `token`  disetiap kali melakukan request ke Endpoint. Berikut adalah contoh yang menyertakan `JWT Token` untuk melakukan request ke `Endpoint` create category:
+
+* Request: `POST /categories`
+* **Header**:
    ```header
     Authorization: Bearer randomstring12321312kwjlasdj
     Content-Type: application/json
     ```
-    Body:
+
+* **Body**:
     ```json
     {
         "name": "Mata Kail",
         "description": "Hook atau mata kail"
     }
     ```
-
 *Anda dapat melihat Endpoint yang tersedia, struktur request, dan struktur response secara lengkap pada link ``Dokumentasi`` yang telah disediakan di atas.
 
 ## Struktur Proyek
