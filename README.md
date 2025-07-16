@@ -76,7 +76,7 @@ Untuk proses instalasi Anda dapat menggunakan docker atau juga dengan menggunaka
    docker compose up
    ## atau untuk docker compose versi 1: docker-compose up 
 ```
-*Anda dapat mengakses API dengan Base URL http://localhost:8080/api dan dokumentasi API di http://localhost:8080/api/docs
+*Anda dapat mengakses API dengan Base URL http://localhost:8080/api dan dokumentasi API di http://localhost:8080/docs
 
 ### Alternative Instalasi dan Konfingurasi menggunakan Java JDK.
 
@@ -136,7 +136,7 @@ Jalankan perintah berikut untuk memastikan semua fungsi sudah berjalan dan membu
 ```bash
   java -jar ./target/widuri-estock-0.0.1-SNAPSHOT.jar
 ```
-*Anda dapat mengakses API dengan `Base URL` http://localhost:8080/api dan `Dokumentasi` API di http://localhost:8080/api/docs
+*Anda dapat mengakses API dengan `Base URL` http://localhost:8080/api dan `Dokumentasi` API di http://localhost:8080/docs
 
 ## Contoh Penggunaan API
 Saat pertamakali aplikasi dijalankan, Anda sudah disediakan akun `owner` sebagai super user pada aplikasi ini. Akun owner akan digunakan untuk membuat dan mengelola akun lain pada aplikasi.

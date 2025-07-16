@@ -28,11 +28,12 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.filter.ForwardedHeaderFilter;
 
 import javax.crypto.SecretKey;
 
 @Configuration
-@EnableWebSecurity(debug = false)
+@EnableWebSecurity(debug = true)
 public class SecurityConfig {
 
 
@@ -52,8 +53,8 @@ public class SecurityConfig {
     private static final String[] SWAGGER_WHITELIST = {
             "/swagger-ui/**",
             "/*.yaml",
-            "/api/docs",
-            "/api/swagger-ui/**",
+            "/docs",
+            "/swagger-ui/**",
             "/v3/api-docs/swagger-config"
     };
     @Bean
@@ -169,4 +170,10 @@ public class SecurityConfig {
                 .role("OWNER").implies("ADMIN_WAREHOUSE")
                 .build();
     }
+
+    @Bean
+    ForwardedHeaderFilter forwardedHeaderFilter() {
+        return new ForwardedHeaderFilter();
+    }
+
 }

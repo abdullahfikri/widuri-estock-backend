@@ -39,6 +39,9 @@ spring:
       hibernate:
         format_sql: false
         show_sql: false
+        temp:
+          use_jdbc_metadata_defaults: false
+    database-platform: org.hibernate.dialect.MySQLDialect
 
 application:
   security:
@@ -56,4 +59,8 @@ springdoc:
         url: "/product.yaml"
       - name: "User API"
         url: "/user.yaml"
-    path: /api/docs
+    path:  /docs
+    # fix path for config-url for reverse proxy, comment the 1 line bellow if u use without prefix-path
+#    config-url: /projects/estock/v1/v3/api-docs/swagger-config
+server:
+  forward-headers-strategy: framework
