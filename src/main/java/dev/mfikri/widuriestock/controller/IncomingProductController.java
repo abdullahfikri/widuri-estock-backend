@@ -5,6 +5,7 @@ import dev.mfikri.widuriestock.model.WebResponse;
 import dev.mfikri.widuriestock.model.incoming_product.*;
 import dev.mfikri.widuriestock.service.IncomingProductService;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -14,6 +15,7 @@ import java.security.Principal;
 import java.time.LocalDate;
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/api")
 public class IncomingProductController {
@@ -30,6 +32,8 @@ public class IncomingProductController {
     )
     @ResponseStatus(HttpStatus.CREATED)
     public WebResponse<IncomingProductResponse> create(@RequestBody IncomingProductCreateRequest request, HttpServletRequest httpServletRequest) {
+        log.info("Receiving request to create an incoming product.");
+
         Principal userPrincipal = httpServletRequest.getUserPrincipal();
         request.setUsername(userPrincipal.getName());
 
@@ -44,6 +48,9 @@ public class IncomingProductController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public WebResponse<IncomingProductResponse> get(@PathVariable Integer incomingProductId) {
+        log.info("Receiving request to get an incoming product. incomingProductId={}.", incomingProductId);
+
+
         IncomingProductResponse response = incomingProductService.get(incomingProductId);
 
         return WebResponse.<IncomingProductResponse>builder()
@@ -54,16 +61,10 @@ public class IncomingProductController {
     @GetMapping(path = "/incoming-products",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    public WebResponse<List<IncomingProductGetListResponse>> getList(@RequestParam(value = "start_date", required = false)LocalDate startDate,
-                                                                     @RequestParam(value = "end_date", required = false)LocalDate endDate,
-                                                                     @RequestParam(value = "page", required = false, defaultValue = "0") Integer page,
-                                                                     @RequestParam(value = "size", required = false, defaultValue = "10") Integer size) {
-        Page<IncomingProductGetListResponse> responsePage = incomingProductService.getList(IncomingProductGetListRequest.builder()
-                        .startDate(startDate)
-                        .endDate(endDate)
-                        .page(page)
-                        .size(size)
-                .build());
+    public WebResponse<List<IncomingProductGetListResponse>> getList(@ModelAttribute IncomingProductGetListRequest request) {
+        log.info("Receiving request to get all incoming products.");
+
+        Page<IncomingProductGetListResponse> responsePage = incomingProductService.getList(request);
         return WebResponse.<List<IncomingProductGetListResponse>>builder()
                 .data(responsePage.getContent())
                 .paging(PagingResponse.builder()
@@ -81,6 +82,8 @@ public class IncomingProductController {
     public WebResponse<IncomingProductResponse> update(@RequestBody IncomingProductUpdateRequest request,
                                                        @PathVariable Integer incomingProductId,
                                                        HttpServletRequest httpServletRequest) {
+        log.info("Receiving request to update an incoming product. incomingProductId={}.", incomingProductId);
+
         request.setId(incomingProductId);
         Principal userPrincipal = httpServletRequest.getUserPrincipal();
         request.setUsername(userPrincipal.getName());
@@ -100,6 +103,8 @@ public class IncomingProductController {
     public WebResponse<IncomingProductDetailResponse> createIncomingProductDetail(@PathVariable Integer incomingProductId,
                                                                                   @RequestBody IncomingProductDetailCreateRequest request
                                                                                ) {
+        log.info("Receiving request to create an incoming product detail for incoming product. incomingProductId={}.", incomingProductId);
+
         request.setIncomingProductId(incomingProductId);
         IncomingProductDetailResponse response = incomingProductService.createIncomingProductDetails(request);
 
@@ -116,6 +121,7 @@ public class IncomingProductController {
     public WebResponse<IncomingProductVariantDetailResponse> createIncomingProductVariantDetail(@PathVariable Integer incomingProductDetailId,
                                                                                   @RequestBody IncomingProductVariantDetailCreateRequest request
     ) {
+        log.info("Receiving request to create an incoming product variant detail for incoming product detail. incomingProductDetailId={}.", incomingProductDetailId);
         request.setIncomingProductDetailId(incomingProductDetailId);
         IncomingProductVariantDetailResponse response = incomingProductService.createIncomingProductVariantDetails(request);
 
@@ -128,6 +134,9 @@ public class IncomingProductController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public WebResponse<String> deleteIncomingProductVariantDetail(@PathVariable Integer incomingProductVariantDetailId) {
+        log.info("Receiving request to delete an incoming product variant detail. incomingProductVariantDetailId={}.", incomingProductVariantDetailId);
+
+
         incomingProductService.deleteIncomingProductVariantDetails(incomingProductVariantDetailId);
 
         return WebResponse.<String>builder()
@@ -139,6 +148,8 @@ public class IncomingProductController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public WebResponse<String> deleteIncomingProductDetail(@PathVariable Integer incomingProductDetailId) {
+        log.info("Receiving request to delete an incoming product detail. incomingProductDetailId={}.", incomingProductDetailId);
+
         incomingProductService.deleteIncomingProductDetails(incomingProductDetailId);
 
         return WebResponse.<String>builder()
@@ -151,6 +162,8 @@ public class IncomingProductController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public WebResponse<String> deleteIncomingProduct(@PathVariable Integer incomingProductId) {
+        log.info("Receiving request to delete an incoming product. incomingProductId={}.", incomingProductId);
+
         incomingProductService.deleteIncomingProduct(incomingProductId);
 
         return WebResponse.<String>builder()

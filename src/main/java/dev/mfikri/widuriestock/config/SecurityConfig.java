@@ -3,6 +3,7 @@ package dev.mfikri.widuriestock.config;
 import dev.mfikri.widuriestock.entity.Role;
 import dev.mfikri.widuriestock.entrypoint.JwtAuthenticationEntryPoint;
 import dev.mfikri.widuriestock.filter.JwtAuthenticationFilter;
+import dev.mfikri.widuriestock.filter.MdcLoggingFilter;
 import dev.mfikri.widuriestock.util.JwtUtil;
 import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.DispatcherType;
@@ -14,11 +15,13 @@ import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.authentication.*;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.AnonymousConfigurer;
+import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
 import org.springframework.security.config.annotation.web.configurers.LogoutConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -33,96 +36,37 @@ import org.springframework.web.filter.ForwardedHeaderFilter;
 import javax.crypto.SecretKey;
 
 @Configuration
-@EnableWebSecurity(debug = true)
+@EnableWebSecurity
 public class SecurityConfig {
 
 
     private final SecurityConfigProperties securityConfigProperties;
     private final UserDetailsService userDetailsService;
-
     private final JwtAuthenticationEntryPoint entryPoint;
-
     private final CustomAccessDeniedHandler customAccessDeniedHandler;
 
-    public SecurityConfig(SecurityConfigProperties securityConfigProperties, UserDetailsService userDetailsService, JwtAuthenticationEntryPoint entryPoint, CustomAccessDeniedHandler customAccessDeniedHandler) {
+    private final MdcLoggingFilter mdcLoggingFilter;
+
+    public SecurityConfig(SecurityConfigProperties securityConfigProperties, UserDetailsService userDetailsService, JwtAuthenticationEntryPoint entryPoint, CustomAccessDeniedHandler customAccessDeniedHandler, MdcLoggingFilter mdcLoggingFilter) {
         this.securityConfigProperties = securityConfigProperties;
         this.userDetailsService = userDetailsService;
         this.entryPoint = entryPoint;
         this.customAccessDeniedHandler = customAccessDeniedHandler;
+        this.mdcLoggingFilter = mdcLoggingFilter;
     }
-    private static final String[] SWAGGER_WHITELIST = {
-            "/swagger-ui/**",
-            "/*.yaml",
-            "/docs",
-            "/swagger-ui/**",
-            "/v3/api-docs/swagger-config"
-    };
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
 
+    @Bean
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http,
+            JwtAuthenticationFilter jwtAuthenticationFilter,
+            Customizer<AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry> authorizeHttpRequestsCustomizer
+    ) throws Exception {
 
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(configurer -> configurer
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests((authorize) -> authorize
-                        .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
-                        .requestMatchers("/api/auth/login").permitAll()
-                        .requestMatchers(SWAGGER_WHITELIST).permitAll()
-                        .requestMatchers("/api/auth/refresh-token").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/users").hasRole("OWNER")
-                        .requestMatchers(HttpMethod.GET, "/api/users").hasRole("OWNER")
-                        .requestMatchers(HttpMethod.GET, "/api/users/current").authenticated()
-                        .requestMatchers(HttpMethod.PATCH, "/api/users/current").authenticated()
-                        // TODO: address current request controller
-                        .requestMatchers(HttpMethod.POST, "/api/users/current/addresses").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/users/current/addresses").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/users/current/addresses/**").authenticated()
-                        .requestMatchers(HttpMethod.PUT, "/api/users/current/addresses/**").authenticated()
-                        .requestMatchers(HttpMethod.DELETE, "/api/users/current/addresses/**").authenticated()
-
-                        // get/update any users
-                        .requestMatchers(HttpMethod.PATCH, "/api/users/**").hasRole("OWNER")
-                        .requestMatchers(HttpMethod.GET, "/api/users/**").hasRole("OWNER")
-
-                        // categories crud api
-                        .requestMatchers(HttpMethod.POST, "/api/categories").hasRole(Role.ADMIN_WAREHOUSE.name())
-                        .requestMatchers(HttpMethod.GET, "/api/categories").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/categories/*").authenticated()
-                        .requestMatchers(HttpMethod.PUT, "/api/categories/*").hasRole(Role.ADMIN_WAREHOUSE.name())
-                        .requestMatchers(HttpMethod.DELETE, "/api/categories/*").hasRole(Role.ADMIN_WAREHOUSE.name())
-
-                        // products crud api
-                        .requestMatchers(HttpMethod.POST, "/api/products").hasRole(Role.ADMIN_WAREHOUSE.name())
-                        .requestMatchers(HttpMethod.GET, "/api/products").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/products/*").authenticated()
-                        .requestMatchers(HttpMethod.DELETE, "/api/products/*").hasRole(Role.ADMIN_WAREHOUSE.name())
-                        .requestMatchers(HttpMethod.PUT, "/api/products/*").hasRole(Role.ADMIN_WAREHOUSE.name())
-
-                        // suppliers crud api
-                        .requestMatchers(HttpMethod.POST, "/api/suppliers").hasRole(Role.ADMIN_WAREHOUSE.name())
-                        .requestMatchers(HttpMethod.GET, "/api/suppliers").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/suppliers/*").authenticated()
-                        .requestMatchers(HttpMethod.PUT, "/api/suppliers/*").hasRole(Role.ADMIN_WAREHOUSE.name())
-                        .requestMatchers(HttpMethod.DELETE, "/api/suppliers/*").hasRole(Role.ADMIN_WAREHOUSE.name())
-
-                        // incoming-product api
-                        .requestMatchers(HttpMethod.POST, "/api/incoming-products").hasRole(Role.ADMIN_WAREHOUSE.name())
-                        .requestMatchers(HttpMethod.GET, "/api/incoming-products").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/incoming-products/*").authenticated()
-                        .requestMatchers(HttpMethod.PUT, "/api/incoming-products/*").hasRole(Role.ADMIN_WAREHOUSE.name())
-
-                        // incoming-product-detail api
-                        .requestMatchers(HttpMethod.POST, "/api/incoming-products/*/incoming-product-details").hasRole(Role.ADMIN_WAREHOUSE.name())
-
-                        // incoming-product-variant-detail api
-                        .requestMatchers(HttpMethod.POST, "/api/incoming-product-details/*/incoming-product-variant-detail").hasRole(Role.ADMIN_WAREHOUSE.name())
-
-                        .requestMatchers(HttpMethod.DELETE, "/api/incoming-products/*").hasRole(Role.ADMIN_WAREHOUSE.name())
-                        .requestMatchers(HttpMethod.DELETE, "/api/incoming-product-details/*").hasRole(Role.ADMIN_WAREHOUSE.name())
-                        .requestMatchers(HttpMethod.DELETE, "/api/incoming-product-variant-details/*").hasRole(Role.ADMIN_WAREHOUSE.name())
-                        .anyRequest().denyAll()
-                )
+                .authorizeHttpRequests(authorizeHttpRequestsCustomizer)
                 .exceptionHandling(handler-> handler.authenticationEntryPoint(entryPoint)
                         .accessDeniedHandler(customAccessDeniedHandler))
                 .authenticationProvider(authenticationProvider())
@@ -130,7 +74,8 @@ public class SecurityConfig {
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .logout(LogoutConfigurer::disable)
                 .anonymous(AnonymousConfigurer::disable)
-                .addFilterBefore(jwtAuthenticationFilter, AuthorizationFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(mdcLoggingFilter, UsernamePasswordAuthenticationFilter.class);
 
 
         return http.build();

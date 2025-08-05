@@ -196,7 +196,7 @@ class AuthControllerTest {
 
             assertNull(response.getData());
             assertNotNull(response.getErrors());
-            assertEquals("Invalid Token", response.getErrors());
+            assertEquals("Invalid Refresh Token", response.getErrors());
 
             RefreshToken refreshToken = refreshTokenRepository.findByRefreshToken(request.getRefreshToken()).orElse(null);
             assertNull(refreshToken);
@@ -212,14 +212,14 @@ class AuthControllerTest {
                         .accept(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestNull))
         ).andExpectAll(
-                status().isUnauthorized()
+                status().isBadRequest()
         ).andDo(result -> {
             WebResponse<AuthTokenResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
 
             assertNull(response.getData());
             assertNotNull(response.getErrors());
-            assertEquals("Invalid Token", response.getErrors());
+            assertEquals("Refresh Token must not blank", response.getErrors());
 
             RefreshToken refreshToken = refreshTokenRepository.findByRefreshToken(request.getRefreshToken()).orElse(null);
             assertNull(refreshToken);
@@ -235,14 +235,14 @@ class AuthControllerTest {
                         .accept(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestBlank))
         ).andExpectAll(
-                status().isUnauthorized()
+                status().isBadRequest()
         ).andDo(result -> {
             WebResponse<AuthTokenResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
 
             assertNull(response.getData());
             assertNotNull(response.getErrors());
-            assertEquals("Invalid Token", response.getErrors());
+            assertEquals("Refresh Token must not blank", response.getErrors());
 
             RefreshToken refreshToken = refreshTokenRepository.findByRefreshToken(request.getRefreshToken()).orElse(null);
             assertNull(refreshToken);
@@ -281,7 +281,7 @@ class AuthControllerTest {
 
             assertNull(response.getData());
             assertNotNull(response.getErrors());
-            assertEquals("Token is expired", response.getErrors());
+            assertEquals("Refresh Token is expired", response.getErrors());
 
             RefreshToken refreshToken = refreshTokenRepository.findByRefreshToken(request.getRefreshToken()).orElse(null);
             assertNull(refreshToken);

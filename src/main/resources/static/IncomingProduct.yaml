@@ -120,14 +120,14 @@ paths:
       parameters:
         - $ref: "#/components/parameters/AUTHORIZATION-TOKEN"
         - in: query
-          name: start_date
+          name: startDate
           description: "Start of the date range"
           schema:
             type: string
             format: "YYYY-MM-DD"
           example: "2024-01-01"
         - in: query
-          name: end_date
+          name: endDate
           description: "End of the date range"
           schema:
             type: string
@@ -214,17 +214,17 @@ paths:
               examples:
                 Size is not number format:
                   value:
-                    errors: "size type data is wrong."
+                    errors: "Invalid format for property 'page'. Please check the data type."
                 Page is not number format:
                   value:
-                    errors: "page type data is wrong."
-                Start_date is not date format:
+                    errors: "Invalid format for property 'size'. Please check the data type."
+                Start Date is not date format:
                   value:
-                    errors: "start_date type data is wrong."
-                End_date is not date format:
+                    errors: "Invalid format for property 'startDate'. Please check the data type."
+                End Date is not date format:
                   value:
-                    errors: "end_date type data is wrong."
-                Start_date overlapping End_date:
+                    errors: "Invalid format for property 'endDate'. Please check the data type."
+                Start Date overlapping End Date:
                   value:
                     errors: "Start date 2025-01-10 must be before or equal to end date 2025-01-01."
         401:

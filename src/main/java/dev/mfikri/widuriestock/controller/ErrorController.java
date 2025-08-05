@@ -13,6 +13,8 @@ import org.springframework.security.authentication.AuthenticationCredentialsNotF
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.validation.BindException;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -28,6 +30,8 @@ public class ErrorController {
 
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<WebResponse<String>> constraintViolationException (ConstraintViolationException exception) {
+        log.warn("Constrain violation error: {}", exception.getMessage(), exception);
+
         return ResponseEntity.badRequest()
                 .body(WebResponse.
                         <String>builder()
@@ -37,6 +41,7 @@ public class ErrorController {
 
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<WebResponse<String>> apiException (ResponseStatusException exception) {
+        log.warn("API Error with status {}: {}", exception.getStatusCode(), exception.getReason(), exception);
         return ResponseEntity
                 .status(exception.getStatusCode())
                 .body(WebResponse.
@@ -47,6 +52,7 @@ public class ErrorController {
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<WebResponse<String>> badCredentialException(BadCredentialsException exception) {
+
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
                 .body(WebResponse.
@@ -57,7 +63,7 @@ public class ErrorController {
 
     @ExceptionHandler(AuthenticationCredentialsNotFoundException.class)
     public ResponseEntity<WebResponse<String>> authenticationException(AuthenticationCredentialsNotFoundException exception) {
-        log.info(exception.getClass().getName());
+        log.warn("Authentication credentials not found: {}", exception.getMessage(), exception);
 
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
@@ -69,34 +75,46 @@ public class ErrorController {
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<WebResponse<String>> methodArgumentPathTypeMismatch(MethodArgumentTypeMismatchException exception) {
-        log.info(exception.getClass().getName());
-        log.info(exception.getPropertyName());
+        log.warn("Method argument type mismatch for property '{}'. Required type: {}. Value: '{}'",
+                exception.getPropertyName(),
+                exception.getRequiredType(),
+                exception.getValue(),
+                exception);
+
+        String userMessage = createUserMessageForTypeMismatch(exception.getPropertyName(), exception.getRequiredType(), exception.getValue());
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(WebResponse
                         .<String>builder()
-                        .errors(exception.getPropertyName() + " type data is wrong.")
+                        .errors(userMessage)
                         .build());
     }
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<WebResponse<String>> methodArgumentTypeMismatch(MethodArgumentNotValidException exception) {
-        String message = exception.getBindingResult()
-                .getFieldErrors()
-                .stream()
-                .map(DefaultMessageSourceResolvable::getDefaultMessage)
-                .collect(Collectors.joining(","));
+    @ExceptionHandler(BindException.class)
+    public ResponseEntity<WebResponse<String>> handleBindingExceptions(BindException exception) {
+        FieldError fieldError = exception.getBindingResult().getFieldError();
+        String userMessage;
+        if (fieldError != null && "typeMismatch".equals(fieldError.getCode())) {
+            log.warn("Method argument type mismatch on object binding. Field: '{}', Rejected Value: '{}'",
+                    fieldError.getField(),
+                    fieldError.getRejectedValue(),
+                    exception);
+            userMessage = createUserMessageForTypeMismatch(fieldError.getField(), null, fieldError.getRejectedValue());
 
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(WebResponse
-                        .<String>builder()
-                        .errors(message)
-                        .build());
+        } else if (fieldError != null) {
+            userMessage = fieldError.getDefaultMessage();
+            log.warn("Constraint violation: {}", userMessage, exception);
+        } else {
+            userMessage = "Invalid request data provided.";
+        }
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(WebResponse.<String>builder().errors(userMessage).build());
     }
 
     @ExceptionHandler(JwtAuthenticationException.class)
     public ResponseEntity<WebResponse<String>> jwtAuthenticationException(AuthenticationException exception) {
+        log.warn("JWT authentication failed: {}", exception.getMessage(), exception);
+
         String message =  exception.getMessage();
 
         return ResponseEntity
@@ -109,7 +127,7 @@ public class ErrorController {
 
     @ExceptionHandler(AuthorizationDeniedException.class)
     public ResponseEntity<WebResponse<String>> forbiddenAccessException(AuthorizationDeniedException exception) {
-//        String message =  exception.getMessage();
+        log.warn("Authorization denied: {}", exception.getMessage(), exception);
 
         return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
@@ -122,10 +140,24 @@ public class ErrorController {
     // sql
     @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
     public ResponseEntity<WebResponse<String>> conflictLockingException(ObjectOptimisticLockingFailureException exception) {
+        log.warn("Optimistic locking failure: {}", exception.getMessage(), exception);
+
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(WebResponse.<String>builder()
                         .errors("Data was updated by another user. Please refresh and retry.")
                         .build());
+    }
+
+    private String createUserMessageForTypeMismatch(String propertyName, Class<?> requiredType, Object invalidValue) {
+
+        if (requiredType != null && java.time.temporal.Temporal.class.isAssignableFrom(requiredType)) {
+            return String.format("Invalid date format for property '%s'. Please use YYYY-MM-DD format.", propertyName);
+        } else if (requiredType != null && Number.class.isAssignableFrom(requiredType)) {
+            return String.format("Invalid number format for property '%s'. Value '%s' is not a valid number.", propertyName, invalidValue);
+        } else {
+            // A generic fallback for other types or when the required type isn't available (like from a FieldError)
+            return String.format("Invalid format for property '%s'. Please check the data type.", propertyName);
+        }
     }
 
 }

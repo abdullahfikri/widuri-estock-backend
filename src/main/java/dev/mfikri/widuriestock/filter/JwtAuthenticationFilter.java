@@ -1,5 +1,6 @@
 package dev.mfikri.widuriestock.filter;
 
+import dev.mfikri.widuriestock.entrypoint.JwtAuthenticationEntryPoint;
 import dev.mfikri.widuriestock.exception.JwtAuthenticationException;
 import dev.mfikri.widuriestock.util.JwtUtil;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -9,6 +10,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContext;
@@ -27,16 +29,20 @@ import java.io.IOException;
 @Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final SecurityContextHolderStrategy securityContextHolderStrategy = SecurityContextHolder.getContextHolderStrategy();
+    private static final String USER_ID_KEY = "username";
 
-    private final UserDetailsService userDetailsService;
     private final JwtUtil jwtUtil;
+    private final UserDetailsService userDetailsService;
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+
 
     private final String AUTH_HEADER = "Authorization";
     private final String AUTH_TYPE = "Bearer";
 
-    public JwtAuthenticationFilter(UserDetailsService userDetailsService, JwtUtil jwtUtil) {
+    public JwtAuthenticationFilter(UserDetailsService userDetailsService, JwtUtil jwtUtil, JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint) {
         this.userDetailsService = userDetailsService;
         this.jwtUtil = jwtUtil;
+        this.jwtAuthenticationEntryPoint = jwtAuthenticationEntryPoint;
     }
 
     @Override
@@ -46,15 +52,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
             return;
         }
-        // log.info("invoke");
+
         try {
             final String tokenUsername = jwtUtil.extractUsername(token);
-//             log.info(tokenUsername);
-
             if (tokenUsername != null && securityContextHolderStrategy.getContext().getAuthentication() == null) {
                 UserDetails userDetails;
-
-
                 userDetails = userDetailsService.loadUserByUsername(tokenUsername);
                 if (!jwtUtil.isTokenValid(token, userDetails.getUsername())) {
                     throw new UsernameNotFoundException("Failed to authenticate with access token");
@@ -66,14 +68,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 securityContext.setAuthentication(authenticationToken);
                 this.securityContextHolderStrategy.setContext(securityContext);
 
+                MDC.put(USER_ID_KEY, userDetails.getUsername());
             }
         }
         catch (ExpiredJwtException e) {
-            throw new JwtAuthenticationException("Access Token Expired", e.getCause());
+            jwtAuthenticationEntryPoint.commence(request, response, new JwtAuthenticationException("Access Token Expired", e.getCause()));
+            return;
         }
         catch (UsernameNotFoundException | JwtException e) {
-//            log.info(e.getMessage());
-            throw new JwtAuthenticationException("Invalid Access Token", e.getCause());
+
+            jwtAuthenticationEntryPoint.commence(request, response, new JwtAuthenticationException("Invalid Access Token", e.getCause()));
+            return;
         }
 
         filterChain.doFilter(request, response);

@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -52,34 +53,52 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public AuthTokenResponse login(AuthLoginRequest request) {
+        log.info("Processing request login. username={}", request.getUsername());
+
         validationService.validate(request);
 
+        log.debug("Authenticating user via AuthenticationManager. username={}", request.getUsername() );
         Authentication authenticationRequest = UsernamePasswordAuthenticationToken.unauthenticated(request.getUsername(), request.getPassword());
+        Authentication authenticate;
+        try {
+            authenticate = authenticationManager.authenticate(authenticationRequest);
+        } catch (BadCredentialsException e) {
+            log.warn("Bad credentials attempt. username={}", request.getUsername());
+            throw  e;
+        }
 
-        Authentication authenticate = authenticationManager.authenticate(authenticationRequest);
+        String authenticatedUsername = authenticate.getName();
 
-        String token = jwtUtil.generate(authenticate.getName(), jwtTtl);
+        log.debug("Generating new access token. username={}", authenticatedUsername);
+        String token = jwtUtil.generate(authenticatedUsername, jwtTtl);
 
+        log.info("Successfully logged in. username={}", authenticatedUsername);
         return AuthTokenResponse.builder()
                 .accessToken(token)
-                .refreshToken(refreshTokenService.create(request.getUsername(), request.getUserAgent()).getRefreshToken())
+                .refreshToken(refreshTokenService.create(authenticatedUsername, request.getUserAgent()).getRefreshToken())
                 .build();
     }
 
     public AuthTokenResponse getNewAccessToken(String refreshTokenString) {
+        log.info("Processing request to get a new Access token using refresh token.");
+
         if (refreshTokenString == null || refreshTokenString.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid Token");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Refresh Token must not blank");
         }
 
+        log.debug("Finding refresh token in the database.");
         RefreshToken refreshToken = refreshTokenRepository.findByRefreshToken(refreshTokenString)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid Token"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid Refresh Token"));
 
+        log.debug("Verifying if refresh token is expired. tokenId={}", refreshToken.getId());
         if (refreshTokenService.isTokenExpired(refreshToken)) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token is expired");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh Token is expired");
         }
+        String username = refreshToken.getUser().getUsername();
+        log.debug("Generating new access token for user. username={}", username);
+        String accessToken = jwtUtil.generate(username, jwtTtl);
 
-        String accessToken = jwtUtil.generate(refreshToken.getUser().getUsername(), jwtTtl);
-
+        log.info("Successfully generated new access token for user. username={}", username);
         return AuthTokenResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken.getRefreshToken())

@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDate;
 
@@ -13,11 +14,11 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @Builder
 public class IncomingProductGetListRequest {
+
     private LocalDate startDate;
     private LocalDate endDate;
 
-    @NotNull
     private Integer page;
-    @NotNull
     private Integer size;
+
 }

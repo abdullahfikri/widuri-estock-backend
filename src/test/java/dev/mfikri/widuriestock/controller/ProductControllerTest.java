@@ -30,10 +30,8 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import static org.springframework.test.web.servlet.MockMvcBuilder.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.*;
 
 @Slf4j
 @SpringBootTest
@@ -454,8 +452,8 @@ class ProductControllerTest {
             assertEquals(false, response.getData().getHasVariant());
             assertEquals(100, response.getData().getStock());
             assertEquals(120500, response.getData().getPrice());
-            assertEquals(categoryId, response.getData().getCategory().getId());
-            assertEquals("Category Test", response.getData().getCategory().getName());
+            assertEquals(categoryId, response.getData().getCategoryResponse().getId());
+            assertEquals("Category Test", response.getData().getCategoryResponse().getName());
             assertNull(response.getData().getPhotos());
             assertEquals(0, response.getData().getVariants().size());
 
@@ -467,8 +465,8 @@ class ProductControllerTest {
             assertEquals(product.getHasVariant(), response.getData().getHasVariant());
             assertEquals(product.getStock(), response.getData().getStock());
             assertEquals(product.getPrice(), response.getData().getPrice());
-            assertEquals(product.getCategory().getId(), response.getData().getCategory().getId());
-            assertEquals(product.getCategory().getName(), response.getData().getCategory().getName());
+            assertEquals(product.getCategory().getId(), response.getData().getCategoryResponse().getId());
+            assertEquals(product.getCategory().getName(), response.getData().getCategoryResponse().getName());
             assertEquals(product.getProductVariants().size(), response.getData().getVariants().size());
             assertEquals(0,product.getProductPhotos().size());
 
@@ -508,10 +506,10 @@ class ProductControllerTest {
             assertEquals("Product Test", response.getData().getName());
             assertEquals("Product description test", response.getData().getDescription());
             assertEquals(true, response.getData().getHasVariant());
-            assertEquals(null, response.getData().getStock());
-            assertEquals(null, response.getData().getPrice());
-            assertEquals(categoryId, response.getData().getCategory().getId());
-            assertEquals("Category Test", response.getData().getCategory().getName());
+            assertNull(response.getData().getStock());
+            assertNull(response.getData().getPrice());
+            assertEquals(categoryId, response.getData().getCategoryResponse().getId());
+            assertEquals("Category Test", response.getData().getCategoryResponse().getName());
             assertNull(response.getData().getPhotos());
             assertEquals(1, response.getData().getVariants().size());
 
@@ -524,8 +522,8 @@ class ProductControllerTest {
             assertEquals(product.getHasVariant(), response.getData().getHasVariant());
             assertEquals(product.getStock(), response.getData().getStock());
             assertEquals(product.getPrice(), response.getData().getPrice());
-            assertEquals(product.getCategory().getId(), response.getData().getCategory().getId());
-            assertEquals(product.getCategory().getName(), response.getData().getCategory().getName());
+            assertEquals(product.getCategory().getId(), response.getData().getCategoryResponse().getId());
+            assertEquals(product.getCategory().getName(), response.getData().getCategoryResponse().getName());
             assertNull(response.getData().getPhotos());
             assertEquals(product.getProductVariants().size(), response.getData().getVariants().size());
 
@@ -570,8 +568,8 @@ class ProductControllerTest {
             assertEquals(false, response.getData().getHasVariant());
             assertEquals(100, response.getData().getStock());
             assertEquals(120500, response.getData().getPrice());
-            assertEquals(categoryId, response.getData().getCategory().getId());
-            assertEquals("Category Test", response.getData().getCategory().getName());
+            assertEquals(categoryId, response.getData().getCategoryResponse().getId());
+            assertEquals("Category Test", response.getData().getCategoryResponse().getName());
             assertEquals(1, response.getData().getPhotos().size());
             assertEquals(0, response.getData().getVariants().size());
 
@@ -583,8 +581,8 @@ class ProductControllerTest {
             assertEquals(product.getHasVariant(), response.getData().getHasVariant());
             assertEquals(product.getStock(), response.getData().getStock());
             assertEquals(product.getPrice(), response.getData().getPrice());
-            assertEquals(product.getCategory().getId(), response.getData().getCategory().getId());
-            assertEquals(product.getCategory().getName(), response.getData().getCategory().getName());
+            assertEquals(product.getCategory().getId(), response.getData().getCategoryResponse().getId());
+            assertEquals(product.getCategory().getName(), response.getData().getCategoryResponse().getName());
             assertEquals(product.getProductPhotos().size(), response.getData().getPhotos().size());
             assertNotNull(product.getProductPhotos().getFirst().getId());
             assertEquals(product.getProductPhotos().getFirst().getImageLocation(), response.getData().getPhotos().getFirst().getImageLocation());
@@ -664,8 +662,8 @@ class ProductControllerTest {
             assertEquals("Product 0", dataFirst.getName());
             assertEquals("Description 0", dataFirst.getDescription());
             assertEquals("upload/product/product-product-test-0.png", dataFirst.getImageLocation());
-            assertNotNull(dataFirst.getCategory().getId());
-            assertEquals("Category Test", dataFirst.getCategory().getName());
+            assertNotNull(dataFirst.getCategoryResponse().getId());
+            assertEquals("Category Test", dataFirst.getCategoryResponse().getName());
 
             assertEquals(0, response.getPaging().getCurrentPage());
             assertEquals(10, response.getPaging().getSizePerPage());
@@ -728,8 +726,8 @@ class ProductControllerTest {
             assertEquals("Product 0", dataFirst.getName());
             assertEquals("Description 0", dataFirst.getDescription());
             assertEquals("upload/product/product-product-test-0.png", dataFirst.getImageLocation());
-            assertNotNull(dataFirst.getCategory().getId());
-            assertEquals("Category Test", dataFirst.getCategory().getName());
+            assertNotNull(dataFirst.getCategoryResponse().getId());
+            assertEquals("Category Test", dataFirst.getCategoryResponse().getName());
 
             assertEquals(0, response.getPaging().getCurrentPage());
             assertEquals(5, response.getPaging().getSizePerPage());
@@ -818,8 +816,8 @@ class ProductControllerTest {
             assertEquals(product.getHasVariant(), response.getData().getHasVariant());
             assertEquals(product.getPrice(), response.getData().getPrice());
             assertEquals(product.getStock(), response.getData().getStock());
-            assertEquals(product.getCategory().getId(), response.getData().getCategory().getId());
-            assertEquals(product.getCategory().getName(), response.getData().getCategory().getName());
+            assertEquals(product.getCategory().getId(), response.getData().getCategoryResponse().getId());
+            assertEquals(product.getCategory().getName(), response.getData().getCategoryResponse().getName());
             assertEquals(0, response.getData().getVariants().size());
             assertEquals(0, response.getData().getPhotos().size());
         });
@@ -867,8 +865,8 @@ class ProductControllerTest {
             assertEquals(product.getHasVariant(), response.getData().getHasVariant());
             assertEquals(product.getPrice(), response.getData().getPrice());
             assertEquals(product.getStock(), response.getData().getStock());
-            assertEquals(product.getCategory().getId(), response.getData().getCategory().getId());
-            assertEquals(product.getCategory().getName(), response.getData().getCategory().getName());
+            assertEquals(product.getCategory().getId(), response.getData().getCategoryResponse().getId());
+            assertEquals(product.getCategory().getName(), response.getData().getCategoryResponse().getName());
             assertEquals(1, response.getData().getVariants().size());
             assertEquals(0, response.getData().getPhotos().size());
 
@@ -933,8 +931,8 @@ class ProductControllerTest {
             assertEquals(product.getHasVariant(), response.getData().getHasVariant());
             assertEquals(product.getPrice(), response.getData().getPrice());
             assertEquals(product.getStock(), response.getData().getStock());
-            assertEquals(product.getCategory().getId(), response.getData().getCategory().getId());
-            assertEquals(product.getCategory().getName(), response.getData().getCategory().getName());
+            assertEquals(product.getCategory().getId(), response.getData().getCategoryResponse().getId());
+            assertEquals(product.getCategory().getName(), response.getData().getCategoryResponse().getName());
             assertEquals(1, response.getData().getVariants().size());
             assertEquals(1, response.getData().getPhotos().size());
 
@@ -1370,7 +1368,7 @@ class ProductControllerTest {
 
             assertEquals("Product Updated", response.getData().getName());
             assertEquals("Product description Updated", response.getData().getDescription());
-            assertEquals(categoryId, response.getData().getCategory().getId());
+            assertEquals(categoryId, response.getData().getCategoryResponse().getId());
             assertEquals(true, response.getData().getHasVariant());
             assertEquals(null, response.getData().getPrice());
             assertEquals(null, response.getData().getStock());
@@ -1452,10 +1450,10 @@ class ProductControllerTest {
 
             assertEquals("Product Updated", response.getData().getName());
             assertEquals("Product description Updated", response.getData().getDescription());
-            assertEquals(categoryId, response.getData().getCategory().getId());
+            assertEquals(categoryId, response.getData().getCategoryResponse().getId());
             assertEquals(true, response.getData().getHasVariant());
-            assertEquals(null, response.getData().getPrice());
-            assertEquals(null, response.getData().getStock());
+            assertNull(response.getData().getPrice());
+            assertNull(response.getData().getStock());
             assertEquals(productVariant.getId(), response.getData().getVariants().getFirst().getId());
             assertEquals("product-test-white", response.getData().getVariants().getFirst().getSku());
             assertEquals(10, response.getData().getVariants().getFirst().getStock());
@@ -1512,7 +1510,7 @@ class ProductControllerTest {
             assertEquals(product.getId(), response.getData().getId());
             assertEquals("Product Updated", response.getData().getName());
             assertEquals("Product description Updated", response.getData().getDescription());
-            assertEquals(categoryId, response.getData().getCategory().getId());
+            assertEquals(categoryId, response.getData().getCategoryResponse().getId());
             assertEquals(false, response.getData().getHasVariant());
             assertEquals(50, response.getData().getStock());
             assertEquals(150500, response.getData().getPrice());
@@ -1520,11 +1518,12 @@ class ProductControllerTest {
             assertEquals(0, response.getData().getPhotos().size());
 
             Product productRepo = productRepository.findById(product.getId()).orElse(null);
+            assertNotNull(productRepo);
             assertEquals(productRepo.getId(), response.getData().getId());
             assertEquals(productRepo.getName(), response.getData().getName());
             assertEquals(productRepo.getDescription(), response.getData().getDescription());
             assertEquals(productRepo.getHasVariant(), response.getData().getHasVariant());
-            assertEquals(productRepo.getCategory().getId(), response.getData().getCategory().getId());
+            assertEquals(productRepo.getCategory().getId(), response.getData().getCategoryResponse().getId());
             assertEquals(productRepo.getStock(), response.getData().getStock());
             assertEquals(productRepo.getPrice(), response.getData().getPrice());
             assertEquals(productRepo.getProductPhotos().size(), response.getData().getPhotos().size());
@@ -1587,10 +1586,10 @@ class ProductControllerTest {
 
             assertEquals("Product Updated", response.getData().getName());
             assertEquals("Product description Updated", response.getData().getDescription());
-            assertEquals(categoryId, response.getData().getCategory().getId());
+            assertEquals(categoryId, response.getData().getCategoryResponse().getId());
             assertEquals(true, response.getData().getHasVariant());
-            assertEquals(null, response.getData().getPrice());
-            assertEquals(null, response.getData().getStock());
+            assertNull(response.getData().getPrice());
+            assertNull(response.getData().getStock());
             assertEquals(productVariant.getId(), response.getData().getVariants().getFirst().getId());
             assertEquals("product-test-white", response.getData().getVariants().getFirst().getSku());
             assertEquals(10, response.getData().getVariants().getFirst().getStock());
@@ -1663,10 +1662,10 @@ class ProductControllerTest {
 
             assertEquals("Product Updated", response.getData().getName());
             assertEquals("Product description Updated", response.getData().getDescription());
-            assertEquals(categoryId, response.getData().getCategory().getId());
+            assertEquals(categoryId, response.getData().getCategoryResponse().getId());
             assertEquals(true, response.getData().getHasVariant());
-            assertEquals(null, response.getData().getPrice());
-            assertEquals(null, response.getData().getStock());
+            assertNull(response.getData().getPrice());
+            assertNull(response.getData().getStock());
             assertEquals(2, response.getData().getVariants().size());
 
             ProductResponse.ProductVariant productVariant1 = response.getData().getVariants().get(0);
@@ -1753,10 +1752,10 @@ class ProductControllerTest {
 
             assertEquals("Product Updated", response.getData().getName());
             assertEquals("Product description Updated", response.getData().getDescription());
-            assertEquals(categoryId, response.getData().getCategory().getId());
+            assertEquals(categoryId, response.getData().getCategoryResponse().getId());
             assertEquals(true, response.getData().getHasVariant());
-            assertEquals(null, response.getData().getPrice());
-            assertEquals(null, response.getData().getStock());
+            assertNull(response.getData().getPrice());
+            assertNull(response.getData().getStock());
             assertEquals(productVariant.getId(), response.getData().getVariants().getFirst().getId());
             assertEquals("product-test-black-large", response.getData().getVariants().getFirst().getSku());
             assertEquals(productVariant.getStock(), response.getData().getVariants().getFirst().getStock());
@@ -1821,7 +1820,7 @@ class ProductControllerTest {
 
             assertEquals("Product Updated", response.getData().getName());
             assertEquals("Product description Updated", response.getData().getDescription());
-            assertEquals(categoryId, response.getData().getCategory().getId());
+            assertEquals(categoryId, response.getData().getCategoryResponse().getId());
             assertEquals(false, response.getData().getHasVariant());
             assertEquals(150000, response.getData().getPrice());
             assertEquals(120, response.getData().getStock());

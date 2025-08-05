@@ -7,6 +7,7 @@ import dev.mfikri.widuriestock.entity.Role;
 import dev.mfikri.widuriestock.entity.User;
 import dev.mfikri.widuriestock.model.WebResponse;
 import dev.mfikri.widuriestock.model.product.CategoryCreateRequest;
+import dev.mfikri.widuriestock.model.product.CategoryResponse;
 import dev.mfikri.widuriestock.model.product.CategoryUpdateRequest;
 import dev.mfikri.widuriestock.repository.*;
 import dev.mfikri.widuriestock.util.BCrypt;
@@ -176,7 +177,7 @@ class CategoryControllerTest {
         ).andExpectAll(
                 status().isCreated()
         ).andDo(result -> {
-            WebResponse<Category> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            WebResponse<CategoryResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
 
             assertNull(response.getErrors());
@@ -231,14 +232,14 @@ class CategoryControllerTest {
         ).andExpectAll(
                 status().isOk()
         ).andDo(result -> {
-            WebResponse<List<Category>> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            WebResponse<List<CategoryResponse>> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
 
             assertNull(response.getErrors());
             assertNull(response.getPaging());
             assertNotNull(response.getData());
             assertEquals(5, response.getData().size());
-            Category category1 = response.getData().getFirst();
+            CategoryResponse category1 = response.getData().getFirst();
             assertNotNull(category1.getId());
             assertEquals("Category 0", category1.getName());
             assertEquals("Description 0", category1.getDescription());
@@ -255,7 +256,7 @@ class CategoryControllerTest {
         ).andExpectAll(
                 status().isBadRequest()
         ).andDo(result -> {
-            WebResponse<Category> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            WebResponse<CategoryResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
 
             assertNull(response.getData());
@@ -274,7 +275,7 @@ class CategoryControllerTest {
         ).andExpectAll(
                 status().isNotFound()
         ).andDo(result -> {
-            WebResponse<Category> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            WebResponse<CategoryResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
 
             assertNull(response.getData());
@@ -299,7 +300,7 @@ class CategoryControllerTest {
         ).andExpectAll(
                 status().isOk()
         ).andDo(result -> {
-            WebResponse<Category> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            WebResponse<CategoryResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
 
             assertNull(response.getErrors());
@@ -324,7 +325,7 @@ class CategoryControllerTest {
         ).andExpectAll(
                 status().isUnauthorized()
         ).andDo(result -> {
-            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            WebResponse<CategoryResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
 
             assertNull(response.getData());
@@ -352,7 +353,7 @@ class CategoryControllerTest {
         ).andExpectAll(
                 status().isBadRequest()
         ).andDo(result -> {
-            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            WebResponse<CategoryResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
 
             assertNull(response.getData());
@@ -376,7 +377,7 @@ class CategoryControllerTest {
         ).andExpectAll(
                 status().isNotFound()
         ).andDo(result -> {
-            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            WebResponse<CategoryResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
 
             assertNull(response.getData());
@@ -407,7 +408,7 @@ class CategoryControllerTest {
         ).andExpectAll(
                 status().isOk()
         ).andDo(result -> {
-            WebResponse<Category> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            WebResponse<CategoryResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
 
             assertNull(response.getErrors());
@@ -519,7 +520,7 @@ class CategoryControllerTest {
         ).andExpectAll(
                 status().isCreated()
         ).andDo(result -> {
-            WebResponse<Category> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            WebResponse<CategoryResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
 
             assertNull(response.getErrors());
@@ -545,14 +546,14 @@ class CategoryControllerTest {
         ).andExpectAll(
                 status().isOk()
         ).andDo(result -> {
-            WebResponse<List<Category>> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            WebResponse<List<CategoryResponse>> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
 
             assertNull(response.getErrors());
             assertNull(response.getPaging());
             assertNotNull(response.getData());
             assertEquals(1, response.getData().size());
-            Category category1 = response.getData().getFirst();
+            CategoryResponse category1 = response.getData().getFirst();
             assertNotNull(category1.getId());
             assertEquals(request.getName(), category1.getName());
             assertEquals(request.getDescription(), category1.getDescription());
@@ -570,7 +571,7 @@ class CategoryControllerTest {
         ).andExpectAll(
                 status().isOk()
         ).andDo(result -> {
-            WebResponse<Category> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            WebResponse<CategoryResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
 
             assertNull(response.getErrors());
@@ -596,7 +597,7 @@ class CategoryControllerTest {
         ).andExpectAll(
                 status().isOk()
         ).andDo(result -> {
-            WebResponse<Category> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            WebResponse<CategoryResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
 
             assertNull(response.getErrors());
@@ -681,14 +682,14 @@ class CategoryControllerTest {
         ).andExpectAll(
                 status().isOk()
         ).andDo(result -> {
-            WebResponse<List<Category>> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            WebResponse<List<CategoryResponse>> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
 
             assertNull(response.getErrors());
             assertNull(response.getPaging());
             assertNotNull(response.getData());
             assertEquals(1, response.getData().size());
-            Category category1 = response.getData().getFirst();
+            CategoryResponse category1 = response.getData().getFirst();
             assertNotNull(category1.getId());
             assertEquals(category.getName(), category1.getName());
             assertEquals(category.getDescription(), category1.getDescription());
@@ -703,7 +704,7 @@ class CategoryControllerTest {
         ).andExpectAll(
                 status().isOk()
         ).andDo(result -> {
-            WebResponse<Category> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            WebResponse<CategoryResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
 
             assertNull(response.getErrors());

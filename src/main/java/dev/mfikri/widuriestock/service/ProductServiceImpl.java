@@ -1,10 +1,7 @@
 package dev.mfikri.widuriestock.service;
 
 import dev.mfikri.widuriestock.entity.product.*;
-import dev.mfikri.widuriestock.model.product.ProductCreateRequest;
-import dev.mfikri.widuriestock.model.product.ProductResponse;
-import dev.mfikri.widuriestock.model.product.ProductUpdateRequest;
-import dev.mfikri.widuriestock.model.product.ProductsGetListResponse;
+import dev.mfikri.widuriestock.model.product.*;
 import dev.mfikri.widuriestock.repository.*;
 import dev.mfikri.widuriestock.util.ImageUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -190,7 +187,7 @@ public class ProductServiceImpl implements ProductService {
                 .hasVariant(product.getHasVariant())
                 .stock(product.getStock())
                 .price(product.getPrice())
-                .category(dev.mfikri.widuriestock.model.product.Category
+                .categoryResponse(CategoryResponse
                         .builder()
                         .id(category.getId())
                         .name(category.getName())
@@ -215,7 +212,7 @@ public class ProductServiceImpl implements ProductService {
             product.setId(productSummary.getId());
             product.setName(productSummary.getName());
             product.setDescription(productSummary.getDescription());
-            product.setCategory(dev.mfikri.widuriestock.model.product.Category.builder()
+            product.setCategoryResponse(CategoryResponse.builder()
                             .id(productSummary.getCategory().getId())
                             .name(productSummary.getCategory().getName())
                     .build());
@@ -248,7 +245,7 @@ public class ProductServiceImpl implements ProductService {
                 .hasVariant(product.getHasVariant())
                 .stock(product.getStock())
                 .price(product.getPrice())
-                .category(dev.mfikri.widuriestock.model.product.Category.builder()
+                .categoryResponse(CategoryResponse.builder()
                         .id(product.getCategory().getId())
                         .name(product.getCategory().getName())
                         .build())
@@ -404,7 +401,7 @@ public class ProductServiceImpl implements ProductService {
                 .hasVariant(product.getHasVariant())
                 .stock(product.getStock())
                 .price(product.getPrice())
-                .category(dev.mfikri.widuriestock.model.product.Category
+                .categoryResponse(CategoryResponse
                         .builder()
                         .id(category.getId())
                         .name(category.getName())

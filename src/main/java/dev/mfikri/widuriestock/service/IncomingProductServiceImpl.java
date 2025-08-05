@@ -11,6 +11,7 @@ import dev.mfikri.widuriestock.model.incoming_product.*;
 import dev.mfikri.widuriestock.repository.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.*;
+import org.springframework.data.util.Pair;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,217 +49,119 @@ public class IncomingProductServiceImpl implements IncomingProductService {
     @Override
     @Transactional
     public IncomingProductResponse create(IncomingProductCreateRequest request) {
+        log.info("Processing request to create a new incoming product transaction.");
+
         validationService.validate(request);
-//        log.info("test invoke");
+
         Supplier supplier = findSupplierByIdOrThrows(request.getSupplierId());
 
-        User user = userRepository.findById(request.getUsername())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User is not found."));
-
-        Set<Integer> productsIdList = new HashSet<>();
-        Map<Integer, Set<Integer>> productVariantsIdMap = new HashMap<>();
-
-
-        request.getIncomingProductDetails().forEach(incomingProductDetails -> {
-            // validation hasVariant
-            incomingProductDetailsValidationHasVariant(incomingProductDetails.getHasVariant(),
-                    incomingProductDetails.getPricePerUnit(),
-                    incomingProductDetails.getQuantity(),
-                    incomingProductDetails.getIncomingProductVariantDetails() == null,
-                    incomingProductDetails.getIncomingProductVariantDetails() != null);
-
-            // collect all productsIdList
-            productsIdList.add(incomingProductDetails.getProductId());
-
-            if (incomingProductDetails.getHasVariant()) {
-                // collect all productVariantsIdMap and group with it's productId
-                incomingProductDetails.getIncomingProductVariantDetails().forEach(incomingProductVariantDetail -> productVariantsIdMap.computeIfAbsent(incomingProductDetails.getProductId(), variantId -> new HashSet<>()).add(incomingProductVariantDetail.getVariantId()));
-            }
-        });
-
-        // check is product duplicate
-        if (productsIdList.size() != request.getIncomingProductDetails().size()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "'Product id' must not duplicate in one IncomingProduct.");
-        }
-
-        // find all products by id
-        List<Product> products = productRepository.findAllById(productsIdList);
-        // check if all product id is valid
-        if (products.size() != productsIdList.size()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Some of 'products' is not found, please check the productId again.");
-        }
-
         // 1. create IncomingProduct
+        User user = findUserByUsernameOrThrows(request.getUsername());
+        // 2. Validate request and collect all Ids
+        Pair<Set<Integer>, Set<Integer>> allIds = validateAndCollectIds(request);
+        Set<Integer> productIds = allIds.getFirst();
+        Set<Integer> variantIds = allIds.getSecond();
+
+        // 3. Fetch all required products and variants in bulk
+        Map<Integer, Product> productMap = fetchProducts(productIds);
+        Map<Integer, ProductVariant> variantMap = fetchProductVariants(variantIds);
+
+        // 4. Create the main IncomingProduct entity;
+        log.debug("Creating main IncomingProduct entity.");
         IncomingProduct incomingProductEntity = new IncomingProduct();
         incomingProductEntity.setDateIn(request.getDateIn());
         incomingProductEntity.setSupplier(supplier);
         incomingProductEntity.setUser(user);
         incomingProductEntity.setTotalProducts(request.getTotalProducts());
         incomingProductEntity.setNote(request.getNote());
+        log.debug("Saving main IncomingProduct entity to the database.");
         incomingProductRepository.save(incomingProductEntity);
 
-        List<Product> updatedProductList = new ArrayList<>();
-        List<ProductVariant> updatedProductVariant = new ArrayList<>();
+        // 5. Process details, create child entities, and update stock
         List<IncomingProductDetail> incomingProductDetailListEntity = new ArrayList<>();
-        Map<Integer, List<IncomingProductVariantDetail>> incomingProductVariantDetailMapEntity = new HashMap<>();
 
-        request.getIncomingProductDetails().forEach(incomingProductDetailsRequest -> {
-            // filter product by equals with request product id.
-            Product product = products.stream()
-                    .filter(p -> p.getId().equals(incomingProductDetailsRequest.getProductId())).findFirst()
-                    .orElse(null);
-            if (product == null) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product is not found.");
-            }
+        List<IncomingProductVariantDetail> allVariantDetails = new ArrayList<>();
 
-            // 2. create IncomingProductDetails
+        for (IncomingProductCreateRequest.IncomingProductDetails detailRequest: request.getIncomingProductDetails()) {
+            Product product = productMap.get(detailRequest.getProductId());
+            compareHasVariantIncomingProductDetailAndProduct(detailRequest.getHasVariant() != product.getHasVariant(), product);
+
             IncomingProductDetail incomingProductDetailEntity = new IncomingProductDetail();
-            incomingProductDetailEntity.setHasVariant(incomingProductDetailsRequest.getHasVariant());
+            incomingProductDetailEntity.setHasVariant(detailRequest.getHasVariant());
             incomingProductDetailEntity.setIncomingProduct(incomingProductEntity);
             incomingProductDetailEntity.setProduct(product);
 
-            // check if product.hasVariant properties from database is equals to incomingProductDetail.hasVariant request property
-            compareHasVariantIncomingProductDetailAndProduct(incomingProductDetailsRequest.getHasVariant() != product.getHasVariant(), product);
-
-            if (!incomingProductDetailsRequest.getHasVariant()) {
-                // set incomingProductDetail without variant
-                incomingProductDetailEntity.setPricePerUnit(incomingProductDetailsRequest.getPricePerUnit());
-                incomingProductDetailEntity.setQuantity(incomingProductDetailsRequest.getQuantity());
-                incomingProductDetailEntity.setTotalPrice(
-                        incomingProductDetailsRequest.getPricePerUnit() * incomingProductDetailsRequest.getQuantity()
-                );
-
-                // update product stock
-                product.setStock(product.getStock() + incomingProductDetailsRequest.getQuantity());
-                updatedProductList.add(product);
+            if (!detailRequest.getHasVariant()) {
+                // Product without variants
+                setIncomingProductDetailWithoutVariant(incomingProductDetailEntity, detailRequest.getPricePerUnit(), detailRequest.getQuantity());
+                product.setStock(product.getStock() + detailRequest.getQuantity());
             } else {
-                // set incomingProductDetail with variant
+                // Product with variants
                 AtomicInteger totalVariantQuantity = new AtomicInteger(0);
                 AtomicInteger totalVariantPrice = new AtomicInteger(0);
+                List<IncomingProductVariantDetail> variantDetailsForThisProduct = new ArrayList<>();
 
-                // check if product variant id is unique
-                if (productVariantsIdMap.get(incomingProductDetailsRequest.getProductId()).size() != incomingProductDetailsRequest.getIncomingProductVariantDetails().size()) {
-                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ProductVariants id must not duplicate in a single ProductVariantDetails.");
+                for (IncomingProductCreateRequest.IncomingProductVariantDetail variantDetailRequest: detailRequest.getIncomingProductVariantDetails()){
+                    ProductVariant productVariant = variantMap.get(variantDetailRequest.getVariantId());
+
+                    // Validate that the variant belongs to the correct product
+                    if (!productVariant.getProduct().getId().equals(product.getId())) {
+                        throw new ResponseStatusException(HttpStatus.CONFLICT, "ProductVariant with id " + productVariant.getId() + " is not a variant for Product with id " + product.getId() + ".");
+                    }
+
+                    IncomingProductVariantDetail variantDetailEntity = new IncomingProductVariantDetail();
+                    variantDetailEntity.setIncomingProductDetail(incomingProductDetailEntity);
+                    variantDetailEntity.setProductVariant(productVariant);
+                    variantDetailEntity.setPricePerUnit(variantDetailRequest.getPricePerUnit());
+                    variantDetailEntity.setQuantity(variantDetailRequest.getQuantity());
+                    variantDetailEntity.setTotalPrice(variantDetailRequest.getPricePerUnit() * variantDetailRequest.getQuantity());
+
+                    // Update stock and totals
+                    productVariant.setStock(productVariant.getStock() + variantDetailRequest.getQuantity());
+                    totalVariantQuantity.addAndGet(variantDetailRequest.getQuantity());
+                    totalVariantPrice.addAndGet(variantDetailEntity.getTotalPrice());
+
+                    variantDetailsForThisProduct.add(variantDetailEntity);
                 }
-
-                incomingProductDetailsRequest.getIncomingProductVariantDetails().forEach(incomingProductVariantDetailRequest -> {
-                    totalVariantQuantity.getAndAdd(incomingProductVariantDetailRequest.getQuantity());
-                    totalVariantPrice.getAndAdd(incomingProductVariantDetailRequest.getPricePerUnit() * incomingProductVariantDetailRequest.getQuantity());
-                });
 
                 incomingProductDetailEntity.setTotalVariantQuantity(totalVariantQuantity.get());
                 incomingProductDetailEntity.setTotalVariantPrice(totalVariantPrice.get());
+                incomingProductDetailEntity.setIncomingProductVariantDetails(variantDetailsForThisProduct);
+                allVariantDetails.addAll(variantDetailsForThisProduct);
             }
-
             incomingProductDetailListEntity.add(incomingProductDetailEntity);
-        });
-
-        // save to db all incomingProductDetail
-        incomingProductDetailRepository.saveAll(incomingProductDetailListEntity);
-        // update product to db
-        productRepository.saveAll(updatedProductList);
-
-
-
-        // create incomingProductVariantDetail
-        if (!productVariantsIdMap.isEmpty()) {
-            for (int i = 0; i < request.getIncomingProductDetails().size(); i++) {
-                IncomingProductDetail incomingProductDetailEntity = incomingProductDetailListEntity.get(i);
-                IncomingProductCreateRequest.IncomingProductDetails incomingProductDetailsRequest = request.getIncomingProductDetails().get(i);
-
-                if (incomingProductDetailEntity.getHasVariant()) {
-                    Product product = products
-                            .stream()
-                            .filter(p -> p.getId().equals(incomingProductDetailEntity.getProduct().getId()))
-                            .findFirst()
-                            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product is not found."));
-
-                    List<ProductVariant> productVariantList = productVariantRepository.findAllById(productVariantsIdMap.get(incomingProductDetailsRequest.getProductId()));
-
-                    if (productVariantList.size() != incomingProductDetailsRequest.getIncomingProductVariantDetails().size()) {
-                        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Some of ProductVariant is not found, please check ProductVariant id again.");
-                    }
-
-                    incomingProductDetailsRequest.getIncomingProductVariantDetails().forEach(incomingProductVariantDetailRequest -> {
-                        ProductVariant productVariant = productVariantList.stream().filter(pV -> Objects.equals(pV.getId(), incomingProductVariantDetailRequest.getVariantId())).findFirst().orElse(null);
-
-                        if (productVariant == null) {
-                            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "ProductVariant with id " + incomingProductVariantDetailRequest.getVariantId() + " is not found, please check ProductVariant id again.");
-                        }
-
-                        if (!Objects.equals(productVariant.getProduct().getId(), product.getId())) {
-                            throw new ResponseStatusException(HttpStatus.CONFLICT,"ProductVariant with id " + productVariant.getId() + " is not ProductVariant for Product with id " + product.getId() + "." );
-                        }
-
-                        IncomingProductVariantDetail incomingProductVariantDetailEntity = new IncomingProductVariantDetail();
-                        incomingProductVariantDetailEntity.setIncomingProductDetail(incomingProductDetailEntity);
-                        incomingProductVariantDetailEntity.setProductVariant(productVariant);
-                        incomingProductVariantDetailEntity.setPricePerUnit(incomingProductVariantDetailRequest.getPricePerUnit());
-                        incomingProductVariantDetailEntity.setQuantity(incomingProductVariantDetailRequest.getQuantity());
-                        incomingProductVariantDetailEntity.setTotalPrice(
-                                incomingProductVariantDetailRequest.getQuantity() * incomingProductVariantDetailRequest.getPricePerUnit()
-                        );
-
-                        // update product variant
-                        productVariant.setStock(productVariant.getStock() + incomingProductVariantDetailRequest.getQuantity());
-                        updatedProductVariant.add(productVariant);
-
-                        incomingProductVariantDetailMapEntity.computeIfAbsent(incomingProductDetailEntity.getId() , key -> new ArrayList<>()).add(incomingProductVariantDetailEntity);
-
-                    });
-                }
-            }
-
-            productVariantRepository.saveAll(updatedProductVariant);
-            incomingProductVariantDetailRepository.saveAll(incomingProductVariantDetailMapEntity.values().stream().flatMap(Collection::stream).toList());
         }
 
-        List<IncomingProductResponse.IncomingProductDetail> incomingProductDetailsResponse = incomingProductDetailListEntity.stream().map(incomingProductDetail -> {
-            List<IncomingProductVariantDetail> incomingProductVariantDetailList = incomingProductVariantDetailMapEntity.get(incomingProductDetail.getId());
-
-            List<IncomingProductResponse.IncomingProductVariantDetail> incomingProductVariantDetailsResponse = null;
-
-            if (incomingProductVariantDetailList != null) {
-                incomingProductVariantDetailsResponse  = incomingProductVariantDetailList
-                    .stream()
-                        .map(this::toIncomingProductVariantDetailResponse)
-                        .toList();
+        // 6. Save all created/updated entities in bulk
+        log.debug("Saving all entities to the database.");
+        List<IncomingProductDetail> incomingProductDetails = incomingProductDetailRepository.saveAll(incomingProductDetailListEntity);
+        log.debug("Saving incomingProductVariantDetails to the database, and mapping incomingProductVariantDetails to it's incomingProductDetail.");
+        if (!allVariantDetails.isEmpty()) {
+            List<IncomingProductVariantDetail> variantDetails = incomingProductVariantDetailRepository.saveAll(allVariantDetails);
+            for ( var productDetail: incomingProductDetails) {
+                List<IncomingProductVariantDetail> variantDetailForThisProductDetail = variantDetails.stream().filter(vD -> vD.getIncomingProductDetail().getId().equals(productDetail.getId())).toList();
+                productDetail.setIncomingProductVariantDetails(variantDetailForThisProductDetail);
             }
+        }
 
-            return IncomingProductResponse.IncomingProductDetail.builder()
-                    .id(incomingProductDetail.getId())
-                    .product(IncomingProductProductResponse.builder()
-                            .id(incomingProductDetail.getProduct().getId())
-                            .name(incomingProductDetail.getProduct().getName())
-                            .build())
-                    .pricePerUnit(incomingProductDetail.getPricePerUnit())
-                    .quantity(incomingProductDetail.getQuantity())
-                    .totalPrice(incomingProductDetail.getTotalPrice())
-                    .hasVariant(incomingProductDetail.getHasVariant())
-                    .totalVariantQuantity(incomingProductDetail.getTotalVariantQuantity())
-                    .totalVariantPrice(incomingProductDetail.getTotalVariantPrice())
-                    .incomingProductVariantDetails(incomingProductVariantDetailsResponse)
-                    .build();
-        }).toList();
+        productRepository.saveAll(productMap.values());
+        if (!variantMap.isEmpty()) {
+            productVariantRepository.saveAll(variantMap.values());;
+        }
+
+        log.info("Successfully created new incoming product. incomingProductId={}", incomingProductEntity.getId());
 
 
-        return IncomingProductResponse.builder()
-                .id(incomingProductEntity.getId())
-                .dateIn(incomingProductEntity.getDateIn())
-                .supplier(IncomingProductSupplierResponse.builder()
-                        .id(supplier.getId())
-                        .name(supplier.getSupplierName())
-                        .build())
-                .username(user.getUsername())
-                .totalProducts(incomingProductEntity.getTotalProducts())
-                .note(incomingProductEntity.getNote())
-                .incomingProductDetails(incomingProductDetailsResponse)
-                .build();
+        incomingProductEntity.setIncomingProductDetails(incomingProductDetails);
+
+        return toIncomingProductResponse(incomingProductEntity);
     }
 
     @Override
     @Transactional(readOnly = true)
     public IncomingProductResponse get(Integer incomingProductId) {
+        log.info("Processing request to get an incoming product transaction. incomingProductId={}", incomingProductId);
+
         // check incomingProductId null
         if (incomingProductId == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Id must be not null.");
@@ -267,47 +170,37 @@ public class IncomingProductServiceImpl implements IncomingProductService {
         // find incomingProductEntity
         IncomingProduct incomingProductEntity = findIncomingProductByIdOrThrows(incomingProductId);
 
-        List<IncomingProductResponse.IncomingProductDetail> incomingProductDetailsResponse = this.toIncomingProductDetailList(incomingProductEntity.getIncomingProductDetails());
-
+        log.info("Successfully get an incoming product transaction. incomingProductId={}", incomingProductId);
         // write response
-        return IncomingProductResponse.builder()
-                .id(incomingProductEntity.getId())
-                .dateIn(incomingProductEntity.getDateIn())
-                .supplier(IncomingProductSupplierResponse.builder()
-                        .id(incomingProductEntity.getSupplier().getId())
-                        .name(incomingProductEntity.getSupplier().getSupplierName())
-                        .build())
-                .username(incomingProductEntity.getUser().getUsername())
-                .totalProducts(incomingProductEntity.getTotalProducts())
-                .note(incomingProductEntity.getNote())
-                .incomingProductDetails(incomingProductDetailsResponse)
-                .build();
+        return toIncomingProductResponse(incomingProductEntity);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<IncomingProductGetListResponse> getList(IncomingProductGetListRequest request) {
-        validationService.validate(request);
+        log.info("Processing request to get list of incoming product transactions.");
 
         // validation startDate and endDate
-        if (request.getStartDate() == null) {
-            request.setStartDate(LocalDate.parse("1970-01-01"));
-        }
+        log.debug("Validating and assign default value. startDate={}, endDate={}", request.getStartDate(), request.getEndDate());
 
-        if (request.getEndDate() == null) {
-            request.setEndDate(LocalDate.now());
-        }
+        LocalDate activeStartDate = request.getStartDate() != null ? request.getStartDate() : LocalDate.parse("1970-01-01");
+        LocalDate activeEndDate = request.getEndDate() != null ? request.getEndDate() : LocalDate.now();
 
 
-        if (request.getStartDate().isAfter(request.getEndDate())) {
+        log.debug("Verifying if activeStartDate is before or equal to activeEndDate. activeStartDate={}, activeEndDate={}", activeStartDate, activeEndDate);
+        if (activeStartDate.isAfter(activeEndDate)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Start date " + request.getStartDate() + " must be before or equal to end date " + request.getEndDate() + ".");
+                    "Start date " + activeStartDate + " must be before or equal to end date " + activeEndDate + ".");
         }
 
+        // validate page and size
+        log.debug("Validating and assign default value. page={}, size={}", request.getPage(), request.getSize());
+        int activePage = request.getPage() != null ? request.getPage() : 0;
+        int activeSize = request.getSize() != null ? request.getSize() : 10;
 
-        Pageable pageable = PageRequest.of(request.getPage(), request.getSize(), Sort.by(Sort.Order.asc("dateIn")));
+        Pageable pageable = PageRequest.of(activePage, activeSize, Sort.by(Sort.Order.asc("dateIn")));
 
-        Page<IncomingProduct> incomingProductPage = incomingProductRepository.findByDateInBetween(request.getStartDate(), request.getEndDate(), pageable);
+        Page<IncomingProduct> incomingProductPage = incomingProductRepository.findByDateInBetween(activeStartDate, activeEndDate, pageable);
 
         List<IncomingProductGetListResponse> incomingProductsListResponse = incomingProductPage.getContent().stream().map(incomingProduct -> IncomingProductGetListResponse.builder()
                 .id(incomingProduct.getId())
@@ -321,7 +214,7 @@ public class IncomingProductServiceImpl implements IncomingProductService {
                 .note(incomingProduct.getNote())
                 .build()).toList();
 
-
+        log.info("Successfully get list of incoming product transactions.");
         return new PageImpl<>(incomingProductsListResponse, pageable, incomingProductPage.getTotalElements());
     }
 
@@ -821,8 +714,7 @@ public class IncomingProductServiceImpl implements IncomingProductService {
     private void incomingProductDetailsValidationHasVariant(Boolean hasVariant,
                                                             Integer pricePerUnit, Integer quantity,
                                                             boolean incomingProductVariantDetailsIsNull,
-                                                            boolean incomingProductVariantDetailsIsNotNull
-    ) {
+                                                            boolean incomingProductVariantDetailsIsNotNull) {
         if (hasVariant &&
                 (pricePerUnit != null || quantity != null)
         ) {
@@ -899,13 +791,97 @@ public class IncomingProductServiceImpl implements IncomingProductService {
 
 
     private IncomingProduct findIncomingProductByIdOrThrows(Integer incomingProductId) {
+        log.debug("Finding incomingProduct. incomingProductId={}", incomingProductId);
         return incomingProductRepository.findById(incomingProductId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "IncomingProduct is not found. Please check IncomingProduct id again."));
     }
     private Supplier findSupplierByIdOrThrows(Integer supplierId) {
+        log.debug("Finding supplier. supplierId={}", supplierId);
         return supplierRepository.findById(supplierId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Supplier is not found. Please check Supplier Id again."));
     }
 
+    private User findUserByUsernameOrThrows(String username) {
+        log.debug("Finding user. username={}", username);
+        return userRepository.findById(username)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User is not found."));
+    }
+
+    private Pair<Set<Integer>, Set<Integer>> validateAndCollectIds(IncomingProductCreateRequest request) {
+        log.debug("Validating request details and collecting entity IDs.");
+        Set<Integer> productIds = new HashSet<>();
+        Set<Integer> variantIds = new HashSet<>();
+
+        for (var detail : request.getIncomingProductDetails()) {
+            incomingProductDetailsValidationHasVariant(detail.getHasVariant(),
+                    detail.getPricePerUnit(),
+                    detail.getQuantity(),
+                    detail.getIncomingProductVariantDetails() == null,
+                    detail.getIncomingProductVariantDetails() != null);
+
+            if (!productIds.add(detail.getProductId())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Product id " + detail.getProductId() + " is duplicate.");
+            }
+
+            if (detail.getHasVariant()) {
+                Set<Integer> variantsForThisProduct = new HashSet<>();
+                for (var variantDetail: detail.getIncomingProductVariantDetails()) {
+                    if (!variantsForThisProduct.add(variantDetail.getVariantId())) {
+                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ProductVariant id " + variantDetail.getVariantId() + " is duplicate for same product.");
+                    }
+                    variantIds.add(variantDetail.getVariantId());
+                }
+            }
+        }
+        return Pair.of(productIds, variantIds);
+    }
+
+    private Map<Integer, Product> fetchProducts(Set<Integer> productIds) {
+        log.debug("Fetching all product in bulk. count={}", productIds.size());
+
+        List<Product> products = productRepository.findAllById(productIds);
+        if (productIds.size() != products.size()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Some products are not found. Please check product IDs again.");
+        }
+
+        Map<Integer, Product> productMap = new HashMap<>();
+        products.forEach(p -> productMap.put(p.getId(), p));
+        return productMap;
+    }
+
+    private Map<Integer, ProductVariant> fetchProductVariants(Set<Integer> variantsIds) {
+        if (variantsIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        log.debug("Fetching all productVariant in bulk. count={}", variantsIds.size());
+        List<ProductVariant> variants = productVariantRepository.findAllById(variantsIds);
+
+        if (variants.size() != variantsIds.size()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Some productVariants are not found. Please check productVariant IDs again.");
+        }
+
+        Map<Integer, ProductVariant> variantMap = new HashMap<>();
+        variants.forEach(v -> variantMap.put(v.getId(), v));
+        return  variantMap;
+    }
+
+    private IncomingProductResponse toIncomingProductResponse (IncomingProduct incomingProduct) {
+        log.debug("Mapping incomingProduct to response.");
+        List<IncomingProductResponse.IncomingProductDetail> details = toIncomingProductDetailList(incomingProduct.getIncomingProductDetails());
+
+        return  IncomingProductResponse.builder()
+                .id(incomingProduct.getId())
+                .dateIn(incomingProduct.getDateIn())
+                .supplier(IncomingProductSupplierResponse.builder()
+                        .id(incomingProduct.getSupplier().getId())
+                        .name(incomingProduct.getSupplier().getSupplierName())
+                        .build())
+                .username(incomingProduct.getUser().getUsername())
+                .totalProducts(incomingProduct.getTotalProducts())
+                .note(incomingProduct.getNote())
+                .incomingProductDetails(details)
+                .build();
+    }
 
 }

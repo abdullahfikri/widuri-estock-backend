@@ -17,7 +17,6 @@ import dev.mfikri.widuriestock.model.incoming_product.*;
 import dev.mfikri.widuriestock.repository.*;
 import dev.mfikri.widuriestock.util.BCrypt;
 import dev.mfikri.widuriestock.util.JwtUtil;
-import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,7 +30,6 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -399,7 +397,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("'Product id' must not duplicate in one IncomingProduct.", response.getErrors());
+            assertEquals("Product id 0 is duplicate.", response.getErrors());
             log.info(response.getErrors());
         });
 
@@ -443,7 +441,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("Some of 'products' is not found, please check the productId again.", response.getErrors());
+            assertEquals("Some products are not found. Please check product IDs again.", response.getErrors());
             log.info(response.getErrors());
         });
     }
@@ -463,7 +461,7 @@ class IncomingProductControllerTest {
         incomingProductDetailsRequest.setIncomingProductVariantDetails(
                 List.of(IncomingProductCreateRequest.IncomingProductVariantDetail
                         .builder()
-                        .variantId(100)
+                        .variantId(productVariant.getId())
                         .pricePerUnit(1000)
                         .quantity(100)
                         .build()
@@ -530,7 +528,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("Some of ProductVariant is not found, please check ProductVariant id again.", response.getErrors());
+            assertEquals("Some productVariants are not found. Please check productVariant IDs again.", response.getErrors());
         });
     }
 
@@ -595,7 +593,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("ProductVariant with id " + productVariant.getId() + " is not ProductVariant for Product with id " + productWithVariant.getId() + ".", response.getErrors());
+            assertEquals("ProductVariant with id " + productVariant.getId() + " is not a variant for Product with id " + productWithVariant.getId() + ".", response.getErrors());
         });
     }
 
@@ -1089,7 +1087,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("incomingProductId type data is wrong.", response.getErrors());
+            assertEquals("Invalid number format for property 'incomingProductId'. Value 'abc' is not a valid number.", response.getErrors());
         });
     }
 
@@ -1388,7 +1386,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("page type data is wrong.", response.getErrors());
+            assertEquals("Invalid format for property 'page'. Please check the data type.", response.getErrors());
         });
 
         mockMvc.perform(
@@ -1406,7 +1404,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("size type data is wrong.", response.getErrors());
+            assertEquals("Invalid format for property 'size'. Please check the data type.", response.getErrors());
         });
     }
 
@@ -1416,8 +1414,8 @@ class IncomingProductControllerTest {
                 get("/api/incoming-products")
                         .header("Authorization", authorizationToken)
                         .accept(MediaType.APPLICATION_JSON)
-                        .param("start_date", "123")
-                        .param("end_date", "123")
+                        .param("startDate", "123")
+                        .param("endDate", "2025-10-30")
                         .param("page", "1")
                         .param("size", "10")
         ).andExpectAll(
@@ -1429,15 +1427,15 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("start_date type data is wrong.", response.getErrors());
+            assertEquals("Invalid format for property 'startDate'. Please check the data type.", response.getErrors());
         });
 
         mockMvc.perform(
                 get("/api/incoming-products")
                         .header("Authorization", authorizationToken)
                         .accept(MediaType.APPLICATION_JSON)
-                        .param("start_date", "2025-10-30")
-                        .param("end_date", "123")
+                        .param("startDate", "2025-10-30")
+                        .param("endDate", "123")
                         .param("page", "1")
                         .param("size", "10")
         ).andExpectAll(
@@ -1449,7 +1447,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("end_date type data is wrong.", response.getErrors());
+            assertEquals("Invalid format for property 'endDate'. Please check the data type.", response.getErrors());
         });
     }
 
@@ -1459,8 +1457,8 @@ class IncomingProductControllerTest {
                 get("/api/incoming-products")
                         .header("Authorization", authorizationToken)
                         .accept(MediaType.APPLICATION_JSON)
-                        .param("start_date", "2025-01-10")
-                        .param("end_date", "2025-01-01")
+                        .param("startDate", "2025-01-10")
+                        .param("endDate", "2025-01-01")
                         .param("page", "1")
                         .param("size", "10")
         ).andExpectAll(
@@ -1552,7 +1550,7 @@ class IncomingProductControllerTest {
                 get("/api/incoming-products")
                         .header("Authorization", authorizationToken)
                         .accept(MediaType.APPLICATION_JSON)
-                        .param("start_date", "2025-05-11")
+                        .param("startDate", "2025-05-11")
                         .param("page", "0")
                         .param("size", "10")
         ).andExpectAll(
@@ -1604,7 +1602,7 @@ class IncomingProductControllerTest {
                 get("/api/incoming-products")
                         .header("Authorization", authorizationToken)
                         .accept(MediaType.APPLICATION_JSON)
-                        .param("end_date", "2025-05-11")
+                        .param("endDate", "2025-05-11")
                         .param("page", "0")
                         .param("size", "10")
         ).andExpectAll(
@@ -1656,8 +1654,8 @@ class IncomingProductControllerTest {
                 get("/api/incoming-products")
                         .header("Authorization", authorizationToken)
                         .accept(MediaType.APPLICATION_JSON)
-                        .param("start_date", "2025-05-05")
-                        .param("end_date", "2025-05-10")
+                        .param("startDate", "2025-05-05")
+                        .param("endDate", "2025-05-10")
                         .param("page", "0")
                         .param("size", "10")
         ).andExpectAll(
@@ -1719,7 +1717,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("incomingProductId type data is wrong.", response.getErrors());
+            assertEquals("Invalid number format for property 'incomingProductId'. Value 'abc' is not a valid number.", response.getErrors());
         });
     }
 
@@ -2800,10 +2798,14 @@ class IncomingProductControllerTest {
                         .orElse(null);
 
                 Product product = productList.stream()
-                        .filter(p -> p.getId().equals(incomingProductDetailUpdateRequest.getProductId()))
+                        .filter(p -> {
+                            assertNotNull(incomingProductDetailUpdateRequest);
+                            return p.getId().equals(incomingProductDetailUpdateRequest.getProductId());
+                        })
                         .findFirst()
                         .orElse(null);
 
+                assertNotNull(product);
                 assertEquals(incomingProductDetailUpdateRequest.getId(), incomingProductDetailResponse.getId());
                 assertEquals(incomingProductDetailUpdateRequest.getId(), incomingProductDetailResponse.getId());
 
@@ -2838,6 +2840,7 @@ class IncomingProductControllerTest {
                         .orElse(null);
 
 
+                assertNotNull(incomingProductDetailBeforeUpdated);
                 int quantityChange = incomingProductDetailUpdateRequest.getQuantity() - incomingProductDetailBeforeUpdated.getQuantity();
 
                 Product productDB = productRepository.findById(product.getId()).orElse(null);
@@ -3171,6 +3174,7 @@ class IncomingProductControllerTest {
 
 
                 if (!incomingProductDetailResponse.getHasVariant()) {
+                    assertNotNull(incomingProductDetailRequestCurrent);
                     assertEquals(incomingProductDetailRequestCurrent.getId(), incomingProductDetailResponse.getId());
                     assertEquals(productWithoutVariant.getId(), incomingProductDetailResponse.getProduct().getId());
                     assertEquals(productWithoutVariant.getName(), incomingProductDetailResponse.getProduct().getName());
@@ -3198,7 +3202,7 @@ class IncomingProductControllerTest {
                     log.info(String.valueOf(product.getStock()));
                 } else {
 
-                    assertNotNull(incomingProductDetailResponse);
+                    assertNotNull(incomingProductDetailRequestCurrent);
                     assertEquals(incomingProductDetailRequestCurrent.getId(), incomingProductDetailResponse.getId());
                     assertEquals(productWithVariant.getId(), incomingProductDetailResponse.getProduct().getId());
                     assertEquals(productWithVariant.getName(), incomingProductDetailResponse.getProduct().getName());
@@ -3304,7 +3308,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("incomingProductId type data is wrong.", response.getErrors());
+            assertEquals("Invalid number format for property 'incomingProductId'. Value 'abc' is not a valid number.", response.getErrors());
         });
     }
 
@@ -3876,7 +3880,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("incomingProductDetailId type data is wrong.", response.getErrors());
+            assertEquals("Invalid number format for property 'incomingProductDetailId'. Value 'abc' is not a valid number.", response.getErrors());
         });
     }
 
@@ -4148,7 +4152,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("incomingProductVariantDetailId type data is wrong.", response.getErrors());
+            assertEquals("Invalid number format for property 'incomingProductVariantDetailId'. Value 'abc' is not a valid number.", response.getErrors());
         });
     }
 
@@ -4249,7 +4253,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("incomingProductDetailId type data is wrong.", response.getErrors());
+            assertEquals("Invalid number format for property 'incomingProductDetailId'. Value 'abc' is not a valid number.", response.getErrors());
         });
     }
 
@@ -4407,7 +4411,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("incomingProductId type data is wrong.", response.getErrors());
+            assertEquals("Invalid number format for property 'incomingProductId'. Value 'abc' is not a valid number.", response.getErrors());
         });
     }
 

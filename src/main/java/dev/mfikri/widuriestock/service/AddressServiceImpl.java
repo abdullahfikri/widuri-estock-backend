@@ -32,46 +32,57 @@ public class AddressServiceImpl implements AddressService {
     @Override
     @Transactional
     public AddressResponse create(AddressCreateRequest request) {
+        log.info("Processing request to create a new address for user.");
+
         validationService.validate(request);
 
+        log.debug("Finding user associated with the request.");
         User user = userRepository.findById(request.getUsername()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User is not found."));
 
         Address address = new Address();
         address.setUser(user);
         setAddress(address, request.getStreet(), request.getVillage(), request.getDistrict(), request.getCity(), request.getProvince(), request.getCountry(), request.getPostalCode());
 
+        log.debug("Saving new address entity to the database.");
         addressRepository.save(address);
 
+        log.info("Successfully created new address. addressId={}.", address.getId());
         return toAddressResponse(address);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<AddressResponse> getList(String username) {
-
+        log.info("Processing request to get list of addresses for user.");
 
         User user = findUserByUsernameOrThrows(username);
-        List<Address> addresses = addressRepository.findAllByUser(user, Sort.by("updatedAt"));
-//        List<Address> addresses = addressRepository.findAllByUser(user);
 
-        for (Address address : addresses) {
-            log.info(address.getStreet());
-        }
+        log.debug("Finding all addresses associated with the user");
+        List<Address> addresses = addressRepository.findAllByUser(user, Sort.by("updatedAt"));
+
+
+        log.info("Successfully found addresses for the user. count={}", addresses.size());
         return addresses.stream().map(AddressServiceImpl::toAddressResponse).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
     public AddressResponse get(String username, Integer addressId) {
+        log.info("Processing request to get an address. addressId={}", addressId);
+
         User user = findUserByUsernameOrThrows(username);
+
         Address address = findAddressByIdAndUserOrThrows(addressId, user);
 
+        log.info("Successfully found address. addressId={}", addressId);
         return toAddressResponse(address);
     }
 
     @Override
     @Transactional
     public AddressResponse update(AddressUpdateRequest request) {
+        log.info("Processing request to update an address. addressId={}", request.getAddressId());
+
         validationService.validate(request);
 
         User user = findUserByUsernameOrThrows(request.getUsername());
@@ -80,19 +91,27 @@ public class AddressServiceImpl implements AddressService {
 
         // update
         setAddress(address, request.getStreet(), request.getVillage(), request.getDistrict(), request.getCity(), request.getProvince(), request.getCountry(), request.getPostalCode());
+
+        log.debug("Saving updated address entity to the database.");
         addressRepository.save(address);
 
+        log.info("Successfully update an address. addressId={}", address.getId());
         return toAddressResponse(address);
     }
 
     @Override
     @Transactional
     public void delete(String username, Integer addressId) {
+        log.info("Processing request to delete an address. addressId={}", addressId);
+
         User user = findUserByUsernameOrThrows(username);
-        int totalRecordImpact = addressRepository.deleteAddressByIdAndUser(addressId, user);
-        if (totalRecordImpact != 1) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Address is not found.");
-        }
+        log.debug("Delete an address with combination of user and addressId.");
+
+        Address address = findAddressByIdAndUserOrThrows(addressId, user);
+        addressRepository.delete(address);
+
+
+        log.info("Successfully delete an address. addressId={}", addressId);
     }
 
     public static void setAddress(Address address, String street, String village, String district, String city, String province, String country, String postalCode) {
@@ -106,10 +125,12 @@ public class AddressServiceImpl implements AddressService {
     }
 
     private User findUserByUsernameOrThrows(String username) {
+        log.debug("Finding user. username={}", username);
         return userRepository.findById(username.trim()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User is not found."));
     }
 
     private Address findAddressByIdAndUserOrThrows(Integer addressId, User user) {
+        log.debug("Finding address. addressId={}", addressId);
         return addressRepository.findAddressByIdAndUser(addressId, user)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Address is not found."));
     }

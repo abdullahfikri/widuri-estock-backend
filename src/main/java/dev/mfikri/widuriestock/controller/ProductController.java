@@ -7,6 +7,7 @@ import dev.mfikri.widuriestock.model.product.ProductResponse;
 import dev.mfikri.widuriestock.model.product.ProductUpdateRequest;
 import dev.mfikri.widuriestock.model.product.ProductsGetListResponse;
 import dev.mfikri.widuriestock.service.ProductService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/api")
 public class ProductController {
@@ -30,6 +32,8 @@ public class ProductController {
     )
     @ResponseStatus(HttpStatus.CREATED)
     public WebResponse<ProductResponse> create(@ModelAttribute ProductCreateRequest request) {
+        log.info("Receiving request to create a new product.");
+
         ProductResponse response = productService.create(request);
 
         return WebResponse.<ProductResponse>builder()
@@ -42,6 +46,8 @@ public class ProductController {
     )
     public WebResponse<List<ProductsGetListResponse>> getList(@RequestParam(value = "page", required = false, defaultValue = "0") Integer page,
                                         @RequestParam(value = "size", required = false, defaultValue = "10") Integer size) {
+        log.info("Receiving request to get list of products.");
+
         Page<ProductsGetListResponse> responsePage = productService.getList(page, size);
 
         return WebResponse.<List<ProductsGetListResponse>>builder()
@@ -58,6 +64,8 @@ public class ProductController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public WebResponse<ProductResponse> get(@PathVariable Integer productId) {
+        log.info("Receiving request to get a product. productId={}", productId);
+
         ProductResponse response = productService.get(productId);
 
         return WebResponse.<ProductResponse>builder()
@@ -70,6 +78,7 @@ public class ProductController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public WebResponse<ProductResponse> update(@ModelAttribute ProductUpdateRequest request, @PathVariable Integer productId) {
+        log.info("Receiving request to update a product. productId={}", productId);
 
         request.setId(productId);
         ProductResponse response = productService.update(request);
@@ -84,6 +93,8 @@ public class ProductController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public WebResponse<String> delete(@PathVariable Integer productId) {
+        log.info("Receiving request to delete a product. productId={}", productId);
+
         productService.delete(productId);
 
         return WebResponse.<String>builder()
