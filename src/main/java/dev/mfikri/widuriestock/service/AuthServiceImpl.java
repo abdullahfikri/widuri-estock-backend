@@ -92,6 +92,7 @@ public class AuthServiceImpl implements AuthService {
 
         log.debug("Verifying if refresh token is expired. tokenId={}", refreshToken.getId());
         if (refreshTokenService.isTokenExpired(refreshToken)) {
+            refreshTokenService.delete(refreshToken);
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh Token is expired");
         }
         String username = refreshToken.getUser().getUsername();

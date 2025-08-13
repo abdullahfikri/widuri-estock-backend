@@ -53,107 +53,32 @@ public class IncomingProductServiceImpl implements IncomingProductService {
 
         validationService.validate(request);
 
+        // 1. Fetch all required entities in bulk to avoid N+1 queries
         Supplier supplier = findSupplierByIdOrThrows(request.getSupplierId());
-
-        // 1. create IncomingProduct
         User user = findUserByUsernameOrThrows(request.getUsername());
-        // 2. Validate request and collect all Ids
-        Pair<Set<Integer>, Set<Integer>> allIds = validateAndCollectIds(request);
-        Set<Integer> productIds = allIds.getFirst();
-        Set<Integer> variantIds = allIds.getSecond();
 
-        // 3. Fetch all required products and variants in bulk
-        Map<Integer, Product> productMap = fetchProducts(productIds);
-        Map<Integer, ProductVariant> variantMap = fetchProductVariants(variantIds);
+        // 2. Build the main IncomingProduct entity (still transient, not saved yet)
+        IncomingProduct incomingProductEntity = buildIncomingProductEntity(request, supplier, user);
 
-        // 4. Create the main IncomingProduct entity;
-        log.debug("Creating main IncomingProduct entity.");
-        IncomingProduct incomingProductEntity = new IncomingProduct();
-        incomingProductEntity.setDateIn(request.getDateIn());
-        incomingProductEntity.setSupplier(supplier);
-        incomingProductEntity.setUser(user);
-        incomingProductEntity.setTotalProducts(request.getTotalProducts());
-        incomingProductEntity.setNote(request.getNote());
+        // 3. Save the parent entity first to get an ID and make it "managed"
         log.debug("Saving main IncomingProduct entity to the database.");
         incomingProductRepository.save(incomingProductEntity);
 
-        // 5. Process details, create child entities, and update stock
-        List<IncomingProductDetail> incomingProductDetailListEntity = new ArrayList<>();
+        // 4. Process and build child entities
+        Pair<List<IncomingProductDetail>, List<IncomingProductVariantDetail>> processedDetails = processAndBuildDetails(request, incomingProductEntity);
 
-        List<IncomingProductVariantDetail> allVariantDetails = new ArrayList<>();
+        List<IncomingProductDetail> incomingProductDetailListEntity = processedDetails.getFirst();
+        List<IncomingProductVariantDetail> incomingProductVariantDetailListEntity = processedDetails.getSecond();
 
-        for (IncomingProductCreateRequest.IncomingProductDetails detailRequest: request.getIncomingProductDetails()) {
-            Product product = productMap.get(detailRequest.getProductId());
-            compareHasVariantIncomingProductDetailAndProduct(detailRequest.getHasVariant() != product.getHasVariant(), product);
-
-            IncomingProductDetail incomingProductDetailEntity = new IncomingProductDetail();
-            incomingProductDetailEntity.setHasVariant(detailRequest.getHasVariant());
-            incomingProductDetailEntity.setIncomingProduct(incomingProductEntity);
-            incomingProductDetailEntity.setProduct(product);
-
-            if (!detailRequest.getHasVariant()) {
-                // Product without variants
-                setIncomingProductDetailWithoutVariant(incomingProductDetailEntity, detailRequest.getPricePerUnit(), detailRequest.getQuantity());
-                product.setStock(product.getStock() + detailRequest.getQuantity());
-            } else {
-                // Product with variants
-                AtomicInteger totalVariantQuantity = new AtomicInteger(0);
-                AtomicInteger totalVariantPrice = new AtomicInteger(0);
-                List<IncomingProductVariantDetail> variantDetailsForThisProduct = new ArrayList<>();
-
-                for (IncomingProductCreateRequest.IncomingProductVariantDetail variantDetailRequest: detailRequest.getIncomingProductVariantDetails()){
-                    ProductVariant productVariant = variantMap.get(variantDetailRequest.getVariantId());
-
-                    // Validate that the variant belongs to the correct product
-                    if (!productVariant.getProduct().getId().equals(product.getId())) {
-                        throw new ResponseStatusException(HttpStatus.CONFLICT, "ProductVariant with id " + productVariant.getId() + " is not a variant for Product with id " + product.getId() + ".");
-                    }
-
-                    IncomingProductVariantDetail variantDetailEntity = new IncomingProductVariantDetail();
-                    variantDetailEntity.setIncomingProductDetail(incomingProductDetailEntity);
-                    variantDetailEntity.setProductVariant(productVariant);
-                    variantDetailEntity.setPricePerUnit(variantDetailRequest.getPricePerUnit());
-                    variantDetailEntity.setQuantity(variantDetailRequest.getQuantity());
-                    variantDetailEntity.setTotalPrice(variantDetailRequest.getPricePerUnit() * variantDetailRequest.getQuantity());
-
-                    // Update stock and totals
-                    productVariant.setStock(productVariant.getStock() + variantDetailRequest.getQuantity());
-                    totalVariantQuantity.addAndGet(variantDetailRequest.getQuantity());
-                    totalVariantPrice.addAndGet(variantDetailEntity.getTotalPrice());
-
-                    variantDetailsForThisProduct.add(variantDetailEntity);
-                }
-
-                incomingProductDetailEntity.setTotalVariantQuantity(totalVariantQuantity.get());
-                incomingProductDetailEntity.setTotalVariantPrice(totalVariantPrice.get());
-                incomingProductDetailEntity.setIncomingProductVariantDetails(variantDetailsForThisProduct);
-                allVariantDetails.addAll(variantDetailsForThisProduct);
-            }
-            incomingProductDetailListEntity.add(incomingProductDetailEntity);
-        }
-
-        // 6. Save all created/updated entities in bulk
-        log.debug("Saving all entities to the database.");
-        List<IncomingProductDetail> incomingProductDetails = incomingProductDetailRepository.saveAll(incomingProductDetailListEntity);
-        log.debug("Saving incomingProductVariantDetails to the database, and mapping incomingProductVariantDetails to it's incomingProductDetail.");
-        if (!allVariantDetails.isEmpty()) {
-            List<IncomingProductVariantDetail> variantDetails = incomingProductVariantDetailRepository.saveAll(allVariantDetails);
-            for ( var productDetail: incomingProductDetails) {
-                List<IncomingProductVariantDetail> variantDetailForThisProductDetail = variantDetails.stream().filter(vD -> vD.getIncomingProductDetail().getId().equals(productDetail.getId())).toList();
-                productDetail.setIncomingProductVariantDetails(variantDetailForThisProductDetail);
-            }
-        }
-
-        productRepository.saveAll(productMap.values());
-        if (!variantMap.isEmpty()) {
-            productVariantRepository.saveAll(variantMap.values());;
+        // 5. Save all created child entities in bulk
+        log.debug("Saving all child entities to the persistence database.");
+        incomingProductDetailRepository.saveAll(incomingProductDetailListEntity);
+        if (!incomingProductVariantDetailListEntity.isEmpty()) {
+            incomingProductVariantDetailRepository.saveAll(incomingProductVariantDetailListEntity);
         }
 
         log.info("Successfully created new incoming product. incomingProductId={}", incomingProductEntity.getId());
-
-
-        incomingProductEntity.setIncomingProductDetails(incomingProductDetails);
-
+        incomingProductEntity.setIncomingProductDetails(incomingProductDetailListEntity);
         return toIncomingProductResponse(incomingProductEntity);
     }
 
@@ -162,16 +87,10 @@ public class IncomingProductServiceImpl implements IncomingProductService {
     public IncomingProductResponse get(Integer incomingProductId) {
         log.info("Processing request to get an incoming product transaction. incomingProductId={}", incomingProductId);
 
-        // check incomingProductId null
-        if (incomingProductId == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Id must be not null.");
-        }
-
         // find incomingProductEntity
         IncomingProduct incomingProductEntity = findIncomingProductByIdOrThrows(incomingProductId);
 
         log.info("Successfully get an incoming product transaction. incomingProductId={}", incomingProductId);
-        // write response
         return toIncomingProductResponse(incomingProductEntity);
     }
 
@@ -199,7 +118,6 @@ public class IncomingProductServiceImpl implements IncomingProductService {
         int activeSize = request.getSize() != null ? request.getSize() : 10;
 
         Pageable pageable = PageRequest.of(activePage, activeSize, Sort.by(Sort.Order.asc("dateIn")));
-
         Page<IncomingProduct> incomingProductPage = incomingProductRepository.findByDateInBetween(activeStartDate, activeEndDate, pageable);
 
         List<IncomingProductGetListResponse> incomingProductsListResponse = incomingProductPage.getContent().stream().map(incomingProduct -> IncomingProductGetListResponse.builder()
@@ -221,217 +139,239 @@ public class IncomingProductServiceImpl implements IncomingProductService {
     @Override
     @Transactional
     public IncomingProductResponse update(IncomingProductUpdateRequest request) {
+        log.info("Processing request to update an incoming product transaction.");
+
         validationService.validate(request);
 
-        // check if incoming product isPresent
+        // check if incoming product, supplier, and user exists in databases.
         IncomingProduct incomingProduct = findIncomingProductByIdOrThrows(request.getId());
-
-        // check if supplier is present
         Supplier supplier = findSupplierByIdOrThrows(request.getSupplierId());
-        User user = userRepository.findById(request.getUsername()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User is not found."));
-
-        // update incomingProduct
-        incomingProduct.setDateIn(request.getDateIn());
-        incomingProduct.setSupplier(supplier);
-        incomingProduct.setUser(user);
-
+        User user = findUserByUsernameOrThrows(request.getUsername());
 
         if (request.getTotalProducts() != request.getIncomingProductDetails().size()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Total products 'IncomingProduct' is wrong.");
         }
-        incomingProduct.setTotalProducts(request.getTotalProducts());
-        incomingProduct.setNote(request.getNote());
-        incomingProduct.setUpdateReason(request.getUpdateReason());
-        incomingProductRepository.save(incomingProduct);
 
-        List<Product> products = new ArrayList<>();
-        List<ProductVariant> productVariants = new ArrayList<>();
+        // The main update logic is now orchestrated here, relying on Dirty Checking.
+        applyUpdates(incomingProduct, request, supplier, user);
 
-        List<IncomingProductDetail> incomingProductDetails = new ArrayList<>();
-        List<IncomingProductVariantDetail> incomingProductVariantDetails = new ArrayList<>();
+        log.info("Successfully updated an incoming product transaction. incomingProductId={}", incomingProduct.getId());
+        return toIncomingProductResponse(incomingProduct);
+    }
 
-        if (incomingProduct.getIncomingProductDetails() == null || incomingProduct.getIncomingProductDetails().size() != request.getIncomingProductDetails().size()) {
+    private record UpdateRequestContext(
+            Map<Integer, IncomingProductUpdateRequest.IncomingProductDetail> detailRequestMap,
+            Map<Integer, IncomingProductUpdateRequest.IncomingProductVariantDetail> variantDetailRequestMap
+    ) {}
+
+    private UpdateRequestContext buildUpdateContext(List<IncomingProductDetail> existingDetails,
+                                                    List<IncomingProductUpdateRequest.IncomingProductDetail> detailRequests) {
+        log.debug("Receiving parameter incomingProductDetails={}, productDetailRequestList={}", existingDetails, detailRequests);
+
+        if (existingDetails.size() != detailRequests.size()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "IncomingProductDetails size is not same. Please check the IncomingProductDetails again.");
         }
 
-        List<IncomingProductResponse.IncomingProductDetail> incomingProductDetailsResponse = incomingProduct.getIncomingProductDetails().stream().map(incomingProductDetail -> {
 
-            List<IncomingProductUpdateRequest.IncomingProductDetail> incomingProductDetailUpdateRequestList = request.getIncomingProductDetails()
-                    .stream()
-                    .filter(iPD -> iPD.getId().equals(incomingProductDetail.getId()))
-                    .toList();
-            
-            if (incomingProductDetailUpdateRequestList.isEmpty()) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "IncomingProductDetail is not found, please check IncomingProductDetail id again.");
-            } else if (incomingProductDetailUpdateRequestList.size() > 1) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "IncomingProductDetail is duplicate, please check IncomingProductDetails again.");
+        Map<Integer, IncomingProductDetail> productDetailMap = new HashMap<>();
+        Map<Integer, IncomingProductUpdateRequest.IncomingProductDetail> productDetailRequestMap = new HashMap<>();
+        Map<Integer, IncomingProductUpdateRequest.IncomingProductVariantDetail> variantDetailRequestMap = new HashMap<>();
+
+        // Pre-populate maps to easily check for existence and prevent duplicates
+        for (var productDetail: existingDetails) {
+            productDetailMap.put(productDetail.getId(), productDetail);
+            productDetailRequestMap.put(productDetail.getId(), null);
+
+            for (var variantDetail: productDetail.getIncomingProductVariantDetails()) {
+                variantDetailRequestMap.put(variantDetail.getId(), null);
+            }
+        }
+
+        for (var productDetailRequest : detailRequests) {
+            if (!productDetailRequestMap.containsKey(productDetailRequest.getId())) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "IncomingProductDetail with id " + productDetailRequest.getId() + " is not found, please check IncomingProductDetail id again.");
             }
 
-            IncomingProductUpdateRequest.IncomingProductDetail incomingProductDetailUpdateRequest = incomingProductDetailUpdateRequestList.getFirst();
-
-
-            // compare hasVariant
-            if (incomingProductDetailUpdateRequest.getHasVariant() != incomingProductDetail.getHasVariant()) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "IncomingProductDetails 'id': " + incomingProductDetail.getId() + " has status 'hasVariant': " + incomingProductDetail.getHasVariant().toString() + ", please input valid IncomingProductDetail hasVariant.");
+            if (productDetailRequestMap.get(productDetailRequest.getId()) != null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "IncomingProductDetail with id " + productDetailRequest.getId() + " is duplicate, please check IncomingProductDetails again.");
             }
+            productDetailRequestMap.replace(productDetailRequest.getId(), productDetailRequest);
+
+            // --- Business Rule Validations for each detail ---
+            IncomingProductDetail existingDetail = productDetailMap.get(productDetailRequest.getId());
 
             // validation hasVariant
-            incomingProductDetailsValidationHasVariant(incomingProductDetailUpdateRequest.getHasVariant(),
-                    incomingProductDetailUpdateRequest.getPricePerUnit(),
-                    incomingProductDetailUpdateRequest.getQuantity(),
-                    incomingProductDetailUpdateRequest.getIncomingProductVariantDetails() == null,
-                    incomingProductDetailUpdateRequest.getIncomingProductVariantDetails() != null);
+            incomingProductDetailsValidationHasVariant(productDetailRequest.getHasVariant(),
+                    productDetailRequest.getPricePerUnit(),
+                    productDetailRequest.getQuantity(),
+                    productDetailRequest.getIncomingProductVariantDetails() == null,
+                    productDetailRequest.getIncomingProductVariantDetails() != null);
 
-
-            Product product = incomingProductDetail.getProduct();
-
-            if (!incomingProductDetailUpdateRequest.getProductId().equals(product.getId())) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product id: " + incomingProductDetailUpdateRequest.getProductId() +
-                        " is wrong, please check Product id again.");
+            // is equal, existing productDetail hasVariant and productDetailRequestList productDetail hasVariant
+            if (productDetailRequest.getHasVariant() != existingDetail.getHasVariant()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Cannot change 'hasVariant' status for IncomingProductDetail with id " + productDetailRequest.getId() + ". Please check 'hasVariant' status again.");
             }
 
-            // check if product is already updated the hasVariant
-            if (incomingProductDetailUpdateRequest.getHasVariant() != product.getHasVariant()) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Product id: " + product.getId() + " is already change hasVariant status, " +
-                        "please delete and create new IncomingProductDetail for this IncomingProduct.");
+
+            Product existingProduct = existingDetail.getProduct();
+
+            if (!productDetailRequest.getProductId().equals(existingProduct.getId())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot change 'productId' value for IncomingProductDetail with id " + productDetailRequest.getId() + ". Please check 'productId' status again.");
             }
 
-            List<IncomingProductResponse.IncomingProductVariantDetail> incomingProductVariantDetailsResponse = null;
+            // check if existingProduct is already updated the hasVariant
+            if (productDetailRequest.getHasVariant() != existingProduct.getHasVariant()) {
 
-            if (!incomingProductDetail.getHasVariant()) {
-                // update the Product stock
-                int quantityChange = incomingProductDetailUpdateRequest.getQuantity() - incomingProductDetail.getQuantity();
-                // quantityChange = 15 - 10 = 5 | stockProduct = currentStock + +5
-                // quantityChange = 5 - 10 = -5 | stockProduct = currentStock + -5
-                product.setStock(product.getStock() + quantityChange);
-                products.add(product);
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Product id: " + productDetailRequest.getProductId() + " is already change hasVariant status, please delete IncomingProductDetail with id " + productDetailRequest.getId() + " and create new IncomingProductDetail for this IncomingProduct.");
+            }
 
-                // set IncomingProductDetail
-                setIncomingProductDetailWithoutVariant(incomingProductDetail,
-                        incomingProductDetailUpdateRequest.getPricePerUnit(),
-                        incomingProductDetailUpdateRequest.getQuantity());
-
-            } else {
-                incomingProductDetail.setPricePerUnit(null);
-                incomingProductDetail.setQuantity(null);
-                incomingProductDetail.setTotalPrice(null);
-                incomingProductDetail.setHasVariant(true);
-
-                if (incomingProductDetail.getIncomingProductVariantDetails().size() != incomingProductDetailUpdateRequest.getIncomingProductVariantDetails().size()) {
+            if (existingDetail.getHasVariant()) {
+                if (existingDetail.getIncomingProductVariantDetails().size() != productDetailRequest.getIncomingProductVariantDetails().size()) {
                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "IncomingProductVariantDetails size is not same. Please check the IncomingProductVariantDetails again.");
                 }
-
-                incomingProductVariantDetailsResponse = incomingProductDetail.getIncomingProductVariantDetails().stream().map(incomingProductVariantDetail -> {
-
-                    IncomingProductUpdateRequest.IncomingProductVariantDetail incomingProductVariantDetailUpdateRequest = incomingProductDetailUpdateRequest.getIncomingProductVariantDetails()
-                            .stream()
-                            .filter(iPVD -> iPVD.getId().equals(incomingProductVariantDetail.getId()))
-                            .findFirst()
-                            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "IncomingProductVariantDetail is not found, please check IncomingProductVariantDetail id again."));
-
-                    ProductVariant productVariant = incomingProductVariantDetail.getProductVariant();
-
-                    if (!incomingProductVariantDetailUpdateRequest.getVariantId().equals(productVariant.getId())) {
-                        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "ProductVariant id: " + incomingProductVariantDetailUpdateRequest.getVariantId() +
-                                " is wrong, please check ProductVariant id again.");
-                    }
-                    // update the ProductVariant stock
-                    int quantityChange = incomingProductVariantDetailUpdateRequest.getQuantity() - incomingProductVariantDetail.getQuantity();
-                    productVariant.setStock(productVariant.getStock() + quantityChange);
-                    productVariants.add(productVariant);
-
-                    incomingProductVariantDetail.setPricePerUnit(incomingProductVariantDetailUpdateRequest.getPricePerUnit());
-                    incomingProductVariantDetail.setQuantity(incomingProductVariantDetailUpdateRequest.getQuantity());
-                    incomingProductVariantDetail.setTotalPrice(
-                            incomingProductVariantDetailUpdateRequest.getPricePerUnit() *
-                                    incomingProductVariantDetailUpdateRequest.getQuantity()
-                    );
-
-                    // set incomingProductDetailUpdateRequest.totalVariantQuantity && incomingProductDetail.totalVariantPrice
-                    if (incomingProductDetailUpdateRequest.getTotalVariantQuantity() == null) {
-                        incomingProductDetailUpdateRequest.setTotalVariantQuantity(incomingProductVariantDetailUpdateRequest.getQuantity());
-                    } else {
-                        incomingProductDetailUpdateRequest.setTotalVariantQuantity(
-                                incomingProductDetailUpdateRequest.getTotalVariantQuantity() + incomingProductVariantDetailUpdateRequest.getQuantity()
-                        );
+                // mapping productVariantDetail
+                for (var variantDetailRequest: productDetailRequest.getIncomingProductVariantDetails()) {
+                    if (!variantDetailRequestMap.containsKey(variantDetailRequest.getId())) {
+                        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "IncomingProductVariantDetail with id " + variantDetailRequest.getId() + " is not found, please check IncomingProductVariantDetail id again.");
                     }
 
-                    if (incomingProductDetailUpdateRequest.getTotalVariantPrice() == null) {
-                        incomingProductDetailUpdateRequest.setTotalVariantPrice(incomingProductVariantDetail.getTotalPrice());
-                    } else {
-                        incomingProductDetailUpdateRequest.setTotalVariantPrice(
-                                incomingProductDetailUpdateRequest.getTotalVariantPrice() + incomingProductVariantDetail.getTotalPrice()
-                        );
+                    if (variantDetailRequestMap.get(variantDetailRequest.getId()) != null) {
+                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "IncomingProductVariantDetail with id " + variantDetailRequest.getId() + " is duplicate, please check IncomingProductVariantDetails again.");
                     }
 
-                    incomingProductVariantDetails.add(incomingProductVariantDetail);
-
-                    // write response
-                    return IncomingProductResponse.IncomingProductVariantDetail.builder()
-                            .id(incomingProductVariantDetail.getId())
-                            .variant(IncomingProductProductVariantResponse.builder()
-                                    .id(productVariant.getId())
-                                    .sku(productVariant.getSku())
-                                    .build())
-                            .pricePerUnit(incomingProductVariantDetail.getPricePerUnit())
-                            .quantity(incomingProductVariantDetail.getQuantity())
-                            .totalPrice(incomingProductVariantDetail.getTotalPrice())
-                            .build();
-                }).toList();
-
-                // update incomingProductDetail totalVariantQuantity & totalVariantPrice.
-                incomingProductDetail.setTotalVariantQuantity(incomingProductDetailUpdateRequest.getTotalVariantQuantity());
-                incomingProductDetail.setTotalVariantPrice(incomingProductDetailUpdateRequest.getTotalVariantPrice());
-
+                    variantDetailRequestMap.put(variantDetailRequest.getId(), variantDetailRequest);
+                }
             }
+        }
 
-            incomingProductDetails.add(incomingProductDetail);
-
-            return IncomingProductResponse.IncomingProductDetail.builder()
-                    .id(incomingProductDetail.getId())
-                    .product(IncomingProductProductResponse.builder()
-                            .id(product.getId())
-                            .name(product.getName())
-                            .build())
-                    .pricePerUnit(incomingProductDetail.getPricePerUnit())
-                    .quantity(incomingProductDetail.getQuantity())
-                    .totalPrice(incomingProductDetail.getTotalPrice())
-                    .hasVariant(incomingProductDetail.getHasVariant())
-                    .totalVariantQuantity(incomingProductDetail.getTotalVariantQuantity())
-                    .totalVariantPrice(incomingProductDetail.getTotalVariantPrice())
-                    .incomingProductVariantDetails(incomingProductVariantDetailsResponse)
-                    .build();
-        }).toList();
-
-
-        // update repository
-        productRepository.saveAll(products);
-        productVariantRepository.saveAll(productVariants);
-        incomingProductDetailRepository.saveAll(incomingProductDetails);
-        incomingProductVariantDetailRepository.saveAll(incomingProductVariantDetails);
-
-
-
-        return IncomingProductResponse.builder()
-                .id(incomingProduct.getId())
-                .dateIn(incomingProduct.getDateIn())
-                .supplier(IncomingProductSupplierResponse.builder()
-                        .id(supplier.getId())
-                        .name(supplier.getSupplierName())
-                        .build())
-                .username(user.getUsername())
-                .totalProducts(incomingProduct.getTotalProducts())
-                .note(incomingProduct.getNote())
-                .updateReason(incomingProduct.getUpdateReason())
-                .incomingProductDetails(incomingProductDetailsResponse)
-                .build();
+        return new UpdateRequestContext(productDetailRequestMap, variantDetailRequestMap);
     }
+
+    private void validationIncomingProductVariantDetail(IncomingProductVariantDetail variantDetail,
+                                                        IncomingProductUpdateRequest.IncomingProductVariantDetail variantDetailRequest) {
+        log.debug("Validating IncomingProductVariantDetail.");
+        if (!variantDetailRequest.getVariantId().equals(variantDetail.getProductVariant().getId())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "ProductVariant for IncomingProductVariantDetail with id: " + variantDetailRequest.getVariantId() +
+                    " is wrong, please check ProductVariant id again.");
+        }
+    }
+
+    private void applyUpdates(IncomingProduct incomingProduct,
+                              IncomingProductUpdateRequest request,
+                              Supplier supplier,
+                              User user) {
+        log.debug("Applying updates to entities.");
+
+        // 1. Validate and structure the request data
+        UpdateRequestContext updateContext = buildUpdateContext(
+                incomingProduct.getIncomingProductDetails(),
+                request.getIncomingProductDetails()
+        );
+
+        // 2. Apply changes to the parent entity
+        incomingProduct.setDateIn(request.getDateIn());
+        incomingProduct.setSupplier(supplier);
+        incomingProduct.setUser(user);
+        incomingProduct.setTotalProducts(request.getTotalProducts());
+        incomingProduct.setNote(request.getNote());
+        incomingProduct.setUpdateReason(request.getUpdateReason());
+
+        // 3. Apply changes to child entities and related business logic (stock)
+        applyDetailUpdates(incomingProduct.getIncomingProductDetails(), updateContext);
+    }
+
+    private void applyDetailUpdates(List<IncomingProductDetail> productDetails, UpdateRequestContext updateContext) {
+        Map<Integer, IncomingProductUpdateRequest.IncomingProductDetail> productDetailRequestMap = updateContext.detailRequestMap();
+        Map<Integer, IncomingProductUpdateRequest.IncomingProductVariantDetail> variantDetailRequestMap = updateContext.variantDetailRequestMap();
+
+        for (var productDetail : productDetails) {
+            IncomingProductUpdateRequest.IncomingProductDetail productDetailRequest = productDetailRequestMap.get(productDetail.getId());
+            log.debug("Getting productDetailRequest from map, productDetailRequest={}", productDetailRequest);
+
+            if (!productDetail.getHasVariant()) {
+                // update the Product stock
+                log.debug("Updated stock product");
+                Product product = productDetail.getProduct();
+                product.setStock(calcStockChange(product.getStock(), productDetailRequest.getQuantity(), productDetail.getQuantity()));
+
+                // set IncomingProductDetail
+                setIncomingProductDetailWithoutVariant(productDetail,
+                        productDetailRequest.getPricePerUnit(),
+                        productDetailRequest.getQuantity());
+
+            } else {
+                productDetail.setPricePerUnit(null);
+                productDetail.setQuantity(null);
+                productDetail.setTotalPrice(null);
+                productDetail.setHasVariant(true);
+
+                AtomicInteger totalVariantQuantity = new AtomicInteger(0);
+                AtomicInteger totalVariantPrice = new AtomicInteger(0);
+
+                for (var variantDetailEntity: productDetail.getIncomingProductVariantDetails()) {
+                    IncomingProductUpdateRequest.IncomingProductVariantDetail variantDetailRequest = variantDetailRequestMap.get(variantDetailEntity.getId());
+
+                    // update the ProductVariant stock
+                    log.debug("Updated stock product variant");
+                    ProductVariant productVariant = variantDetailEntity.getProductVariant();
+
+                    int productVariantStockChange = calcStockChange(productVariant.getStock(),
+                            variantDetailRequest.getQuantity(),
+                            variantDetailEntity.getQuantity());
+
+                    productVariant.setStock(productVariantStockChange);
+
+                    validationIncomingProductVariantDetail(variantDetailEntity, variantDetailRequest);
+
+                    // set IncomingProductVariantDetail
+                    variantDetailEntity.setPricePerUnit(variantDetailRequest.getPricePerUnit());
+                    variantDetailEntity.setQuantity(variantDetailRequest.getQuantity());
+                    int variantDetailTotalPrice = calcTotalPrice(variantDetailRequest.getPricePerUnit(), variantDetailRequest.getQuantity());
+                    variantDetailEntity.setTotalPrice(variantDetailTotalPrice);
+
+
+                    totalVariantQuantity.addAndGet(variantDetailRequest.getQuantity());
+                    totalVariantPrice.addAndGet(variantDetailEntity.getTotalPrice());
+                }
+                productDetail.setTotalVariantQuantity(totalVariantQuantity.get());
+                productDetail.setTotalVariantPrice(totalVariantPrice.get());
+            }
+        }
+    }
+
 
     @Override
     @Transactional
-    public IncomingProductDetailResponse createIncomingProductDetails(IncomingProductDetailCreateRequest request) {
+    public IncomingProductResponse.IncomingProductDetail addIncomingProductDetails(Integer incomingProductId, IncomingProductCreateRequest.IncomingProductDetails request) {
+        log.info("Processing request to add a new IncomingProductDetail.");
+
         validationService.validate(request);
+
+        IncomingProduct incomingProduct = findIncomingProductByIdOrThrows(incomingProductId);
+        // increase IncomingProduct TotalProduct because we add new IncomingProductDetails
+        incomingProduct.setTotalProducts(incomingProduct.getTotalProducts() + 1);
+
+        Product product = findProductByIdOrThrows(request.getProductId());
+
+        Set<Integer> variantIds = validateAndCollectVariantIdForAddIncomingProductDetail(request, product);
+
+        Map<Integer, ProductVariant> variantMap = fetchProductVariants(variantIds);
+
+        List<IncomingProductVariantDetail> allVariantDetails = new ArrayList<>();
+
+        IncomingProductDetail incomingProductDetail = buildProductDetailEntity(request, incomingProduct, product, variantMap, allVariantDetails);
+
+        incomingProductRepository.save(incomingProduct);
+        incomingProductDetailRepository.save(incomingProductDetail);
+        incomingProductVariantDetailRepository.saveAll(allVariantDetails);
+
+        log.info("Successfully added new IncomingProductDetail. incomingProductDetailId={}", incomingProductDetail.getId());
+        return toIncomingProductDetailListResponse(List.of(incomingProductDetail)).getFirst();
+    }
+
+    public Set<Integer> validateAndCollectVariantIdForAddIncomingProductDetail(IncomingProductCreateRequest.IncomingProductDetails request, Product product) {
+        log.debug("Validating and collecting variantId.");
 
         // validate hasVariant
         incomingProductDetailsValidationHasVariant(request.getHasVariant(),
@@ -440,11 +380,6 @@ public class IncomingProductServiceImpl implements IncomingProductService {
                 request.getIncomingProductVariantDetails() == null,
                 request.getIncomingProductVariantDetails() != null
         );
-
-        IncomingProduct incomingProduct = findIncomingProductByIdOrThrows(request.getIncomingProductId());
-
-        Product product = productRepository.findById(request.getProductId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product is not found. Please check Product id again."));
 
         compareHasVariantIncomingProductDetailAndProduct(request.getHasVariant() != product.getHasVariant(), product);
 
@@ -462,248 +397,136 @@ public class IncomingProductServiceImpl implements IncomingProductService {
             });
         }
 
-
-        IncomingProductDetail incomingProductDetail = new IncomingProductDetail();
-        incomingProductDetail.setIncomingProduct(incomingProduct);
-        incomingProductDetail.setProduct(product);
-        List<IncomingProductVariantDetail> incomingProductVariantDetailList = new ArrayList<>();
-        if (!request.getHasVariant()) {
-            setIncomingProductDetailWithoutVariant(incomingProductDetail, request.getPricePerUnit(), request.getQuantity());
-
-            // update product
-            if (product.getStock() != null) {
-                product.setStock(product.getStock() + request.getQuantity());
-            } else {
-                product.setStock(request.getQuantity());
-            }
-
-        } else {
-            incomingProductDetail.setPricePerUnit(null);
-            incomingProductDetail.setQuantity(null);
-            incomingProductDetail.setTotalPrice(null);
-            incomingProductDetail.setHasVariant(request.getHasVariant());
-
-            incomingProductDetail.setTotalVariantPrice(0);
-            incomingProductDetail.setTotalVariantQuantity(0);
-
-
-            List<ProductVariant> productVariantList = productVariantRepository.findAllById(productVariantIdList);
-
-            request.getIncomingProductVariantDetails().forEach(incomingProductVariantDetailRequest -> {
-
-                ProductVariant productVariant = productVariantList.stream()
-                        .filter(pV -> pV.getId().equals(incomingProductVariantDetailRequest.getVariantId()))
-                        .findFirst()
-                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ProductVariant with id " + incomingProductVariantDetailRequest.getVariantId() + " is not found. please check ProductVariant id again."));
-
-                // check if productVariant is belongs to product
-                if (!productVariant.getProduct().getId().equals(product.getId())) {
-                    throw new ResponseStatusException(HttpStatus.CONFLICT, "ProductVariant with id " + productVariant.getId() + " is not product variant for Product with id " + product.getId() + ".");
-                }
-
-
-                IncomingProductVariantDetail incomingProductVariantDetail = new IncomingProductVariantDetail();
-                incomingProductVariantDetail.setIncomingProductDetail(incomingProductDetail);
-                incomingProductVariantDetail.setProductVariant(productVariant);
-                incomingProductVariantDetail.setPricePerUnit(incomingProductVariantDetailRequest.getPricePerUnit());
-                incomingProductVariantDetail.setQuantity(incomingProductVariantDetailRequest.getQuantity());
-                incomingProductVariantDetail.setTotalPrice(incomingProductVariantDetailRequest.getPricePerUnit() * incomingProductVariantDetailRequest.getQuantity());
-                incomingProductVariantDetailList.add(incomingProductVariantDetail);
-
-                // update ProductVariant stock
-                if (productVariant.getStock() != null) {
-                    productVariant.setStock(productVariant.getStock() + incomingProductVariantDetailRequest.getQuantity());
-                } else {
-                    productVariant.setStock(incomingProductVariantDetailRequest.getQuantity());
-                }
-
-                // increase incomingProductDetail TotalVariantPrice * TotalVariantQuantity
-                incomingProductDetail.setTotalVariantPrice(incomingProductDetail.getTotalVariantPrice() + incomingProductVariantDetail.getTotalPrice());
-                incomingProductDetail.setTotalVariantQuantity(incomingProductDetail.getTotalVariantQuantity() + incomingProductVariantDetail.getQuantity());
-            });
-
-            // update product variant
-            productVariantRepository.saveAll(productVariantList);
-
-        }
-
-        // increase IncomingProduct TotalProduct
-        incomingProduct.setTotalProducts(incomingProduct.getTotalProducts() + 1);
-
-        incomingProductRepository.save(incomingProduct);
-        incomingProductDetailRepository.save(incomingProductDetail);
-        incomingProductVariantDetailRepository.saveAll(incomingProductVariantDetailList);
-        // update product
-        productRepository.save(product);
-
-        // write incomingProductVariantDetails
-        List<IncomingProductDetailResponse.IncomingProductVariantDetail> incomingProductVariantDetailsResponse = incomingProductVariantDetailList.stream()
-                .map(incomingProductVariantDetail -> IncomingProductDetailResponse.IncomingProductVariantDetail.builder()
-                        .id(incomingProductVariantDetail.getId())
-                        .variant(IncomingProductProductVariantResponse.builder()
-                            .id(incomingProductVariantDetail.getProductVariant().getId())
-                            .sku(incomingProductVariantDetail.getProductVariant().getSku())
-                            .build()
-                        )
-                        .pricePerUnit(incomingProductVariantDetail.getPricePerUnit())
-                        .quantity(incomingProductVariantDetail.getQuantity())
-                        .totalPrice(incomingProductVariantDetail.getTotalPrice())
-                        .build()
-                ).toList();
-
-        return IncomingProductDetailResponse.builder()
-                .id(incomingProductDetail.getId())
-                .product(IncomingProductProductResponse.builder()
-                        .id(product.getId())
-                        .name(product.getName())
-                        .build())
-                .pricePerUnit(incomingProductDetail.getPricePerUnit())
-                .quantity(incomingProductDetail.getQuantity())
-                .totalPrice(incomingProductDetail.getTotalPrice())
-                .hasVariant(incomingProductDetail.getHasVariant())
-                .totalVariantQuantity(incomingProductDetail.getTotalVariantQuantity())
-                .totalVariantPrice(incomingProductDetail.getTotalVariantPrice())
-                .incomingProductVariantDetails(!incomingProductVariantDetailsResponse.isEmpty() ? incomingProductVariantDetailsResponse : null)
-                .build();
+        return productVariantIdList;
     }
 
     @Override
     @Transactional
-    public IncomingProductVariantDetailResponse createIncomingProductVariantDetails(IncomingProductVariantDetailCreateRequest request) {
-        validationService.validate(request);
+    public IncomingProductResponse.IncomingProductVariantDetail addIncomingProductVariantDetails(Integer incomingProductDetailId, IncomingProductCreateRequest.IncomingProductVariantDetail variantDetailRequest) {
+        log.info("Processing request to add a new IncomingProductVariantDetail.");
 
-        IncomingProductDetail incomingProductDetail = incomingProductDetailRepository
-                .findById(request.getIncomingProductDetailId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "IncomingProductDetail is not found, please check IncomingProductDetail id again."));
+        validationService.validate(variantDetailRequest);
+
+        IncomingProductDetail productDetail = findIncomingProductDetailByIdOrThrows(incomingProductDetailId);
+
+        validateAddIncomingProductVariantDetail(productDetail, variantDetailRequest.getVariantId());
+
+        ProductVariant productVariant = findProductVariantByIdOrThrows(variantDetailRequest.getVariantId());
+
+        IncomingProductVariantDetail variantDetail = buildVariantDetailAndUpdateVariantStock(variantDetailRequest, productDetail, productVariant);
+
+        log.debug("Set totalVariantPrice and totalVariantQuantity.");
+        if (productDetail.getTotalVariantPrice() == null) {
+            productDetail.setTotalVariantPrice(variantDetail.getTotalPrice());
+        } else {
+            productDetail.setTotalVariantPrice(productDetail.getTotalVariantPrice() + variantDetail.getTotalPrice());
+        }
+
+        if (productDetail.getTotalVariantQuantity() == null) {
+            productDetail.setTotalVariantQuantity(
+                    variantDetail.getQuantity());
+        } else {
+            productDetail.setTotalVariantQuantity(
+                    productDetail.getTotalVariantQuantity() + variantDetail.getQuantity());
+        }
+
+        incomingProductVariantDetailRepository.save(variantDetail);
+
+        log.info("Successfully added new IncomingProductVariantDetail. incomingProductVariantDetailId={}", variantDetail.getId());
+        return toIncomingProductVariantDetailResponse(variantDetail);
+    }
+
+    private void validateAddIncomingProductVariantDetail(IncomingProductDetail incomingProductDetail, Integer productVariantId) {
+        log.debug("Validating IncomingProductVariantDetail and ProductVariant. ");
 
         if (!incomingProductDetail.getHasVariant()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Failed to create IncomingProductVariantDetail, since IncomingProductDetail hasVariant is false.");
         }
 
-        ProductVariant productVariant = productVariantRepository.findById(request.getVariantId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ProductVariant is not found, please check ProductVariant id again."));
-
         if (incomingProductDetail.getIncomingProductVariantDetails() != null) {
             incomingProductDetail
                     .getIncomingProductVariantDetails()
                     .stream()
-                    .filter(incomingProductVariantDetail -> incomingProductVariantDetail.getProductVariant().getId().equals(request.getVariantId()))
+                    .filter(incomingProductVariantDetail -> incomingProductVariantDetail.getProductVariant().getId().equals(productVariantId))
                     .findFirst()
-                    .ifPresent(incomingProductVariantDetail -> {throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ProductVariant is already present in the IcomingProductDetail, please check ProductVarian id again.");});
+                    .ifPresent(incomingProductVariantDetail -> {throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ProductVariant is already present in the IncomingProductDetail, please check ProductVariant id again.");});
         }
-
-        IncomingProductVariantDetail incomingProductVariantDetail = new IncomingProductVariantDetail();
-        incomingProductVariantDetail.setIncomingProductDetail(incomingProductDetail);
-        incomingProductVariantDetail.setProductVariant(productVariant);
-        incomingProductVariantDetail.setPricePerUnit(request.getPricePerUnit());
-        incomingProductVariantDetail.setQuantity(request.getQuantity());
-        incomingProductVariantDetail.setTotalPrice(request.getQuantity() * request.getPricePerUnit());
-        incomingProductVariantDetailRepository.save(incomingProductVariantDetail);
-
-        // update ProductVariant Stock
-        productVariant.setStock(productVariant.getStock() + incomingProductVariantDetail.getQuantity());
-        productVariantRepository.save(productVariant);
-
-        return IncomingProductVariantDetailResponse.builder()
-                .id(incomingProductVariantDetail.getId())
-                .variant(IncomingProductProductVariantResponse.builder()
-                        .id(productVariant.getId())
-                        .sku(productVariant.getSku())
-                        .build())
-                .pricePerUnit(incomingProductVariantDetail.getPricePerUnit())
-                .quantity(incomingProductVariantDetail.getQuantity())
-                .totalPrice(incomingProductVariantDetail.getTotalPrice())
-                .build();
     }
 
     @Override
+    @Transactional
     public void deleteIncomingProduct(Integer incomingProductId) {
-        if (incomingProductId.equals(null)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "IncomingProductDetails id must not null.");
-        }
-
+        log.info("Processing request to delete an incoming product transaction. incomingProductId={}", incomingProductId);
         IncomingProduct incomingProduct = findIncomingProductByIdOrThrows(incomingProductId);
 
-
-        List<Product> productList = new ArrayList<>();
-        List<ProductVariant> productVariantList = new ArrayList<>();
-
-        incomingProduct.getIncomingProductDetails().forEach(incomingProductDetail -> {
-            if (!incomingProductDetail.getHasVariant()) {
-                Product product = incomingProductDetail.getProduct();
-                product.setStock(product.getStock() - incomingProductDetail.getQuantity());
-                productList.add(product);
+        for (IncomingProductDetail productDetail: incomingProduct.getIncomingProductDetails()) {
+            if (!productDetail.getHasVariant()) {
+                Product product = productDetail.getProduct();
+                product.setStock(product.getStock() - productDetail.getQuantity());
             } else {
-                incomingProductDetail.getIncomingProductVariantDetails().forEach(incomingProductVariantDetail -> {
-                    ProductVariant productVariant = incomingProductVariantDetail.getProductVariant();
-                    productVariant.setStock(productVariant.getStock() - incomingProductVariantDetail.getQuantity());
-                });
+                for ( IncomingProductVariantDetail variantDetail: productDetail.getIncomingProductVariantDetails()) {
+                    ProductVariant productVariant = variantDetail.getProductVariant();
+                    productVariant.setStock(productVariant.getStock() - variantDetail.getQuantity());
+                }
             }
-        });
-
-        productRepository.saveAll(productList);
-        productVariantRepository.saveAll(productVariantList);
+        }
 
         incomingProductRepository.delete(incomingProduct);
-
+        log.info("Successfully deleted an incoming product transaction. incomingProductId={}", incomingProductId);
     }
 
     @Override
     @Transactional
     public void deleteIncomingProductDetails(Integer incomingProductDetailId) {
-        if (incomingProductDetailId != null) {
-            IncomingProductDetail incomingProductDetail = incomingProductDetailRepository.findById(incomingProductDetailId)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "IncomingProductDetails is not found, please check the IncomingProductDetails id again."));
+        log.info("Processing request to delete an incoming product detail. incomingProductDetailId={}", incomingProductDetailId);
 
-            if (!incomingProductDetail.getHasVariant()) {
-                Product product = incomingProductDetail.getProduct();
-                product.setStock(product.getStock() - incomingProductDetail.getQuantity());
-                productRepository.save(product);
-            } else {
-                List<ProductVariant> productVariantList = new ArrayList<>();
-                incomingProductDetail.getIncomingProductVariantDetails().forEach(incomingProductVariantDetail -> {
-                    ProductVariant productVariant = incomingProductVariantDetail.getProductVariant();
-                    productVariant.setStock(productVariant.getStock() - incomingProductVariantDetail.getQuantity());
-                });
-                productVariantRepository.saveAll(productVariantList);
-            }
+        IncomingProductDetail incomingProductDetail = findIncomingProductDetailByIdOrThrows(incomingProductDetailId);
 
-            // update IncomingProduct
-            IncomingProduct incomingProduct = incomingProductDetail.getIncomingProduct();
-            incomingProduct.setTotalProducts(incomingProduct.getTotalProducts() - 1);
-            incomingProductRepository.save(incomingProduct);
-            incomingProductDetailRepository.delete(incomingProductDetail);
-
+        log.debug("Updating product or product variant stock.");
+        if (!incomingProductDetail.getHasVariant()) {
+            Product product = incomingProductDetail.getProduct();
+            product.setStock(product.getStock() - incomingProductDetail.getQuantity());
         } else {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "IncomingProductDetails id must not null.");
+            incomingProductDetail.getIncomingProductVariantDetails().forEach(incomingProductVariantDetail -> {
+                ProductVariant productVariant = incomingProductVariantDetail.getProductVariant();
+                productVariant.setStock(productVariant.getStock() - incomingProductVariantDetail.getQuantity());
+            });
         }
+
+        // update IncomingProduct
+        IncomingProduct incomingProduct = incomingProductDetail.getIncomingProduct();
+        incomingProduct.setTotalProducts(incomingProduct.getTotalProducts() - 1);
+
+        incomingProductDetailRepository.delete(incomingProductDetail);
+        log.info("Successfully deleted an incoming product detail. incomingProductDetailId={}", incomingProductDetailId);
     }
 
     @Override
     @Transactional
     public void deleteIncomingProductVariantDetails(Integer incomingProductVariantDetailId) {
-        if (incomingProductVariantDetailId != null) {
-            IncomingProductVariantDetail incomingProductVariantDetail = incomingProductVariantDetailRepository.findById(incomingProductVariantDetailId)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "IncomingProductVariantDetails is not found, please check the IncomingProductVariantDetails id again."));
+        log.info("Processing request to delete an incoming product variant detail. incomingProductVariantDetailId={}", incomingProductVariantDetailId);
 
-            // update incomingProductDetail TotalVariantQuantity && TotalVariantPrice
-            IncomingProductDetail incomingProductDetail = incomingProductVariantDetail.getIncomingProductDetail();
-            incomingProductDetail.setTotalVariantQuantity(incomingProductDetail.getTotalVariantQuantity() - incomingProductVariantDetail.getQuantity());
-            incomingProductDetail.setTotalVariantPrice(incomingProductDetail.getTotalVariantPrice() - incomingProductVariantDetail.getTotalPrice());
-            incomingProductDetailRepository.save(incomingProductDetail);
+        IncomingProductVariantDetail variantDetail = findIncomingProductVariantDetailByIdOrThrows(incomingProductVariantDetailId);
 
-            // update ProductVariant
-            ProductVariant productVariant = incomingProductVariantDetail.getProductVariant();
-            productVariant.setStock(productVariant.getStock() - incomingProductVariantDetail.getQuantity());
-            productVariantRepository.save(productVariant);
+        // update incomingProductDetail TotalVariantQuantity && TotalVariantPrice
+        log.debug("Updating incomingProductDetail TotalVariantQuantity && TotalVariantPrice.");
+        IncomingProductDetail incomingProductDetail = variantDetail.getIncomingProductDetail();
+        incomingProductDetail.setTotalVariantQuantity(incomingProductDetail.getTotalVariantQuantity() - variantDetail.getQuantity());
+        incomingProductDetail.setTotalVariantPrice(incomingProductDetail.getTotalVariantPrice() - variantDetail.getTotalPrice());
 
-            incomingProductVariantDetailRepository.delete(incomingProductVariantDetail);
-        } else {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "IncomingProductVariantDetail id must not null.");
-        }
+
+        // update ProductVariant
+        ProductVariant productVariant = variantDetail.getProductVariant();
+        productVariant.setStock(productVariant.getStock() - variantDetail.getQuantity());
+
+        incomingProductVariantDetailRepository.delete(variantDetail);
+        log.info("Successfully deleted an incoming product variant detail. incomingProductVariantDetailId={}", incomingProductVariantDetailId);
     }
 
+
+
     private void compareHasVariantIncomingProductDetailAndProduct (boolean compareResult, Product product) {
+        log.debug("Compare has variant product detail and product. compareResult={}, product={}", compareResult, product);
         if (compareResult) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Product id: " + product.getId() + " hasVariant is " +  product.getHasVariant() + ", please check hasVariant again."
@@ -737,6 +560,7 @@ public class IncomingProductServiceImpl implements IncomingProductService {
     }
 
     private IncomingProductResponse.IncomingProductVariantDetail toIncomingProductVariantDetailResponse (IncomingProductVariantDetail incomingProductVariantDetail) {
+        log.debug("Mapping incomingProductVariantDetail to response.");
         return IncomingProductResponse.IncomingProductVariantDetail.builder()
                 .id(incomingProductVariantDetail.getId())
                 .variant(IncomingProductProductVariantResponse.builder()
@@ -749,7 +573,9 @@ public class IncomingProductServiceImpl implements IncomingProductService {
                 .build();
     }
 
-    private List<IncomingProductResponse.IncomingProductDetail> toIncomingProductDetailList(List<IncomingProductDetail> incomingProductDetails) {
+    private List<IncomingProductResponse.IncomingProductDetail> toIncomingProductDetailListResponse(List<IncomingProductDetail> incomingProductDetails) {
+        log.debug("Receiving parameter incomingProductDetails={}", incomingProductDetails);
+
         return incomingProductDetails.stream().map(incomingProductDetail -> {
             List<IncomingProductResponse.IncomingProductVariantDetail> incomingProductVariantDetails = null;
 
@@ -760,6 +586,7 @@ public class IncomingProductServiceImpl implements IncomingProductService {
                         .toList();
             }
 
+            log.debug("Mapping incomingProductDetail to response.");
             return IncomingProductResponse.IncomingProductDetail.builder()
                     .id(incomingProductDetail.getId())
                     .product(IncomingProductProductResponse.builder()
@@ -777,6 +604,25 @@ public class IncomingProductServiceImpl implements IncomingProductService {
         }).toList();
     }
 
+    private IncomingProductResponse toIncomingProductResponse (IncomingProduct incomingProduct) {
+        log.debug("Mapping incomingProduct to response.");
+        List<IncomingProductResponse.IncomingProductDetail> details = toIncomingProductDetailListResponse(incomingProduct.getIncomingProductDetails());
+
+        return  IncomingProductResponse.builder()
+                .id(incomingProduct.getId())
+                .dateIn(incomingProduct.getDateIn())
+                .supplier(IncomingProductSupplierResponse.builder()
+                        .id(incomingProduct.getSupplier().getId())
+                        .name(incomingProduct.getSupplier().getSupplierName())
+                        .build())
+                .username(incomingProduct.getUser().getUsername())
+                .totalProducts(incomingProduct.getTotalProducts())
+                .note(incomingProduct.getNote())
+                .updateReason(incomingProduct.getUpdateReason())
+                .incomingProductDetails(details)
+                .build();
+    }
+
     private void setIncomingProductDetailWithoutVariant (IncomingProductDetail incomingProductDetail,
                                                          Integer pricePerUnit,
                                                          Integer quantity) {
@@ -792,9 +638,37 @@ public class IncomingProductServiceImpl implements IncomingProductService {
 
     private IncomingProduct findIncomingProductByIdOrThrows(Integer incomingProductId) {
         log.debug("Finding incomingProduct. incomingProductId={}", incomingProductId);
+
+        if (incomingProductId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Id must not null.");
+        }
+
         return incomingProductRepository.findById(incomingProductId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "IncomingProduct is not found. Please check IncomingProduct id again."));
     }
+
+    private IncomingProductDetail findIncomingProductDetailByIdOrThrows(Integer incomingProductDetailId) {
+        log.debug("Finding incomingProductDetail. incomingProductDetailId={}", incomingProductDetailId);
+
+        if (incomingProductDetailId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Id must not null.");
+        }
+        return incomingProductDetailRepository
+                .findById(incomingProductDetailId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "IncomingProductDetail is not found, please check IncomingProductDetail id again."));
+    }
+
+    private IncomingProductVariantDetail findIncomingProductVariantDetailByIdOrThrows(Integer incomingProductVariantDetailId) {
+        log.debug("Finding IncomingProductVariantDetail. incomingProductVariantDetailId={}", incomingProductVariantDetailId);
+
+        if (incomingProductVariantDetailId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "IncomingProductVariantDetail id must not null.");
+        }
+
+        return incomingProductVariantDetailRepository.findById(incomingProductVariantDetailId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "IncomingProductVariantDetail is not found, please check the IncomingProductVariantDetail id again."));
+    }
+
     private Supplier findSupplierByIdOrThrows(Integer supplierId) {
         log.debug("Finding supplier. supplierId={}", supplierId);
         return supplierRepository.findById(supplierId)
@@ -806,6 +680,22 @@ public class IncomingProductServiceImpl implements IncomingProductService {
         return userRepository.findById(username)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User is not found."));
     }
+
+    private Product findProductByIdOrThrows(Integer productId) {
+        log.debug("Finding product. productId={}", productId);
+
+        return productRepository.findById(productId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product is not found. Please check Product id again."));
+    }
+
+    private ProductVariant findProductVariantByIdOrThrows(Integer productVariantId) {
+        log.debug("Finding productVariant. productVariantId={}", productVariantId);
+
+        return productVariantRepository.findById(productVariantId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ProductVariant is not found, please check ProductVariant id again."));
+    }
+
+
 
     private Pair<Set<Integer>, Set<Integer>> validateAndCollectIds(IncomingProductCreateRequest request) {
         log.debug("Validating request details and collecting entity IDs.");
@@ -866,22 +756,128 @@ public class IncomingProductServiceImpl implements IncomingProductService {
         return  variantMap;
     }
 
-    private IncomingProductResponse toIncomingProductResponse (IncomingProduct incomingProduct) {
-        log.debug("Mapping incomingProduct to response.");
-        List<IncomingProductResponse.IncomingProductDetail> details = toIncomingProductDetailList(incomingProduct.getIncomingProductDetails());
+    private Pair<List<IncomingProductDetail>, List<IncomingProductVariantDetail>> processAndBuildDetails(IncomingProductCreateRequest request, IncomingProduct incomingProductEntity) {
+        log.debug("Processing and building details.");
+        // 1. Validate request and collect all Ids
+        Pair<Set<Integer>, Set<Integer>> allIds = validateAndCollectIds(request);
+        Set<Integer> productIds = allIds.getFirst();
+        Set<Integer> variantIds = allIds.getSecond();
 
-        return  IncomingProductResponse.builder()
-                .id(incomingProduct.getId())
-                .dateIn(incomingProduct.getDateIn())
-                .supplier(IncomingProductSupplierResponse.builder()
-                        .id(incomingProduct.getSupplier().getId())
-                        .name(incomingProduct.getSupplier().getSupplierName())
-                        .build())
-                .username(incomingProduct.getUser().getUsername())
-                .totalProducts(incomingProduct.getTotalProducts())
-                .note(incomingProduct.getNote())
-                .incomingProductDetails(details)
-                .build();
+        // 2. Fetch all required products and variants in bulk
+        Map<Integer, Product> productMap = fetchProducts(productIds);
+        Map<Integer, ProductVariant> variantMap = fetchProductVariants(variantIds);
+
+        // 3. Process details, create child entities, and update stock
+        List<IncomingProductDetail> incomingProductDetailListEntity = new ArrayList<>();
+        List<IncomingProductVariantDetail> allVariantDetails = new ArrayList<>();
+
+        for (IncomingProductCreateRequest.IncomingProductDetails detailRequest: request.getIncomingProductDetails()) {
+            Product product = productMap.get(detailRequest.getProductId());
+            compareHasVariantIncomingProductDetailAndProduct(detailRequest.getHasVariant() != product.getHasVariant(), product);
+
+            IncomingProductDetail productDetailEntity = buildProductDetailEntity(detailRequest, incomingProductEntity, product, variantMap, allVariantDetails);
+
+            incomingProductDetailListEntity.add(productDetailEntity);
+        }
+        // NOTE: We DO NOT need to save productMap or variantMap.
+        // They were fetched from the database, making them "managed".
+        // JPA's Dirty Checking will automatically persist any changes (like stock updates)
+        // when the transaction commits.
+
+        return Pair.of(incomingProductDetailListEntity, allVariantDetails);
+    }
+
+    private IncomingProduct buildIncomingProductEntity(IncomingProductCreateRequest request,
+                                                       Supplier supplier,
+                                                       User user) {
+        log.debug("Building main IncomingProduct entity.");
+        IncomingProduct incomingProductEntity = new IncomingProduct();
+        incomingProductEntity.setDateIn(request.getDateIn());
+        incomingProductEntity.setSupplier(supplier);
+        incomingProductEntity.setUser(user);
+        incomingProductEntity.setTotalProducts(request.getTotalProducts());
+        incomingProductEntity.setNote(request.getNote());
+        return incomingProductEntity;
+    }
+
+
+
+    private IncomingProductDetail buildProductDetailEntity(IncomingProductCreateRequest.IncomingProductDetails productDetailsRequest,
+                                                           IncomingProduct incomingProductEntity,
+                                                           Product product,
+                                                           Map<Integer, ProductVariant> variantMap,
+                                                           List<IncomingProductVariantDetail> allVariantDetails) {
+        log.debug("Building IncomingProductDetail entity. productDetailsRequest={}", productDetailsRequest);
+
+        IncomingProductDetail productDetailEntity = new IncomingProductDetail();
+        productDetailEntity.setHasVariant(productDetailsRequest.getHasVariant());
+        productDetailEntity.setIncomingProduct(incomingProductEntity);
+        productDetailEntity.setProduct(product);
+
+        if (!productDetailsRequest.getHasVariant()) {
+            // Product without variants
+            setIncomingProductDetailWithoutVariant(productDetailEntity, productDetailsRequest.getPricePerUnit(), productDetailsRequest.getQuantity());
+            product.setStock(product.getStock() + productDetailsRequest.getQuantity());
+        } else {
+            // Product with variants
+            AtomicInteger totalVariantQuantity = new AtomicInteger(0);
+            AtomicInteger totalVariantPrice = new AtomicInteger(0);
+            List<IncomingProductVariantDetail> variantDetailsForThisProduct = new ArrayList<>();
+
+            for (IncomingProductCreateRequest.IncomingProductVariantDetail variantDetailRequest: productDetailsRequest.getIncomingProductVariantDetails()){
+                ProductVariant productVariant = variantMap.get(variantDetailRequest.getVariantId());
+
+                // Validate that the variant belongs to the correct product
+                if (!productVariant.getProduct().getId().equals(product.getId())) {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT, "ProductVariant with id " + productVariant.getId() + " is not a variant for Product with id " + product.getId() + ".");
+                }
+
+
+                IncomingProductVariantDetail variantDetailEntity = buildVariantDetailAndUpdateVariantStock(variantDetailRequest, productDetailEntity, productVariant);
+
+                totalVariantQuantity.addAndGet(variantDetailRequest.getQuantity());
+                totalVariantPrice.addAndGet(variantDetailEntity.getTotalPrice());
+
+                variantDetailsForThisProduct.add(variantDetailEntity);
+            }
+
+            productDetailEntity.setTotalVariantQuantity(totalVariantQuantity.get());
+            productDetailEntity.setTotalVariantPrice(totalVariantPrice.get());
+            productDetailEntity.setIncomingProductVariantDetails(variantDetailsForThisProduct);
+            allVariantDetails.addAll(variantDetailsForThisProduct);
+        }
+        return productDetailEntity;
+    }
+
+    private IncomingProductVariantDetail buildVariantDetailAndUpdateVariantStock(IncomingProductCreateRequest.IncomingProductVariantDetail variantDetailRequest,
+                                                                                 IncomingProductDetail incomingProductDetail,
+                                                                                 ProductVariant productVariant) {
+        log.debug("Building IncomingProductVariantDetail entity. variantDetailRequest={}", variantDetailRequest);
+
+        IncomingProductVariantDetail incomingProductVariantDetail = new IncomingProductVariantDetail();
+        incomingProductVariantDetail.setIncomingProductDetail(incomingProductDetail);
+        incomingProductVariantDetail.setProductVariant(productVariant);
+        incomingProductVariantDetail.setPricePerUnit(variantDetailRequest.getPricePerUnit());
+        incomingProductVariantDetail.setQuantity(variantDetailRequest.getQuantity());
+        incomingProductVariantDetail.setTotalPrice(variantDetailRequest.getQuantity() * variantDetailRequest.getPricePerUnit());
+
+        // update productVariant stock
+        productVariant.setStock(productVariant.getStock() + variantDetailRequest.getQuantity());
+
+        return incomingProductVariantDetail;
+    }
+
+    private int calcStockChange(int currentStock, int newQuantityIn, int oldQuantityIn ) {
+        log.debug("Calculating stock change. currentStock={}, newQuantityIn={}, oldQuantityIn={}", currentStock, newQuantityIn, oldQuantityIn);
+        // quantityChange = 15 - 10 = 5 | stockProduct = currentStock + +5
+        // quantityChange = 5 - 10 = -5 | stockProduct = currentStock + -5
+        int quantityChange = newQuantityIn - oldQuantityIn;
+        return currentStock + quantityChange;
+    }
+
+    private int calcTotalPrice(int price, int quantity) {
+        log.debug("Calculating total price. price={}, quantity={}", price, quantity);
+        return price * quantity;
     }
 
 }

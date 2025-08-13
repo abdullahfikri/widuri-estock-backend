@@ -1,5 +1,6 @@
 package dev.mfikri.widuriestock.service;
 
+import dev.mfikri.widuriestock.entity.Address;
 import dev.mfikri.widuriestock.model.address.AddressCreateRequest;
 import dev.mfikri.widuriestock.model.address.AddressResponse;
 import dev.mfikri.widuriestock.model.address.AddressUpdateRequest;
@@ -12,4 +13,6 @@ public interface AddressService {
     AddressResponse get(String username, Integer addressId);
     AddressResponse update(AddressUpdateRequest request);
     void delete(String username, Integer addressId);
+
+    void setAddress(Address address, String street, String village, String district, String city, String province, String country, String postalCode);
 }

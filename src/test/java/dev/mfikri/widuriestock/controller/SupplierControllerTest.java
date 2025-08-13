@@ -307,7 +307,7 @@ class SupplierControllerTest {
 
             assertNull(response.getData());
             assertNotNull(response.getErrors());
-            assertEquals("supplierId type data is wrong.", response.getErrors());
+            assertEquals("Invalid number format for property 'supplierId'. Value 'abc' is not a valid number.", response.getErrors());
         });
     }
 
@@ -413,7 +413,7 @@ class SupplierControllerTest {
 
             assertNull(response.getData());
             assertNotNull(response.getErrors());
-            assertEquals("supplierId type data is wrong.", response.getErrors());
+            assertEquals("Invalid number format for property 'supplierId'. Value 'abc' is not a valid number.", response.getErrors());
         });
     }
 
@@ -506,7 +506,7 @@ class SupplierControllerTest {
 
             assertNull(response.getData());
             assertNotNull(response.getErrors());
-            assertEquals("page type data is wrong.", response.getErrors());
+            assertEquals("Invalid number format for property 'page'. Value 'abc' is not a valid number.", response.getErrors());
         });
 
         mockMvc.perform(
@@ -523,7 +523,7 @@ class SupplierControllerTest {
 
             assertNull(response.getData());
             assertNotNull(response.getErrors());
-            assertEquals("size type data is wrong.", response.getErrors());
+            assertEquals("Invalid number format for property 'size'. Value 'abc' is not a valid number.", response.getErrors());
         });
     }
 
@@ -608,7 +608,7 @@ class SupplierControllerTest {
 
             assertNull(response.getData());
             assertNotNull(response.getErrors());
-            assertEquals("supplierId type data is wrong.", response.getErrors());
+            assertEquals("Invalid number format for property 'supplierId'. Value 'abc' is not a valid number.", response.getErrors());
         });
     }
 

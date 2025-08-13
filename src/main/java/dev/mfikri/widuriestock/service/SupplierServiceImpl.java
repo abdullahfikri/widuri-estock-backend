@@ -26,11 +26,13 @@ public class SupplierServiceImpl implements SupplierService {
     private final ValidationService validationService;
     private final SupplierRepository supplierRepository;
     private final AddressRepository addressRepository;
+    private final AddressService addressService;
 
-    public SupplierServiceImpl(ValidationService validationService, SupplierRepository supplierRepository, AddressRepository addressRepository) {
+    public SupplierServiceImpl(ValidationService validationService, SupplierRepository supplierRepository, AddressRepository addressRepository, AddressService addressService) {
         this.validationService = validationService;
         this.supplierRepository = supplierRepository;
         this.addressRepository = addressRepository;
+        this.addressService = addressService;
     }
 
     @Override
@@ -58,7 +60,7 @@ public class SupplierServiceImpl implements SupplierService {
         supplierRepository.save(supplier);
 
         Address address = new Address();
-        AddressServiceImpl.setAddress(address,
+        addressService.setAddress(address,
                 request.getAddress().getStreet(),
                 request.getAddress().getVillage(),
                 request.getAddress().getDistrict(),
@@ -71,14 +73,7 @@ public class SupplierServiceImpl implements SupplierService {
         addressRepository.save(address);
 
 
-        return SupplierResponse.builder()
-                .id(supplier.getId())
-                .supplierName(supplier.getSupplierName())
-                .phone(supplier.getPhone())
-                .email(supplier.getEmail())
-                .information(supplier.getInformation())
-                .address(AddressServiceImpl.toAddressResponse(address))
-                .build();
+        return toSupplierResponse(supplier, address);
     }
 
     @Override
@@ -106,36 +101,31 @@ public class SupplierServiceImpl implements SupplierService {
         }
 
         Supplier supplier = findSupplierByIdOrThrows(id);
-        AddressResponse addressResponse = AddressServiceImpl.toAddressResponse(supplier.getAddress());
 
-        return SupplierResponse.builder()
-                .id(supplier.getId())
-                .supplierName(supplier.getSupplierName())
-                .phone(supplier.getPhone())
-                .email(supplier.getEmail())
-                .information(supplier.getInformation())
-                .address(addressResponse)
-                .build();
+        return toSupplierResponse(supplier, supplier.getAddress());
     }
 
     @Override
     @Transactional
     public SupplierResponse update(SupplierUpdateRequest request) {
+        log.info("Processing request to update a supplier. supplierId={}", request.getSupplierId());
         validationService.validate(request);
 
         Supplier supplier = findSupplierByIdOrThrows(request.getSupplierId());
 
-        Address address = addressRepository.findAddressByIdAndSupplier(request.getAddress().getId(), supplier)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Address is not found."));
+        Address address = supplier.getAddress();
 
-        log.info(request.getSupplierName());
+        if (address.getId() != request.getAddress().getId()) {
+           throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Address is not found.");
+        }
+
         supplier.setSupplierName(request.getSupplierName());
         supplier.setPhone(request.getPhone());
         supplier.setEmail(request.getEmail());
         supplier.setInformation(request.getInformation());
         supplierRepository.save(supplier);
 
-        AddressServiceImpl.setAddress(
+        addressService.setAddress(
                 address,
                 request.getAddress().getStreet(),
                 request.getAddress().getVillage(),
@@ -146,17 +136,8 @@ public class SupplierServiceImpl implements SupplierService {
                 request.getAddress().getPostalCode()
         );
 
-        addressRepository.save(address);
 
-
-        return SupplierResponse.builder()
-                .id(supplier.getId())
-                .supplierName(supplier.getSupplierName())
-                .phone(supplier.getPhone())
-                .email(supplier.getEmail())
-                .information(supplier.getInformation())
-                .address(AddressServiceImpl.toAddressResponse(address))
-                .build();
+        return toSupplierResponse(supplier, address);
     }
 
     @Override
@@ -173,5 +154,16 @@ public class SupplierServiceImpl implements SupplierService {
 
     private Supplier findSupplierByIdOrThrows(Integer id) {
         return supplierRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Supplier is not found."));
+    }
+
+    private SupplierResponse toSupplierResponse(Supplier supplier, Address address) {
+        return SupplierResponse.builder()
+                .id(supplier.getId())
+                .supplierName(supplier.getSupplierName())
+                .phone(supplier.getPhone())
+                .email(supplier.getEmail())
+                .information(supplier.getInformation())
+                .address(AddressServiceImpl.toAddressResponse(address))
+                .build();
     }
 }

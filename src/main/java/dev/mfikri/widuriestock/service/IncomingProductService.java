@@ -10,8 +10,9 @@ public interface IncomingProductService {
     Page<IncomingProductGetListResponse> getList(IncomingProductGetListRequest request);
     IncomingProductResponse update(IncomingProductUpdateRequest request);
 
-    IncomingProductDetailResponse createIncomingProductDetails(IncomingProductDetailCreateRequest request);
-    IncomingProductVariantDetailResponse createIncomingProductVariantDetails(IncomingProductVariantDetailCreateRequest request);
+    IncomingProductResponse.IncomingProductDetail addIncomingProductDetails(Integer incomingProductId, IncomingProductCreateRequest.IncomingProductDetails request);
+
+    IncomingProductResponse.IncomingProductVariantDetail addIncomingProductVariantDetails(Integer incomingProductDetailId, IncomingProductCreateRequest.IncomingProductVariantDetail request);
 
     void deleteIncomingProduct(Integer incomingProductId);
     void deleteIncomingProductDetails(Integer incomingProductDetailId);

@@ -12,7 +12,6 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
-import java.time.LocalDate;
 import java.util.List;
 
 @Slf4j
@@ -100,15 +99,14 @@ public class IncomingProductController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     @ResponseStatus(HttpStatus.CREATED)
-    public WebResponse<IncomingProductDetailResponse> createIncomingProductDetail(@PathVariable Integer incomingProductId,
-                                                                                  @RequestBody IncomingProductDetailCreateRequest request
+    public WebResponse<IncomingProductResponse.IncomingProductDetail> createIncomingProductDetail(@PathVariable Integer incomingProductId,
+                                                                                  @RequestBody IncomingProductCreateRequest.IncomingProductDetails request
                                                                                ) {
         log.info("Receiving request to create an incoming product detail for incoming product. incomingProductId={}.", incomingProductId);
 
-        request.setIncomingProductId(incomingProductId);
-        IncomingProductDetailResponse response = incomingProductService.createIncomingProductDetails(request);
+        IncomingProductResponse.IncomingProductDetail response = incomingProductService.addIncomingProductDetails(incomingProductId, request);
 
-        return WebResponse.<IncomingProductDetailResponse>builder()
+        return WebResponse.<IncomingProductResponse.IncomingProductDetail>builder()
                 .data(response)
                 .build();
     }
@@ -118,14 +116,13 @@ public class IncomingProductController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     @ResponseStatus(HttpStatus.CREATED)
-    public WebResponse<IncomingProductVariantDetailResponse> createIncomingProductVariantDetail(@PathVariable Integer incomingProductDetailId,
-                                                                                  @RequestBody IncomingProductVariantDetailCreateRequest request
+    public WebResponse<IncomingProductResponse.IncomingProductVariantDetail> createIncomingProductVariantDetail(@PathVariable Integer incomingProductDetailId,
+                                                                                  @RequestBody IncomingProductCreateRequest.IncomingProductVariantDetail request
     ) {
         log.info("Receiving request to create an incoming product variant detail for incoming product detail. incomingProductDetailId={}.", incomingProductDetailId);
-        request.setIncomingProductDetailId(incomingProductDetailId);
-        IncomingProductVariantDetailResponse response = incomingProductService.createIncomingProductVariantDetails(request);
+        IncomingProductResponse.IncomingProductVariantDetail response = incomingProductService.addIncomingProductVariantDetails(incomingProductDetailId, request);
 
-        return WebResponse.<IncomingProductVariantDetailResponse>builder()
+        return WebResponse.<IncomingProductResponse.IncomingProductVariantDetail>builder()
                 .data(response)
                 .build();
     }

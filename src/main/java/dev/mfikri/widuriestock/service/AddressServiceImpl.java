@@ -114,7 +114,7 @@ public class AddressServiceImpl implements AddressService {
         log.info("Successfully delete an address. addressId={}", addressId);
     }
 
-    public static void setAddress(Address address, String street, String village, String district, String city, String province, String country, String postalCode) {
+    public void setAddress(Address address, String street, String village, String district, String city, String province, String country, String postalCode) {
         address.setStreet(street);
         address.setVillage(village);
         address.setDistrict(district);
