@@ -41,10 +41,6 @@ public class SupplierUpdateRequest {
     @NoArgsConstructor
     @Builder
     public static class AddressSupplierUpdateRequest {
-        @NotNull
-        @PositiveOrZero
-        private Integer id;
-
         @NotBlank
         @Size(max = 100, min = 1)
         private String street;

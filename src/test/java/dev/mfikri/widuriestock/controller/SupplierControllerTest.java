@@ -10,7 +10,7 @@ import dev.mfikri.widuriestock.model.WebResponse;
 import dev.mfikri.widuriestock.model.address.AddressCreateRequest;
 import dev.mfikri.widuriestock.model.address.AddressResponse;
 import dev.mfikri.widuriestock.model.supplier.SupplierCreateRequest;
-import dev.mfikri.widuriestock.model.supplier.SupplierGetListResponse;
+import dev.mfikri.widuriestock.model.supplier.SupplierSummaryResponse;
 import dev.mfikri.widuriestock.model.supplier.SupplierResponse;
 import dev.mfikri.widuriestock.model.supplier.SupplierUpdateRequest;
 import dev.mfikri.widuriestock.repository.AddressRepository;
@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -32,10 +31,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.springframework.test.web.servlet.MockMvcBuilder.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.*;
 
 @Slf4j
 @SpringBootTest
@@ -131,26 +128,11 @@ class SupplierControllerTest {
 
     @Test
     void createFailedDuplicateNameAndEmail() throws Exception {
-        Supplier supplier = new Supplier();
-        supplier.setSupplierName("Supplier Test");
-        supplier.setPhone("6281238218");
-        supplier.setEmail("john@company.xyz");
-        supplier.setInformation("Supplier for fishing tools");
+        Supplier supplier = getSupplier();
         supplierRepository.save(supplier);
 
-        Address address = new Address();
-        address.setStreet("JL Test");
-        address.setVillage("Village Test");
-        address.setDistrict("District Test");
-        address.setCity("City Test");
-        address.setProvince("Province Test");
-        address.setCountry("Country Test");
-        address.setPostalCode("0000000");
-        address.setSupplier(supplier);
-        addressRepository.save(address);
-
         SupplierCreateRequest request = new SupplierCreateRequest();
-        request.setSupplierName("Supplier Test");
+        request.setSupplierName(supplier.getSupplierName());
         request.setPhone("6281238218");
         request.setEmail("johnupdated@company.xyz");
         request.setInformation("Supplier for fishing tools");
@@ -164,7 +146,6 @@ class SupplierControllerTest {
                         .postalCode("0000000")
                 .build());
 
-
         mockMvc.perform(
                 post("/api/suppliers")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -172,20 +153,20 @@ class SupplierControllerTest {
                         .header("Authorization", authorizationToken)
                         .content(objectMapper.writeValueAsString(request))
         ).andExpect(
-                status().isBadRequest()
+                status().isConflict()
         ).andDo(result -> {
             WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
 
             assertNull(response.getData());
             assertNotNull(response.getErrors());
-            assertEquals("Supplier name is already exists.", response.getErrors());
+            assertEquals("Supplier name is already taken. Please use a different name.", response.getErrors());
         });
 
 
         // check duplicate email
         request.setSupplierName("Update SupplierName");
-        request.setEmail("john@company.xyz");
+        request.setEmail(supplier.getEmail());
         mockMvc.perform(
                 post("/api/suppliers")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -193,14 +174,14 @@ class SupplierControllerTest {
                         .header("Authorization", authorizationToken)
                         .content(objectMapper.writeValueAsString(request))
         ).andExpect(
-                status().isBadRequest()
+                status().isConflict()
         ).andDo(result -> {
             WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
 
             assertNull(response.getData());
             assertNotNull(response.getErrors());
-            assertEquals("Email is already exists.", response.getErrors());
+            assertEquals("Email is already registered. Please use a different email.", response.getErrors());
         });
     }
 
@@ -332,23 +313,10 @@ class SupplierControllerTest {
 
     @Test
     void getSuccess() throws Exception {
-        Supplier supplier = new Supplier();
-        supplier.setSupplierName("Supplier Test");
-        supplier.setPhone("6281238218");
-        supplier.setEmail("john@company.xyz");
-        supplier.setInformation("Supplier for fishing tools");
+        Supplier supplier = getSupplier();
         supplierRepository.save(supplier);
+        Address address = supplier.getAddress();
 
-        Address address = new Address();
-        address.setStreet("JL Test");
-        address.setVillage("Village Test");
-        address.setDistrict("District Test");
-        address.setCity("City Test");
-        address.setProvince("Province Test");
-        address.setCountry("Country Test");
-        address.setPostalCode("0000000");
-        address.setSupplier(supplier);
-        addressRepository.save(address);
 
         mockMvc.perform(
                 get("/api/suppliers/" + supplier.getId())
@@ -438,23 +406,9 @@ class SupplierControllerTest {
 
     @Test
     void deleteSuccess() throws Exception {
-        Supplier supplier = new Supplier();
-        supplier.setSupplierName("Supplier Test");
-        supplier.setPhone("6281238218");
-        supplier.setEmail("john@company.xyz");
-        supplier.setInformation("Supplier for fishing tools");
+        Supplier supplier = getSupplier();
         supplierRepository.save(supplier);
 
-        Address address = new Address();
-        address.setStreet("JL Test");
-        address.setVillage("Village Test");
-        address.setDistrict("District Test");
-        address.setCity("City Test");
-        address.setProvince("Province Test");
-        address.setCountry("Country Test");
-        address.setPostalCode("0000000");
-        address.setSupplier(supplier);
-        addressRepository.save(address);
 
         mockMvc.perform(
                 delete("/api/suppliers/" + supplier.getId())
@@ -469,7 +423,10 @@ class SupplierControllerTest {
             assertNull(response.getErrors());
             assertNotNull(response.getData());
             assertEquals("OK", response.getData());
-
+            Supplier supplierDB = supplierRepository.findById(supplier.getId()).orElse(null);
+            assertNull(supplierDB);
+            Address addressDB = addressRepository.findById(supplier.getAddress().getId()).orElse(null);
+            assertNull(addressDB);
         });
     }
 
@@ -551,7 +508,7 @@ class SupplierControllerTest {
         ).andExpect(
                 status().isOk()
         ).andDo(result -> {
-            WebResponse<List<SupplierGetListResponse>> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            WebResponse<List<SupplierSummaryResponse>> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
 
             assertNull(response.getErrors());
@@ -643,7 +600,6 @@ class SupplierControllerTest {
         request.setInformation("Supplier for fishing tools");
         request.setAddress(SupplierUpdateRequest.AddressSupplierUpdateRequest
                 .builder()
-                        .id(123)
                         .street("JL Test")
                         .village("Village Test")
                         .district("District Test")
@@ -673,69 +629,12 @@ class SupplierControllerTest {
     }
 
     @Test
-    void updateFailedAddressNotFound() throws Exception {
-        Supplier supplier = new Supplier();
-        supplier.setSupplierName("Supplier Test");
-        supplier.setPhone("6281238218");
-        supplier.setEmail("johnupdated@company.xyz");
-        supplier.setInformation("Supplier for fishing tools");
-        supplierRepository.save(supplier);
-
-        SupplierUpdateRequest request = new SupplierUpdateRequest();
-        request.setSupplierName("Supplier Test");
-        request.setPhone("6281238218");
-        request.setEmail("johnupdated@company.xyz");
-        request.setInformation("Supplier for fishing tools");
-        request.setAddress(SupplierUpdateRequest.AddressSupplierUpdateRequest
-                .builder()
-                .id(123)
-                .street("JL Test")
-                .village("Village Test")
-                .district("District Test")
-                .city("City Test")
-                .province("Province Test")
-                .country("Country Test")
-                .postalCode("0000000")
-                .build()
-        );
-
-        mockMvc.perform(
-                put("/api/suppliers/" + supplier.getId())
-                        .header("Authorization", authorizationToken)
-                        .accept(MediaType.APPLICATION_JSON)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request))
-        ).andExpect(
-                status().isNotFound()
-        ).andDo(result -> {
-            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
-            });
-
-            assertNull(response.getData());
-            assertNotNull(response.getErrors());
-            assertEquals("Address is not found.", response.getErrors());
-        });
-    }
-
-    @Test
     void updateSuccess() throws Exception {
-        Supplier supplier = new Supplier();
-        supplier.setSupplierName("Supplier Test");
-        supplier.setPhone("6281238218");
-        supplier.setEmail("johnupdated@company.xyz");
-        supplier.setInformation("Supplier for fishing tools");
+        Supplier supplier = getSupplier();
         supplierRepository.save(supplier);
 
-        Address address = new Address();
-        address.setStreet("JL Test");
-        address.setVillage("Village Test");
-        address.setDistrict("District Test");
-        address.setCity("City Test");
-        address.setProvince("Province Test");
-        address.setCountry("Country Test");
-        address.setPostalCode("0000000");
-        address.setSupplier(supplier);
-        addressRepository.save(address);
+        Address address = supplier.getAddress();
+
 
 
         SupplierUpdateRequest request = new SupplierUpdateRequest();
@@ -745,7 +644,6 @@ class SupplierControllerTest {
         request.setInformation("Supplier for fishing tools Update");
         request.setAddress(SupplierUpdateRequest.AddressSupplierUpdateRequest
                 .builder()
-                .id(address.getId())
                 .street("JL Test Update")
                 .village("Village Test Update")
                 .district("District Test Update")
@@ -775,7 +673,7 @@ class SupplierControllerTest {
             assertEquals(request.getPhone(), response.getData().getPhone());
             assertEquals(request.getEmail(), response.getData().getEmail());
             assertEquals(request.getInformation(), response.getData().getInformation());
-            assertEquals(request.getAddress().getId(), response.getData().getAddress().getId());
+            assertEquals(supplier.getAddress().getId(), response.getData().getAddress().getId());
             assertEquals(request.getAddress().getStreet(), response.getData().getAddress().getStreet());
             assertEquals(request.getAddress().getVillage(), response.getData().getAddress().getVillage());
             assertEquals(request.getAddress().getDistrict(), response.getData().getAddress().getDistrict());
@@ -810,6 +708,26 @@ class SupplierControllerTest {
     }
 
 
+    private static Supplier getSupplier() {
+        Supplier supplier = new Supplier();
+        supplier.setSupplierName("Supplier Test");
+        supplier.setPhone("6281238218");
+        supplier.setEmail("johnupdated@company.xyz");
+        supplier.setInformation("Supplier for fishing tools");
 
+        Address address = new Address();
+
+        address.setStreet("JL Test");
+        address.setVillage("Village Test");
+        address.setDistrict("District");
+        address.setCity("city");
+        address.setProvince("Province Test");
+        address.setCountry("country");
+        address.setPostalCode("123123");
+        address.setSupplier(supplier);
+
+        supplier.setAddress(address);
+        return supplier;
+    }
 
 }

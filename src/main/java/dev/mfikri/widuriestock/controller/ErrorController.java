@@ -5,6 +5,7 @@ import dev.mfikri.widuriestock.model.WebResponse;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -158,6 +159,35 @@ public class ErrorController {
             // A generic fallback for other types or when the required type isn't available (like from a FieldError)
             return String.format("Invalid format for property '%s'. Please check the data type.", propertyName);
         }
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<WebResponse<String>> handleDataIntegrityViolation(DataIntegrityViolationException exception) {
+        String message = exception.getMostSpecificCause().getMessage().toLowerCase();
+
+        log.warn("Data integrity violation: {}", message, exception);
+        // Add "duplicate entry" to catch errors from MySQL
+        if (message.contains("unique constraint") || message.contains("duplicate key") || message.contains("duplicate entry")){
+            String userMessage;
+            // Provide more specific feedback based on the constraint name
+            if (message.contains("unique_supplier_name")) {
+                userMessage = "Supplier name is already taken. Please use a different name.";
+            } else if (message.contains("unique_email")) {
+                userMessage = "Email is already registered. Please use a different email.";
+            } else {
+                // A good generic fallback for other unique constraints
+                userMessage = "A record with one of the unique fields already exists.";
+            }
+            return ResponseEntity
+                    .status(HttpStatus.CONFLICT)
+                    .body(WebResponse.<String>builder().errors(userMessage).build());
+        }
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(WebResponse.<String>builder()
+                        .errors("Data integrity violation: " + exception.getMostSpecificCause().getMessage())
+                        .build());
     }
 
 }

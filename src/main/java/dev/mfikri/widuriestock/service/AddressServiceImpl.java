@@ -62,7 +62,7 @@ public class AddressServiceImpl implements AddressService {
 
 
         log.info("Successfully found addresses for the user. count={}", addresses.size());
-        return addresses.stream().map(AddressServiceImpl::toAddressResponse).toList();
+        return addresses.stream().map(this::toAddressResponse).toList();
     }
 
     @Override
@@ -135,7 +135,7 @@ public class AddressServiceImpl implements AddressService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Address is not found."));
     }
 
-    public static AddressResponse toAddressResponse(Address address) {
+    public AddressResponse toAddressResponse(Address address) {
         return AddressResponse.builder()
                 .id(address.getId())
                 .street(address.getStreet())

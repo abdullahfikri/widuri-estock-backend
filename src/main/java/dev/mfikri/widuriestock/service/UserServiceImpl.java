@@ -31,11 +31,13 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final AddressRepository addressRepository;
     private final ValidationService validationService;
+    private final AddressService addressService;
 
-    public UserServiceImpl(UserRepository userRepository, AddressRepository addressRepository, ValidationService validationService) {
+    public UserServiceImpl(UserRepository userRepository, AddressRepository addressRepository, ValidationService validationService, AddressService addressService) {
         this.userRepository = userRepository;
         this.addressRepository = addressRepository;
         this.validationService = validationService;
+        this.addressService = addressService;
     }
 
     @Override
@@ -208,7 +210,7 @@ public class UserServiceImpl implements UserService {
     private UserResponse toUserResponse(User user) {
         Set<AddressResponse> addressResponses = new HashSet<>();
         if (user.getAddresses() != null) {
-            addressResponses = user.getAddresses().stream().map(AddressServiceImpl::toAddressResponse).collect(Collectors.toSet());
+            addressResponses = user.getAddresses().stream().map(addressService::toAddressResponse).collect(Collectors.toSet());
         }
 
         return UserResponse.builder()

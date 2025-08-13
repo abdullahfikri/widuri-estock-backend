@@ -28,7 +28,8 @@ CREATE TABLE IF NOT EXISTS suppliers (
     phone VARCHAR(20) NOT NULL,
     email VARCHAR(100),
     information VARCHAR(255),
-    UNIQUE (supplier_name, email),
+    UNIQUE (supplier_name),
+    UNIQUE (email),
     PRIMARY KEY (id)
 ) engine = InnoDB;
 
@@ -38,7 +39,14 @@ ALTER TABLE suppliers
 ALTER TABLE suppliers
     ADD COLUMN updated_at TIMESTAMP;
 
+ALTER TABLE suppliers
+    ADD CONSTRAINT unique_email
+    UNIQUE (email);
+
 SELECT * FROM suppliers;
+
+# DELETE FROM suppliers;
+DROP TABLE IF EXISTS suppliers;
 
 CREATE TABLE IF NOT EXISTS addresses (
     id int NOT NULL AUTO_INCREMENT,
@@ -61,6 +69,8 @@ CREATE TABLE IF NOT EXISTS addresses (
 # ) ENGINE = InnoDB;
 
 SELECT * FROM addresses;
+
+# DELETE FROM addresses;
 
 # INSERT INTO users (username, password, first_name, phone, role) VALUES ('testing', 'testing', 'john', '623213123', 'ADM_WAREHOUSE');
 

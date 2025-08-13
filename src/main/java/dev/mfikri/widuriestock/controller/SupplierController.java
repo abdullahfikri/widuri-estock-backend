@@ -3,7 +3,7 @@ package dev.mfikri.widuriestock.controller;
 import dev.mfikri.widuriestock.model.PagingResponse;
 import dev.mfikri.widuriestock.model.WebResponse;
 import dev.mfikri.widuriestock.model.supplier.SupplierCreateRequest;
-import dev.mfikri.widuriestock.model.supplier.SupplierGetListResponse;
+import dev.mfikri.widuriestock.model.supplier.SupplierSummaryResponse;
 import dev.mfikri.widuriestock.model.supplier.SupplierResponse;
 import dev.mfikri.widuriestock.model.supplier.SupplierUpdateRequest;
 import dev.mfikri.widuriestock.service.SupplierService;
@@ -44,13 +44,13 @@ public class SupplierController {
     @GetMapping(path = "/suppliers",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    public WebResponse<List<SupplierGetListResponse>> getList(@RequestParam(value = "page", required = false, defaultValue = "0") Integer page,
+    public WebResponse<List<SupplierSummaryResponse>> getList(@RequestParam(value = "page", required = false, defaultValue = "0") Integer page,
                                                               @RequestParam(value = "size", required = false, defaultValue = "10") Integer size) {
         log.info("Receiving request to get list of suppliers.");
 
-        Page<SupplierGetListResponse> responsePage = supplierService.getList(page, size);
+        Page<SupplierSummaryResponse> responsePage = supplierService.getList(page, size);
 
-        return WebResponse.<List<SupplierGetListResponse>>builder()
+        return WebResponse.<List<SupplierSummaryResponse>>builder()
                 .data(responsePage.getContent())
                 .paging(PagingResponse.builder()
                         .currentPage(responsePage.getNumber())

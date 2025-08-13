@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class SupplierGetListResponse {
+public class SupplierSummaryResponse {
     private Integer id;
     private String supplierName;
     private String phone;

@@ -15,4 +15,5 @@ public interface AddressService {
     void delete(String username, Integer addressId);
 
     void setAddress(Address address, String street, String village, String district, String city, String province, String country, String postalCode);
+    AddressResponse toAddressResponse(Address address);
 }
