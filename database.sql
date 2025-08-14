@@ -14,7 +14,8 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP,
     updated_at TIMESTAMP,
     primary key (username),
-    UNIQUE (token, email)
+    UNIQUE (token),
+    UNIQUE (email)
 ) engine = InnoDB;
 
 INSERT INTO users (username, password, first_name, phone, role)
