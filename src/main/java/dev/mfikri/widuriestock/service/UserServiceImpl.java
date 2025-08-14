@@ -94,10 +94,6 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public UserResponse get(String username) {
-        if (username.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username must not blank.");
-        }
-
         User user = findUserByUsernameOrThrows(username);
         return toUserResponse(user);
     }
@@ -206,6 +202,9 @@ public class UserServiceImpl implements UserService {
 //    }
 
     private User findUserByUsernameOrThrows(String username) {
+        if (username == null || username.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username must not blank.");
+        }
         return userRepository.findById(username.trim()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,  "User is not found."));
     }
 
