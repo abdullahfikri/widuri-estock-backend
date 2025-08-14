@@ -33,18 +33,22 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         log.info("Processing create refresh token request, username={}, userAgent={}", username, userAgent);
         
         User user= findUserByUsernameOrThrows(username);
-        
-        RefreshToken refreshToken = RefreshToken.builder()
-                .user(user)
-                .refreshToken(UUID.randomUUID().toString())
-                .expiredAt(Instant.now().plusMillis(refreshTokenDuration)) // 10 minute for development
-                .userAgent(userAgent)
-                .build();
+
+        RefreshToken refreshToken = buildRefreshToken(user, userAgent);
 
         RefreshToken token = refreshTokenRepository.save(refreshToken);
 
         log.info("Created refresh token, username={}, userAgent={}", username, userAgent);
         return token;
+    }
+
+    private RefreshToken buildRefreshToken(User user, String userAgent) {
+        return RefreshToken.builder()
+                .user(user)
+                .refreshToken(UUID.randomUUID().toString())
+                .expiredAt(Instant.now().plusMillis(refreshTokenDuration))
+                .userAgent(userAgent)
+                .build();
     }
 
     private User findUserByUsernameOrThrows(String username) {
@@ -59,7 +63,6 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
 
     @Override
     public boolean isTokenExpired(RefreshToken refreshToken) {
-        // This is now a pure query method with no side effects.
         return refreshToken.getExpiredAt().isBefore(Instant.now());
     }
 
