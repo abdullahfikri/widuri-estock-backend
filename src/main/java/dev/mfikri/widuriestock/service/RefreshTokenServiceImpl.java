@@ -43,6 +43,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     }
 
     private RefreshToken buildRefreshToken(User user, String userAgent) {
+        log.debug("Building refresh token.");
         return RefreshToken.builder()
                 .user(user)
                 .refreshToken(UUID.randomUUID().toString())
@@ -52,17 +53,20 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     }
 
     private User findUserByUsernameOrThrows(String username) {
+        log.debug("Finding user by username. username={}", username);
         return userRepository.findById(username)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User with username " + username + " not found."));
     }
 
     @Override
     public Optional<RefreshToken> findByToken(String refreshToken) {
+        log.debug("Finding refresh token.");
         return refreshTokenRepository.findByRefreshToken(refreshToken);
     }
 
     @Override
     public boolean isTokenExpired(RefreshToken refreshToken) {
+        log.debug("Checking if refresh token is expired.");
         return refreshToken.getExpiredAt().isBefore(Instant.now());
     }
 
