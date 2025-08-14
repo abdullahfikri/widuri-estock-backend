@@ -2,6 +2,7 @@ package dev.mfikri.widuriestock.service;
 
 import dev.mfikri.widuriestock.entity.Address;
 import dev.mfikri.widuriestock.entity.User;
+import dev.mfikri.widuriestock.model.address.AddressCreateRequest;
 import dev.mfikri.widuriestock.model.address.AddressResponse;
 import dev.mfikri.widuriestock.model.user.*;
 import dev.mfikri.widuriestock.repository.AddressRepository;
@@ -29,13 +30,11 @@ import java.util.stream.Collectors;
 @Service
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
-    private final AddressRepository addressRepository;
     private final ValidationService validationService;
     private final AddressService addressService;
 
-    public UserServiceImpl(UserRepository userRepository, AddressRepository addressRepository, ValidationService validationService, AddressService addressService) {
+    public UserServiceImpl(UserRepository userRepository, ValidationService validationService, AddressService addressService) {
         this.userRepository = userRepository;
-        this.addressRepository = addressRepository;
         this.validationService = validationService;
         this.addressService = addressService;
     }
@@ -46,13 +45,31 @@ public class UserServiceImpl implements UserService {
         validationService.validate(request);
 
         if (userRepository.existsById(request.getUsername())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username is already exists");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Username is already registered. Please use a different username.");
         }
 
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email is already exists");
+        User user = buildUser(request);
+        if (request.getAddress() != null) {
+            AddressCreateRequest requestAddress = request.getAddress();
+            Address address = new Address();
+            addressService.setAddress(address,
+                    requestAddress.getStreet(),
+                    requestAddress.getVillage(),
+                    requestAddress.getDistrict(),
+                    requestAddress.getCity(),
+                    requestAddress.getProvince(),
+                    requestAddress.getCountry(),
+                    requestAddress.getPostalCode()
+                    );
+            address.setUser(user);
+            user.setAddresses(Set.of(address));
         }
 
+        User savedUser = userRepository.save(user);
+        return toUserResponse(savedUser);
+    }
+
+    private User buildUser(UserCreateRequest request) {
         User user = new User();
         user.setUsername(request.getUsername());
         user.setPassword("{bcrypt}" + BCrypt.hashpw(request.getPassword(), BCrypt.gensalt()));
@@ -69,25 +86,10 @@ public class UserServiceImpl implements UserService {
         user.setRole(request.getRole().toUpperCase());
 
         user.setDateIn(Instant.now());
-        userRepository.save(user);
-
-        if (request.getAddress() != null) {
-            Address address = new Address();
-            address.setStreet(request.getAddress().getStreet());
-            address.setVillage(request.getAddress().getVillage());
-            address.setDistrict(request.getAddress().getDistrict());
-            address.setCity(request.getAddress().getCity());
-            address.setProvince(request.getAddress().getProvince());
-            address.setCountry(request.getAddress().getCountry());
-            address.setPostalCode(request.getAddress().getPostalCode());
-            address.setUser(user);
-            addressRepository.save(address);
-
-            user.setAddresses(Set.of(address));
-        }
-
-        return toUserResponse(user);
+        return user;
     }
+
+
 
     @Override
     @Transactional(readOnly = true)

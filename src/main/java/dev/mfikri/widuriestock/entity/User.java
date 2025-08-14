@@ -60,7 +60,7 @@ public class User {
     @Column(name = "updated_at")
     private Instant updatedAt;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Address> addresses;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE)

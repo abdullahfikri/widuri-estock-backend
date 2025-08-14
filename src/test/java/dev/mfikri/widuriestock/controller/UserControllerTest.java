@@ -229,14 +229,14 @@ class UserControllerTest {
                         .params(params)
 
         ).andExpectAll(
-            status().isBadRequest()
+            status().isConflict()
         ).andDo(result -> {
             WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
 
             assertNull(response.getData());
             assertNotNull(response.getErrors());
-            assertEquals("Username is already exists", response.getErrors());
+            assertEquals("Username is already registered. Please use a different username.", response.getErrors());
         });
     }
 
@@ -276,14 +276,14 @@ class UserControllerTest {
                         .params(params)
 
         ).andExpectAll(
-                status().isBadRequest()
+                status().isConflict()
         ).andDo(result -> {
             WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
 
             assertNull(response.getData());
             assertNotNull(response.getErrors());
-            assertEquals("Email is already exists", response.getErrors());
+            assertEquals("Email is already registered. Please use a different email.", response.getErrors());
         });
     }
 
