@@ -100,43 +100,36 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public UserResponse update(UserUpdateRequest request, boolean current) {
+    public UserResponse update(UserUpdateRequest request, boolean isCurrentUser) {
         validationService.validate(request);
 
         User user = findUserByUsernameOrThrows(request.getUsername());
 
-        if (Objects.nonNull(request.getPassword())) {
-            user.setPassword(BCrypt.hashpw(request.getPassword(), BCrypt.gensalt()));
-        }
-
-        if (Objects.nonNull(request.getFirstName())) {
-            user.setFirstName(request.getFirstName());
-        }
-
-        if (Objects.nonNull(request.getLastName())) {
-            user.setLastName(request.getLastName());
-        }
-
-        if (Objects.nonNull(request.getPhone())) {
-            user.setPhone(request.getPhone());
-        }
-
-        if (Objects.nonNull(request.getEmail())) {
-            user.setEmail(request.getEmail());
-        }
-
-        if (request.getPhoto() != null && !request.getPhoto().isEmpty()) {
-            Path path = ImageUtil.uploadPhoto(request.getPhoto(), request.getUsername(), false);
-            user.setPhoto(path.toString());
-        }
-
-        if (!current == Objects.nonNull(request.getRole())){
-            user.setRole(request.getRole());;
-        }
-
-        userRepository.save(user);
+        applyUpdatesToUser(request, user, isCurrentUser);
 
         return toUserResponse(user);
+    }
+
+    private void applyUpdatesToUser(UserUpdateRequest request, User user, boolean isCurrentUser) {
+        Optional.ofNullable(request.getPassword())
+                .filter(String::isBlank)
+                .ifPresent( pw -> user.setPassword(BCrypt.hashpw(request.getPassword(), BCrypt.gensalt())));
+
+        Optional.ofNullable(request.getFirstName()).ifPresent(user::setFirstName);
+        Optional.ofNullable(request.getLastName()).ifPresent(user::setLastName);
+        Optional.ofNullable(request.getPhone()).ifPresent(user::setPhone);
+        Optional.ofNullable(request.getEmail()).ifPresent(user::setEmail);
+
+        Optional.ofNullable(request.getPhoto())
+                .filter(photo -> !photo.isEmpty())
+                .ifPresent(photo -> {
+                    Path path = ImageUtil.uploadPhoto(request.getPhoto(), request.getUsername(), false);
+                    user.setPhoto(path.toString());
+                });
+
+        if (!isCurrentUser && request.getRole() != null) {
+            user.setRole(request.getRole());
+        }
     }
 
 
