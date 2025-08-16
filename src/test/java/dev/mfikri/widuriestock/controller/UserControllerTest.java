@@ -554,7 +554,7 @@ class UserControllerTest {
             User userUpdated = userRepository.findById(user.getUsername()).orElse(null);
             assertNotNull(userUpdated);
 
-            assertTrue(BCrypt.checkpw("abcd1234", userUpdated.getPassword()));
+            assertTrue(BCrypt.checkpw("abcd1234", userUpdated.getPassword().replace("{bcrypt}", "")));
             assertEquals("johndo123@example.com", userUpdated.getEmail());
             assertEquals("John Update", userUpdated.getFirstName());
             assertEquals("Doe Update", userUpdated.getLastName());
@@ -710,7 +710,7 @@ class UserControllerTest {
 
         ).andExpectAll(
                 status().isOk()
-        ).andDo(result -> {
+         ).andDo(result -> {
             WebResponse<UserResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
             assertNull(response.getErrors());
@@ -726,8 +726,7 @@ class UserControllerTest {
 
             User userUpdated = userRepository.findById(user.getUsername()).orElse(null);
             assertNotNull(userUpdated);
-
-            assertTrue(BCrypt.checkpw("abcd1234", userUpdated.getPassword()));
+            assertTrue(BCrypt.checkpw("abcd1234", userUpdated.getPassword().replace("{bcrypt}", "")));
             assertEquals("johndo123@example.com", userUpdated.getEmail());
             assertEquals("John Update", userUpdated.getFirstName());
             assertEquals("Doe Update", userUpdated.getLastName());
@@ -736,7 +735,6 @@ class UserControllerTest {
             assertEquals(Role.ADMIN_WAREHOUSE.toString(), userUpdated.getRole());
         });
     }
-
 
     @Test
     void searchAll() throws Exception {

@@ -113,7 +113,7 @@ public class UserServiceImpl implements UserService {
     private void applyUpdatesToUser(UserUpdateRequest request, User user, boolean isCurrentUser) {
         Optional.ofNullable(request.getPassword())
                 .filter(String::isBlank)
-                .ifPresent( pw -> user.setPassword(BCrypt.hashpw(request.getPassword(), BCrypt.gensalt())));
+                .ifPresent( pw -> user.setPassword("{bcrypt}" + BCrypt.hashpw(request.getPassword(), BCrypt.gensalt())));
 
         Optional.ofNullable(request.getFirstName()).ifPresent(user::setFirstName);
         Optional.ofNullable(request.getLastName()).ifPresent(user::setLastName);
