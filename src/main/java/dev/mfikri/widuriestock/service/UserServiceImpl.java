@@ -138,61 +138,44 @@ public class UserServiceImpl implements UserService {
     public Page<UserSearchResponse> searchUser(UserSearchFilterRequest filterRequest) {
         validationService.validate(filterRequest);
 
-        Specification<User> specification = (root, query, criteriaBuilder) -> {
-            List<Predicate> predicates = new ArrayList<>();
-
-            if (filterRequest.getUsername() != null) {
-                predicates.add(criteriaBuilder.like(root.get("username"), "%" + filterRequest.getUsername() + "%"));
-            }
-
-            if (filterRequest.getName() != null) {
-                predicates.add(criteriaBuilder.or(
-                   criteriaBuilder.like(root.get("firstName"), "%" + filterRequest.getName() + "%"),
-                   criteriaBuilder.like(root.get("lastName"), "%" + filterRequest.getName() + "%")
-                ));
-            }
-
-            if (filterRequest.getPhone() != null) {
-                predicates.add(criteriaBuilder.like(root.get("phone"), "%" + filterRequest.getPhone() + "%"));
-            }
-
-            if (filterRequest.getEmail() != null) {
-                predicates.add(criteriaBuilder.like(root.get("email"), "%" + filterRequest.getEmail() + "%"));
-            }
-
-            if (filterRequest.getRole() != null) {
-                predicates.add(criteriaBuilder.like(root.get("role") , "%" + filterRequest.getRole() + "%"));
-            }
-            if (predicates.isEmpty()) {
-                predicates.add(criteriaBuilder.like(root.get("username"), "%%"));
-            }
-            return query.where(predicates.toArray(new Predicate[]{})).getRestriction();
-        };
+        Specification<User> specification = createSearchSpecification(filterRequest);
 
         Pageable pageable= PageRequest.of(filterRequest.getPage(), filterRequest.getSize());
 
         Page<User> userPage = userRepository.findAll(specification, pageable);
 
-        List<UserSearchResponse> users = userPage.getContent().stream().map(this::toUserSearchResponse).toList();
-
-        return new PageImpl<>(users, pageable, userPage.getTotalElements());
+        return userPage.map(this::toUserSearchResponse);
     }
 
-//    private Path uploadPhoto(MultipartFile photo, String username) {
-//        String contentType = photo.getContentType();
-//        if (contentType == null || !ImageUtil.isImage(contentType)) {
-//            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Image photo is not valid");
-//        }
-//        String type = photo.getContentType().split("/")[1];
-//
-//        Path path = Path.of("upload/profile-" + username + "." + type);
-//        try {
-//            photo.transferTo(path);
-//            return path;
-//        } catch (IOException e) {
-//            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Server unavailable, try again later");
-//        }
-//    }
+    private Specification<User> createSearchSpecification(UserSearchFilterRequest filterRequest) {
+        return (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (filterRequest.getUsername() != null && !filterRequest.getUsername().isBlank()) {
+                predicates.add(criteriaBuilder.like(root.get("username"), "%" + filterRequest.getUsername() + "%"));
+            }
+
+            if (filterRequest.getName() != null && !filterRequest.getName().isBlank()) {
+                predicates.add(criteriaBuilder.or(
+                        criteriaBuilder.like(root.get("firstName"), "%" + filterRequest.getName() + "%"),
+                        criteriaBuilder.like(root.get("lastName"), "%" + filterRequest.getName() + "%")
+                ));
+            }
+
+            if (filterRequest.getPhone() != null && !filterRequest.getPhone().isBlank()) {
+                predicates.add(criteriaBuilder.like(root.get("phone"), "%" + filterRequest.getPhone() + "%"));
+            }
+
+            if (filterRequest.getEmail() != null && !filterRequest.getEmail().isBlank()) {
+                predicates.add(criteriaBuilder.like(root.get("email"), "%" + filterRequest.getEmail() + "%"));
+            }
+
+            if (filterRequest.getRole() != null && !filterRequest.getRole().isBlank()) {
+                predicates.add(criteriaBuilder.like(root.get("role") , "%" + filterRequest.getRole() + "%"));
+            }
+            return criteriaBuilder.and(predicates.toArray(new Predicate[]{}));
+        };
+    }
 
     private User findUserByUsernameOrThrows(String username) {
         if (username == null || username.isBlank()) {
