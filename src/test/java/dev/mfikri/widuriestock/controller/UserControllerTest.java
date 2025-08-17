@@ -505,7 +505,7 @@ class UserControllerTest {
     void updateSuccess() throws Exception {
         User user = new User();
         user.setUsername("adminwarehouse");
-        user.setPassword("adminwarehouse123");
+        user.setPassword("{bcrypt}" + BCrypt.hashpw("adminwarehouse123", BCrypt.gensalt()));
         user.setFirstName("adminwarehouse123");
         user.setPhone("6200312300");
         user.setEmail("john@doe.com");
@@ -553,7 +553,6 @@ class UserControllerTest {
 
             User userUpdated = userRepository.findById(user.getUsername()).orElse(null);
             assertNotNull(userUpdated);
-
             assertTrue(BCrypt.checkpw("abcd1234", userUpdated.getPassword().replace("{bcrypt}", "")));
             assertEquals("johndo123@example.com", userUpdated.getEmail());
             assertEquals("John Update", userUpdated.getFirstName());
