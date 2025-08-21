@@ -197,6 +197,7 @@ public class UserServiceImpl implements UserService {
     }
 
     private User findUserByUsernameOrThrows(String username) {
+        log.debug("Finding user by username. username={}", username);
         if (username == null || username.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username must not blank.");
         }
@@ -204,6 +205,7 @@ public class UserServiceImpl implements UserService {
     }
 
     private UserResponse toUserResponse(User user) {
+        log.debug("Building user response, username={}", user.getUsername());
         Set<AddressResponse> addressResponses = new HashSet<>();
         if (user.getAddresses() != null) {
             addressResponses = user.getAddresses().stream().map(addressService::toAddressResponse).collect(Collectors.toSet());
@@ -222,6 +224,7 @@ public class UserServiceImpl implements UserService {
     }
 
     private UserSearchResponse toUserSearchResponse(User user) {
+        log.debug("Building user search response, username={}", user.getUsername());
         return UserSearchResponse.builder()
                 .username(user.getUsername())
                 .firstName(user.getFirstName())
