@@ -101,7 +101,11 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public UserResponse get(String username) {
+        log.info("Processing to get a user data, username={}", username);
+
         User user = findUserByUsernameOrThrows(username);
+
+        log.info("Successfully get a user data");
         return toUserResponse(user);
     }
 
