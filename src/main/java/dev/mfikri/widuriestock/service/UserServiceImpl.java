@@ -42,6 +42,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserResponse create(UserCreateRequest request) {
+        log.info("Processing create user request, username={}", request.getUsername());
         validationService.validate(request);
 
         if (userRepository.existsById(request.getUsername())) {
@@ -50,6 +51,7 @@ public class UserServiceImpl implements UserService {
 
         User user = buildUser(request);
         if (request.getAddress() != null) {
+            log.debug("Building address. address={}", request.getAddress());
             AddressCreateRequest requestAddress = request.getAddress();
             Address address = new Address();
             addressService.setAddress(address,
@@ -65,11 +67,15 @@ public class UserServiceImpl implements UserService {
             user.setAddresses(Set.of(address));
         }
 
+        log.debug("Saving user to database.");
         User savedUser = userRepository.save(user);
+
+        log.info("Successfully created user, username={}", request.getUsername());
         return toUserResponse(savedUser);
     }
 
     private User buildUser(UserCreateRequest request) {
+        log.debug("Building new user, username={}", request.getUsername());
         User user = new User();
         user.setUsername(request.getUsername());
         user.setPassword("{bcrypt}" + BCrypt.hashpw(request.getPassword(), BCrypt.gensalt()));
@@ -86,6 +92,7 @@ public class UserServiceImpl implements UserService {
         user.setRole(request.getRole().toUpperCase());
 
         user.setDateIn(Instant.now());
+
         return user;
     }
 
