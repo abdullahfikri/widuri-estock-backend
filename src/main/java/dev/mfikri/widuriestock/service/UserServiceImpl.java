@@ -112,16 +112,19 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserResponse update(UserUpdateRequest request, boolean isCurrentUser) {
+        log.info("Processing to update user data. username={}, isCurrentUser={}", request.getUsername(), isCurrentUser);
         validationService.validate(request);
 
         User user = findUserByUsernameOrThrows(request.getUsername());
 
         applyUpdatesToUser(request, user, isCurrentUser);
 
+        log.info("Successfully updated user data. username={}", request.getUsername());
         return toUserResponse(user);
     }
 
     private void applyUpdatesToUser(UserUpdateRequest request, User user, boolean isCurrentUser) {
+        log.debug("Applying updates to user. username={}", request.getUsername());
         Optional.ofNullable(request.getPassword())
                 .filter(pw -> !pw.isBlank())
                 .ifPresent( pw -> user.setPassword("{bcrypt}" + BCrypt.hashpw(request.getPassword(), BCrypt.gensalt())));
