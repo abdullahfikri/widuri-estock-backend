@@ -150,18 +150,23 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public Page<UserSearchResponse> searchUser(UserSearchFilterRequest filterRequest) {
+        log.info("Processing search user request. filterRequest={}", filterRequest);
         validationService.validate(filterRequest);
 
         Specification<User> specification = createSearchSpecification(filterRequest);
 
+        log.debug("Building paging specification.");
         Pageable pageable= PageRequest.of(filterRequest.getPage(), filterRequest.getSize());
 
+        log.debug("Finding users in database with specification.");
         Page<User> userPage = userRepository.findAll(specification, pageable);
 
+        log.info("Successfully searched users. count={}", userPage.getSize());
         return userPage.map(this::toUserSearchResponse);
     }
 
     private Specification<User> createSearchSpecification(UserSearchFilterRequest filterRequest) {
+        log.debug("Creating search specification. filterRequest={}", filterRequest);
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
 
