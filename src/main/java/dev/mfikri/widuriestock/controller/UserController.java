@@ -5,6 +5,7 @@ import dev.mfikri.widuriestock.model.WebResponse;
 import dev.mfikri.widuriestock.model.user.*;
 import dev.mfikri.widuriestock.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping(path = "/api/users")
 public class UserController {
@@ -29,6 +31,7 @@ public class UserController {
     )
     @ResponseStatus(HttpStatus.CREATED)
     public WebResponse<UserResponse> create (@ModelAttribute UserCreateRequest request) {
+        log.info("Receiving request to create user request");
         UserResponse response = userService.create(request);
 
         return WebResponse.<UserResponse>builder()
@@ -39,25 +42,14 @@ public class UserController {
     @GetMapping(path = "",
         produces = MediaType.APPLICATION_JSON_VALUE
     )
-    public WebResponse<List<UserSearchResponse>> search (
-                                                         @RequestParam(value = "username", required = false) String username,
-                                                         @RequestParam(value = "name", required = false) String name,
-                                                         @RequestParam(value = "phone", required = false) String phone,
-                                                         @RequestParam(value = "email", required = false) String email,
-                                                         @RequestParam(value = "role", required = false) String role,
-                                                         @RequestParam(value = "page", required = false, defaultValue = "0") Integer page,
-                                                         @RequestParam(value = "size", required = false, defaultValue = "10") Integer size
+    public WebResponse<List<UserSearchResponse>> search (@RequestParam(value = "page", required = false, defaultValue = "0") Integer page,
+                                                         @RequestParam(value = "size", required = false, defaultValue = "10") Integer size,
+                                                         @ModelAttribute UserSearchFilterRequest filterRequest
     ) {
+        log.info("Receiving request to searching user");
 
-        UserSearchFilterRequest filterRequest = UserSearchFilterRequest.builder()
-                .username(username)
-                .name(name)
-                .phone(phone)
-                .email(email)
-                .role(role)
-                .page(page)
-                .size(size)
-                .build();
+        filterRequest.setPage(page);
+        filterRequest.setSize(size);
 
         Page<UserSearchResponse> responsePage = userService.searchUser(filterRequest);
 
@@ -75,6 +67,9 @@ public class UserController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public WebResponse<UserResponse> get (@PathVariable String username) {
+        log.info("Receiving request to get a user. username={}", username);
+
+
         UserResponse response = userService.get(username);
 
         return WebResponse.<UserResponse>builder()
@@ -87,6 +82,8 @@ public class UserController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public WebResponse<UserResponse> update (@ModelAttribute UserUpdateRequest request, @PathVariable String username) {
+        log.info("Receiving request to update a user. username={}", username);
+
         request.setUsername(username);
 
         UserResponse response = userService.update(request, false);
@@ -101,7 +98,8 @@ public class UserController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public WebResponse<UserResponse> getCurrent (HttpServletRequest httpServletRequest) {
-        // todo: get user from user details
+        log.info("Receiving request to get current user");
+
         Principal userPrincipal = httpServletRequest.getUserPrincipal();
         UserResponse response = userService.get(userPrincipal.getName());
 
@@ -115,7 +113,8 @@ public class UserController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public WebResponse<UserResponse> updateCurrent (@ModelAttribute UserUpdateRequest request, HttpServletRequest httpServletRequest) {
-        // todo: get user from user details
+        log.info("Receiving request to update current user");
+
         Principal userPrincipal = httpServletRequest.getUserPrincipal();
         request.setUsername(userPrincipal.getName());
 

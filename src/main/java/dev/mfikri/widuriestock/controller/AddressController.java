@@ -6,6 +6,7 @@ import dev.mfikri.widuriestock.model.address.AddressResponse;
 import dev.mfikri.widuriestock.model.address.AddressUpdateRequest;
 import dev.mfikri.widuriestock.service.AddressService;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping(path = "/api/users")
 public class AddressController {
@@ -31,6 +33,8 @@ public class AddressController {
     )
     @ResponseStatus(HttpStatus.CREATED)
     public WebResponse<AddressResponse> createAddressForCurrentUser(@RequestBody AddressCreateRequest request, HttpServletRequest httpServletRequest) {
+        log.info("Receiving request to create new address for current user.");
+
         Principal userPrincipal = httpServletRequest.getUserPrincipal();
         request.setUsername(userPrincipal.getName());
 
@@ -45,6 +49,8 @@ public class AddressController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public WebResponse<List<AddressResponse>> getListAddressForCurrentUser(HttpServletRequest httpServletRequest) {
+        log.info("Receiving request to get all address for current user.");
+
         Principal userPrincipal = httpServletRequest.getUserPrincipal();
 
         List<AddressResponse> responses = addressService.getList(userPrincipal.getName());
@@ -58,8 +64,9 @@ public class AddressController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public WebResponse<AddressResponse> getAddressForCurrentUser(@PathVariable Integer addressId, HttpServletRequest httpServletRequest) {
-        Principal userPrincipal = httpServletRequest.getUserPrincipal();
+        log.info("Receiving request to get an address for current user, addressId={}.", addressId);
 
+        Principal userPrincipal = httpServletRequest.getUserPrincipal();
         AddressResponse response = addressService.get(userPrincipal.getName(), addressId);
 
         return WebResponse.<AddressResponse>builder()
@@ -72,6 +79,8 @@ public class AddressController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public WebResponse<AddressResponse> updateAddressForCurrentUser(@RequestBody AddressUpdateRequest request, HttpServletRequest httpServletRequest, @PathVariable Integer addressId) {
+        log.info("Receiving request to update an address for current user, addressId={}.", addressId);
+
         Principal userPrincipal = httpServletRequest.getUserPrincipal();
 
         request.setUsername(userPrincipal.getName());
@@ -89,6 +98,8 @@ public class AddressController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public WebResponse<String> deleteAddressForCurrentUser(HttpServletRequest httpServletRequest, @PathVariable Integer addressId) {
+        log.info("Receiving request to delete an address for current user, addressId={}.", addressId);
+
         Principal userPrincipal = httpServletRequest.getUserPrincipal();
 
         addressService.delete(userPrincipal.getName(), addressId);

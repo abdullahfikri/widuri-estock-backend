@@ -25,11 +25,12 @@ public class Supplier {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(name = "supplier_name")
+    @Column(name = "supplier_name", unique = true)
     private String supplierName;
 
     private String phone;
 
+    @Column(unique = true)
     private String email;
 
     private String information;
@@ -42,7 +43,7 @@ public class Supplier {
     @Column(name = "updated_at")
     private Instant updatedAt;
 
-    @OneToOne(mappedBy = "supplier", cascade = CascadeType.REMOVE)
+    @OneToOne(mappedBy = "supplier", cascade = CascadeType.ALL, orphanRemoval = true, optional = false)
     private Address address;
 
     @OneToMany(mappedBy = "supplier")

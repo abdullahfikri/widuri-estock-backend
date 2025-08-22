@@ -17,7 +17,6 @@ import dev.mfikri.widuriestock.model.incoming_product.*;
 import dev.mfikri.widuriestock.repository.*;
 import dev.mfikri.widuriestock.util.BCrypt;
 import dev.mfikri.widuriestock.util.JwtUtil;
-import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,7 +30,6 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -399,7 +397,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("'Product id' must not duplicate in one IncomingProduct.", response.getErrors());
+            assertEquals("Product id 0 is duplicate.", response.getErrors());
             log.info(response.getErrors());
         });
 
@@ -443,7 +441,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("Some of 'products' is not found, please check the productId again.", response.getErrors());
+            assertEquals("Some products are not found. Please check product IDs again.", response.getErrors());
             log.info(response.getErrors());
         });
     }
@@ -463,7 +461,7 @@ class IncomingProductControllerTest {
         incomingProductDetailsRequest.setIncomingProductVariantDetails(
                 List.of(IncomingProductCreateRequest.IncomingProductVariantDetail
                         .builder()
-                        .variantId(100)
+                        .variantId(productVariant.getId())
                         .pricePerUnit(1000)
                         .quantity(100)
                         .build()
@@ -530,7 +528,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("Some of ProductVariant is not found, please check ProductVariant id again.", response.getErrors());
+            assertEquals("Some productVariants are not found. Please check productVariant IDs again.", response.getErrors());
         });
     }
 
@@ -595,7 +593,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("ProductVariant with id " + productVariant.getId() + " is not ProductVariant for Product with id " + productWithVariant.getId() + ".", response.getErrors());
+            assertEquals("ProductVariant with id " + productVariant.getId() + " is not a variant for Product with id " + productWithVariant.getId() + ".", response.getErrors());
         });
     }
 
@@ -1089,7 +1087,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("incomingProductId type data is wrong.", response.getErrors());
+            assertEquals("Invalid number format for property 'incomingProductId'. Value 'abc' is not a valid number.", response.getErrors());
         });
     }
 
@@ -1388,7 +1386,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("page type data is wrong.", response.getErrors());
+            assertEquals("Invalid format for property 'page'. Please check the data type.", response.getErrors());
         });
 
         mockMvc.perform(
@@ -1406,7 +1404,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("size type data is wrong.", response.getErrors());
+            assertEquals("Invalid format for property 'size'. Please check the data type.", response.getErrors());
         });
     }
 
@@ -1416,8 +1414,8 @@ class IncomingProductControllerTest {
                 get("/api/incoming-products")
                         .header("Authorization", authorizationToken)
                         .accept(MediaType.APPLICATION_JSON)
-                        .param("start_date", "123")
-                        .param("end_date", "123")
+                        .param("startDate", "123")
+                        .param("endDate", "2025-10-30")
                         .param("page", "1")
                         .param("size", "10")
         ).andExpectAll(
@@ -1429,15 +1427,15 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("start_date type data is wrong.", response.getErrors());
+            assertEquals("Invalid format for property 'startDate'. Please check the data type.", response.getErrors());
         });
 
         mockMvc.perform(
                 get("/api/incoming-products")
                         .header("Authorization", authorizationToken)
                         .accept(MediaType.APPLICATION_JSON)
-                        .param("start_date", "2025-10-30")
-                        .param("end_date", "123")
+                        .param("startDate", "2025-10-30")
+                        .param("endDate", "123")
                         .param("page", "1")
                         .param("size", "10")
         ).andExpectAll(
@@ -1449,7 +1447,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("end_date type data is wrong.", response.getErrors());
+            assertEquals("Invalid format for property 'endDate'. Please check the data type.", response.getErrors());
         });
     }
 
@@ -1459,8 +1457,8 @@ class IncomingProductControllerTest {
                 get("/api/incoming-products")
                         .header("Authorization", authorizationToken)
                         .accept(MediaType.APPLICATION_JSON)
-                        .param("start_date", "2025-01-10")
-                        .param("end_date", "2025-01-01")
+                        .param("startDate", "2025-01-10")
+                        .param("endDate", "2025-01-01")
                         .param("page", "1")
                         .param("size", "10")
         ).andExpectAll(
@@ -1552,7 +1550,7 @@ class IncomingProductControllerTest {
                 get("/api/incoming-products")
                         .header("Authorization", authorizationToken)
                         .accept(MediaType.APPLICATION_JSON)
-                        .param("start_date", "2025-05-11")
+                        .param("startDate", "2025-05-11")
                         .param("page", "0")
                         .param("size", "10")
         ).andExpectAll(
@@ -1604,7 +1602,7 @@ class IncomingProductControllerTest {
                 get("/api/incoming-products")
                         .header("Authorization", authorizationToken)
                         .accept(MediaType.APPLICATION_JSON)
-                        .param("end_date", "2025-05-11")
+                        .param("endDate", "2025-05-11")
                         .param("page", "0")
                         .param("size", "10")
         ).andExpectAll(
@@ -1656,8 +1654,8 @@ class IncomingProductControllerTest {
                 get("/api/incoming-products")
                         .header("Authorization", authorizationToken)
                         .accept(MediaType.APPLICATION_JSON)
-                        .param("start_date", "2025-05-05")
-                        .param("end_date", "2025-05-10")
+                        .param("startDate", "2025-05-05")
+                        .param("endDate", "2025-05-10")
                         .param("page", "0")
                         .param("size", "10")
         ).andExpectAll(
@@ -1719,7 +1717,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("incomingProductId type data is wrong.", response.getErrors());
+            assertEquals("Invalid number format for property 'incomingProductId'. Value 'abc' is not a valid number.", response.getErrors());
         });
     }
 
@@ -2004,7 +2002,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("IncomingProductDetail is not found, please check IncomingProductDetail id again.", response.getErrors());
+            assertEquals("IncomingProductDetail with id " + 999999 + " is not found, please check IncomingProductDetail id again.", response.getErrors());
         });
 
     }
@@ -2089,7 +2087,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("IncomingProductDetail is duplicate, please check IncomingProductDetails again.", response.getErrors());
+            assertEquals("IncomingProductDetail with id " + incomingProductDetail.getId() + " is duplicate, please check IncomingProductDetails again.", response.getErrors());
         });
     }
 
@@ -2160,7 +2158,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("IncomingProductDetails 'id': " + incomingProductDetail.getId() + " has status 'hasVariant': false, please input valid IncomingProductDetail hasVariant.", response.getErrors());
+            assertEquals("Cannot change 'hasVariant' status for IncomingProductDetail with id " + incomingProductDetail.getId() + ". Please check 'hasVariant' status again.", response.getErrors());
         });
     }
 
@@ -2216,7 +2214,7 @@ class IncomingProductControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request))
         ).andExpectAll(
-                status().isNotFound()
+                status().isBadRequest()
         ).andExpect(result -> {
             WebResponse<IncomingProductGetListResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
@@ -2224,7 +2222,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("Product id: 999999 is wrong, please check Product id again.", response.getErrors());
+            assertEquals("Cannot change 'productId' value for IncomingProductDetail with id " + incomingProductDetail.getId() + ". Please check 'productId' status again.", response.getErrors());
         });
     }
 
@@ -2290,7 +2288,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("Product id: " + productWithoutVariant.getId() + " is already change hasVariant status, please delete and create new IncomingProductDetail for this IncomingProduct.", response.getErrors());
+            assertEquals("Product id: " + productWithoutVariant.getId() + " is already change hasVariant status, please delete IncomingProductDetail with id " + incomingProductDetail.getId()  + " and create new IncomingProductDetail for this IncomingProduct.", response.getErrors());
         });
     }
 
@@ -2461,7 +2459,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("IncomingProductVariantDetail is not found, please check IncomingProductVariantDetail id again.", response.getErrors());
+            assertEquals("IncomingProductVariantDetail with id " + 999999 + " is not found, please check IncomingProductVariantDetail id again.", response.getErrors());
         });
     }
 
@@ -2542,7 +2540,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("ProductVariant id: " + 999999 +" is wrong, please check ProductVariant id again.", response.getErrors());
+            assertEquals("ProductVariant for IncomingProductVariantDetail with id: " + 999999 +" is wrong, please check ProductVariant id again.", response.getErrors());
         });
     }
 
@@ -2800,10 +2798,14 @@ class IncomingProductControllerTest {
                         .orElse(null);
 
                 Product product = productList.stream()
-                        .filter(p -> p.getId().equals(incomingProductDetailUpdateRequest.getProductId()))
+                        .filter(p -> {
+                            assertNotNull(incomingProductDetailUpdateRequest);
+                            return p.getId().equals(incomingProductDetailUpdateRequest.getProductId());
+                        })
                         .findFirst()
                         .orElse(null);
 
+                assertNotNull(product);
                 assertEquals(incomingProductDetailUpdateRequest.getId(), incomingProductDetailResponse.getId());
                 assertEquals(incomingProductDetailUpdateRequest.getId(), incomingProductDetailResponse.getId());
 
@@ -2838,6 +2840,7 @@ class IncomingProductControllerTest {
                         .orElse(null);
 
 
+                assertNotNull(incomingProductDetailBeforeUpdated);
                 int quantityChange = incomingProductDetailUpdateRequest.getQuantity() - incomingProductDetailBeforeUpdated.getQuantity();
 
                 Product productDB = productRepository.findById(product.getId()).orElse(null);
@@ -3171,6 +3174,7 @@ class IncomingProductControllerTest {
 
 
                 if (!incomingProductDetailResponse.getHasVariant()) {
+                    assertNotNull(incomingProductDetailRequestCurrent);
                     assertEquals(incomingProductDetailRequestCurrent.getId(), incomingProductDetailResponse.getId());
                     assertEquals(productWithoutVariant.getId(), incomingProductDetailResponse.getProduct().getId());
                     assertEquals(productWithoutVariant.getName(), incomingProductDetailResponse.getProduct().getName());
@@ -3198,7 +3202,7 @@ class IncomingProductControllerTest {
                     log.info(String.valueOf(product.getStock()));
                 } else {
 
-                    assertNotNull(incomingProductDetailResponse);
+                    assertNotNull(incomingProductDetailRequestCurrent);
                     assertEquals(incomingProductDetailRequestCurrent.getId(), incomingProductDetailResponse.getId());
                     assertEquals(productWithVariant.getId(), incomingProductDetailResponse.getProduct().getId());
                     assertEquals(productWithVariant.getName(), incomingProductDetailResponse.getProduct().getName());
@@ -3294,7 +3298,7 @@ class IncomingProductControllerTest {
                         .header("Authorization", authorizationToken)
                         .accept(MediaType.APPLICATION_JSON)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new IncomingProductDetailCreateRequest()))
+                        .content(objectMapper.writeValueAsString(new IncomingProductCreateRequest.IncomingProductDetails()))
         ).andExpectAll(
                 status().isBadRequest()
         ).andExpect(result -> {
@@ -3304,7 +3308,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("incomingProductId type data is wrong.", response.getErrors());
+            assertEquals("Invalid number format for property 'incomingProductId'. Value 'abc' is not a valid number.", response.getErrors());
         });
     }
 
@@ -3315,7 +3319,7 @@ class IncomingProductControllerTest {
                         .header("Authorization", authorizationToken)
                         .accept(MediaType.APPLICATION_JSON)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new IncomingProductDetailCreateRequest()))
+                        .content(objectMapper.writeValueAsString(new IncomingProductCreateRequest.IncomingProductDetails()))
         ).andExpectAll(
                 status().isBadRequest()
         ).andExpect(result -> {
@@ -3332,7 +3336,7 @@ class IncomingProductControllerTest {
     @Test
     void createIncomingProductDetailsFailedIncomingProductNotFound() throws Exception {
 
-        IncomingProductDetailCreateRequest request = new IncomingProductDetailCreateRequest();
+        IncomingProductCreateRequest.IncomingProductDetails request = new IncomingProductCreateRequest.IncomingProductDetails();
         request.setProductId(productWithoutVariant.getId());
         request.setPricePerUnit(100);
         request.setQuantity(10);
@@ -3376,7 +3380,7 @@ class IncomingProductControllerTest {
         incomingProduct.setUser(user);
         incomingProductRepository.save(incomingProduct);
 
-        IncomingProductDetailCreateRequest request = new IncomingProductDetailCreateRequest();
+        IncomingProductCreateRequest.IncomingProductDetails request = new IncomingProductCreateRequest.IncomingProductDetails();
         request.setProductId(99999);
         request.setPricePerUnit(100);
         request.setQuantity(10);
@@ -3417,12 +3421,12 @@ class IncomingProductControllerTest {
         incomingProduct.setUser(user);
         incomingProductRepository.save(incomingProduct);
 
-        IncomingProductDetailCreateRequest request = new IncomingProductDetailCreateRequest();
+        IncomingProductCreateRequest.IncomingProductDetails request = new IncomingProductCreateRequest.IncomingProductDetails();
         request.setProductId(productWithoutVariant.getId());
         request.setHasVariant(true);
 
 
-        IncomingProductDetailCreateRequest.IncomingProductVariantDetail incomingProductVariantDetailRequest = IncomingProductDetailCreateRequest.IncomingProductVariantDetail.builder()
+        IncomingProductCreateRequest.IncomingProductVariantDetail incomingProductVariantDetailRequest = IncomingProductCreateRequest.IncomingProductVariantDetail.builder()
                 .variantId(productVariant.getId())
                 .pricePerUnit(109)
                 .quantity(10)
@@ -3465,18 +3469,18 @@ class IncomingProductControllerTest {
         incomingProduct.setUser(user);
         incomingProductRepository.save(incomingProduct);
 
-        IncomingProductDetailCreateRequest request = new IncomingProductDetailCreateRequest();
+        IncomingProductCreateRequest.IncomingProductDetails request = new IncomingProductCreateRequest.IncomingProductDetails();
         request.setProductId(productWithVariant.getId());
         request.setHasVariant(true);
 
 
-        IncomingProductDetailCreateRequest.IncomingProductVariantDetail incomingProductVariantDetailRequest = IncomingProductDetailCreateRequest.IncomingProductVariantDetail.builder()
+        IncomingProductCreateRequest.IncomingProductVariantDetail incomingProductVariantDetailRequest = IncomingProductCreateRequest.IncomingProductVariantDetail.builder()
                 .variantId(123)
                 .pricePerUnit(109)
                 .quantity(10)
                 .build();
 
-        IncomingProductDetailCreateRequest.IncomingProductVariantDetail incomingProductVariantDetailRequest2 = IncomingProductDetailCreateRequest.IncomingProductVariantDetail.builder()
+        IncomingProductCreateRequest.IncomingProductVariantDetail incomingProductVariantDetailRequest2 = IncomingProductCreateRequest.IncomingProductVariantDetail.builder()
                 .variantId(123)
                 .pricePerUnit(109)
                 .quantity(10)
@@ -3518,12 +3522,12 @@ class IncomingProductControllerTest {
         incomingProduct.setUser(user);
         incomingProductRepository.save(incomingProduct);
 
-        IncomingProductDetailCreateRequest request = new IncomingProductDetailCreateRequest();
+        IncomingProductCreateRequest.IncomingProductDetails request = new IncomingProductCreateRequest.IncomingProductDetails();
         request.setProductId(productWithVariant.getId());
         request.setHasVariant(true);
 
 
-        IncomingProductDetailCreateRequest.IncomingProductVariantDetail incomingProductVariantDetailRequest = IncomingProductDetailCreateRequest.IncomingProductVariantDetail.builder()
+        IncomingProductCreateRequest.IncomingProductVariantDetail incomingProductVariantDetailRequest = IncomingProductCreateRequest.IncomingProductVariantDetail.builder()
                 .variantId(123)
                 .pricePerUnit(109)
                 .quantity(10)
@@ -3546,7 +3550,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("ProductVariant with id " + incomingProductVariantDetailRequest.getVariantId() + " is not found. please check ProductVariant id again.", response.getErrors());
+            assertEquals("Some productVariants are not found. Please check productVariant IDs again.", response.getErrors());
         });
     }
 
@@ -3575,12 +3579,12 @@ class IncomingProductControllerTest {
         product.setHasVariant(true);
         productRepository.save(product);
 
-        IncomingProductDetailCreateRequest request = new IncomingProductDetailCreateRequest();
+        IncomingProductCreateRequest.IncomingProductDetails request = new IncomingProductCreateRequest.IncomingProductDetails();
         request.setProductId(product.getId());
         request.setHasVariant(true);
 
 
-        IncomingProductDetailCreateRequest.IncomingProductVariantDetail incomingProductVariantDetailRequest = IncomingProductDetailCreateRequest.IncomingProductVariantDetail.builder()
+        IncomingProductCreateRequest.IncomingProductVariantDetail incomingProductVariantDetailRequest = IncomingProductCreateRequest.IncomingProductVariantDetail.builder()
                 .variantId(productVariant.getId())
                 .pricePerUnit(109)
                 .quantity(10)
@@ -3603,7 +3607,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("ProductVariant with id " + productVariant.getId() + " is not product variant for Product with id " + product.getId() + ".", response.getErrors());
+            assertEquals("ProductVariant with id " + productVariant.getId() + " is not a variant for Product with id " + product.getId() + ".", response.getErrors());
         });
     }
 
@@ -3622,7 +3626,7 @@ class IncomingProductControllerTest {
         incomingProduct.setUser(user);
         incomingProductRepository.save(incomingProduct);
 
-        IncomingProductDetailCreateRequest request = new IncomingProductDetailCreateRequest();
+        IncomingProductCreateRequest.IncomingProductDetails request = new IncomingProductCreateRequest.IncomingProductDetails();
         request.setPricePerUnit(60000);
         request.setQuantity(10);
         request.setProductId(productWithoutVariant.getId());
@@ -3638,7 +3642,7 @@ class IncomingProductControllerTest {
         ).andExpectAll(
                 status().isCreated()
         ).andExpect(result -> {
-            WebResponse<IncomingProductDetailResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            WebResponse<IncomingProductResponse.IncomingProductDetail> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
 
             assertNull(response.getErrors());
@@ -3683,12 +3687,12 @@ class IncomingProductControllerTest {
         incomingProduct.setUser(user);
         incomingProductRepository.save(incomingProduct);
 
-        IncomingProductDetailCreateRequest request = new IncomingProductDetailCreateRequest();
+        IncomingProductCreateRequest.IncomingProductDetails request = new IncomingProductCreateRequest.IncomingProductDetails();
         request.setProductId(productWithVariant.getId());
         request.setHasVariant(true);
 
 
-        IncomingProductDetailCreateRequest.IncomingProductVariantDetail incomingProductVariantDetailRequest = IncomingProductDetailCreateRequest.IncomingProductVariantDetail.builder()
+        IncomingProductCreateRequest.IncomingProductVariantDetail incomingProductVariantDetailRequest = IncomingProductCreateRequest.IncomingProductVariantDetail.builder()
                 .variantId(productVariant.getId())
                 .pricePerUnit(109)
                 .quantity(10)
@@ -3705,7 +3709,7 @@ class IncomingProductControllerTest {
         ).andExpectAll(
                 status().isCreated()
         ).andExpect(result -> {
-            WebResponse<IncomingProductDetailResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            WebResponse<IncomingProductResponse.IncomingProductDetail> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
 
             assertNull(response.getErrors());
@@ -3724,7 +3728,7 @@ class IncomingProductControllerTest {
             assertEquals(1, response.getData().getIncomingProductVariantDetails().size());
 
             // check IncomingProductVariant
-            IncomingProductDetailResponse.IncomingProductVariantDetail incomingProductVariantDetailResponse = response.getData().getIncomingProductVariantDetails().getFirst();
+            IncomingProductResponse.IncomingProductVariantDetail incomingProductVariantDetailResponse = response.getData().getIncomingProductVariantDetails().getFirst();
             assertNotNull(incomingProductVariantDetailResponse.getId());
             assertEquals(productVariant.getId(), incomingProductVariantDetailResponse.getVariant().getId());
             assertEquals(productVariant.getSku(), incomingProductVariantDetailResponse.getVariant().getSku());
@@ -3758,12 +3762,12 @@ class IncomingProductControllerTest {
         incomingProduct.setUser(user);
         incomingProductRepository.save(incomingProduct);
 
-        IncomingProductDetailCreateRequest request = new IncomingProductDetailCreateRequest();
+        IncomingProductCreateRequest.IncomingProductDetails request = new IncomingProductCreateRequest.IncomingProductDetails();
         request.setProductId(productWithVariant.getId());
         request.setHasVariant(true);
 
 
-        IncomingProductDetailCreateRequest.IncomingProductVariantDetail incomingProductVariantDetailRequest = IncomingProductDetailCreateRequest.IncomingProductVariantDetail.builder()
+        IncomingProductCreateRequest.IncomingProductVariantDetail incomingProductVariantDetailRequest = IncomingProductCreateRequest.IncomingProductVariantDetail.builder()
                 .variantId(productVariant.getId())
                 .pricePerUnit(109)
                 .quantity(10)
@@ -3776,7 +3780,7 @@ class IncomingProductControllerTest {
         productVariant2.setStock(60);
         productVariantRepository.save(productVariant2);
 
-        IncomingProductDetailCreateRequest.IncomingProductVariantDetail incomingProductVariantDetailRequest2 = IncomingProductDetailCreateRequest.IncomingProductVariantDetail.builder()
+        IncomingProductCreateRequest.IncomingProductVariantDetail incomingProductVariantDetailRequest2 = IncomingProductCreateRequest.IncomingProductVariantDetail.builder()
                 .variantId(productVariant2.getId())
                 .pricePerUnit(109)
                 .quantity(20)
@@ -3793,7 +3797,7 @@ class IncomingProductControllerTest {
         ).andExpectAll(
                 status().isCreated()
         ).andExpect(result -> {
-            WebResponse<IncomingProductDetailResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            WebResponse<IncomingProductResponse.IncomingProductDetail> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
 
             assertNull(response.getErrors());
@@ -3817,10 +3821,10 @@ class IncomingProductControllerTest {
             List<ProductVariant> productVariantList = List.of(productVariant, productVariant2);
 
             for (int i = 0; i < response.getData().getIncomingProductVariantDetails().size(); i++) {
-                IncomingProductDetailCreateRequest.IncomingProductVariantDetail incomingProductVariantDetailCurrentRequest = request.getIncomingProductVariantDetails()
+                IncomingProductCreateRequest.IncomingProductVariantDetail incomingProductVariantDetailCurrentRequest = request.getIncomingProductVariantDetails()
                         .get(i);
 
-                IncomingProductDetailResponse.IncomingProductVariantDetail incomingProductVariantDetailResponse = response.getData().getIncomingProductVariantDetails().get(i);
+                IncomingProductResponse.IncomingProductVariantDetail incomingProductVariantDetailResponse = response.getData().getIncomingProductVariantDetails().get(i);
                 ProductVariant productVariant = productVariantList.get(i);
 
                 assertNotNull(incomingProductVariantDetailResponse.getId());
@@ -3866,7 +3870,7 @@ class IncomingProductControllerTest {
                         .header("Authorization", authorizationToken)
                         .accept(MediaType.APPLICATION_JSON)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new IncomingProductDetailCreateRequest()))
+                        .content(objectMapper.writeValueAsString(new IncomingProductCreateRequest.IncomingProductDetails()))
         ).andExpectAll(
                 status().isBadRequest()
         ).andExpect(result -> {
@@ -3876,7 +3880,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("incomingProductDetailId type data is wrong.", response.getErrors());
+            assertEquals("Invalid number format for property 'incomingProductDetailId'. Value 'abc' is not a valid number.", response.getErrors());
         });
     }
 
@@ -3887,7 +3891,7 @@ class IncomingProductControllerTest {
                         .header("Authorization", authorizationToken)
                         .accept(MediaType.APPLICATION_JSON)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new IncomingProductVariantDetailCreateRequest()))
+                        .content(objectMapper.writeValueAsString(new IncomingProductCreateRequest.IncomingProductVariantDetail()))
         ).andExpectAll(
                 status().isBadRequest()
         ).andExpect(result -> {
@@ -3903,7 +3907,7 @@ class IncomingProductControllerTest {
 
     @Test
     void createIncomingProductVariantDetailsFailedIncomingProductDetailIsNotFound() throws Exception {
-        IncomingProductVariantDetailCreateRequest request = new IncomingProductVariantDetailCreateRequest();
+        IncomingProductCreateRequest.IncomingProductVariantDetail request = new IncomingProductCreateRequest.IncomingProductVariantDetail();
         request.setVariantId(99999);
         request.setPricePerUnit(10123);
         request.setQuantity(10);
@@ -3950,7 +3954,7 @@ class IncomingProductControllerTest {
         incomingProductDetailRepository.save(incomingProductDetail);
 
 
-        IncomingProductVariantDetailCreateRequest request = new IncomingProductVariantDetailCreateRequest();
+        IncomingProductCreateRequest.IncomingProductVariantDetail request = new IncomingProductCreateRequest.IncomingProductVariantDetail();
         request.setVariantId(999999);
         request.setPricePerUnit(10123);
         request.setQuantity(10);
@@ -3997,7 +4001,7 @@ class IncomingProductControllerTest {
         incomingProductDetailRepository.save(incomingProductDetail);
 
 
-        IncomingProductVariantDetailCreateRequest request = new IncomingProductVariantDetailCreateRequest();
+        IncomingProductCreateRequest.IncomingProductVariantDetail request = new IncomingProductCreateRequest.IncomingProductVariantDetail();
         request.setVariantId(99999);
         request.setPricePerUnit(10123);
         request.setQuantity(10);
@@ -4052,7 +4056,7 @@ class IncomingProductControllerTest {
         incomingProductVariantDetailRepository.save(incomingProductVariantDetail);
 
 
-        IncomingProductVariantDetailCreateRequest request = new IncomingProductVariantDetailCreateRequest();
+        IncomingProductCreateRequest.IncomingProductVariantDetail request = new IncomingProductCreateRequest.IncomingProductVariantDetail();
         request.setVariantId(productVariant.getId());
         request.setPricePerUnit(10123);
         request.setQuantity(10);
@@ -4072,7 +4076,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("ProductVariant is already present in the IcomingProductDetail, please check ProductVarian id again.", response.getErrors());
+            assertEquals("ProductVariant is already present in the IncomingProductDetail, please check ProductVariant id again.", response.getErrors());
         });
     }
 
@@ -4099,7 +4103,7 @@ class IncomingProductControllerTest {
         incomingProductDetail.setHasVariant(true);
         incomingProductDetailRepository.save(incomingProductDetail);
 
-        IncomingProductVariantDetailCreateRequest request = new IncomingProductVariantDetailCreateRequest();
+        IncomingProductCreateRequest.IncomingProductVariantDetail request = new IncomingProductCreateRequest.IncomingProductVariantDetail();
         request.setVariantId(productVariant.getId());
         request.setPricePerUnit(10123);
         request.setQuantity(10);
@@ -4113,7 +4117,7 @@ class IncomingProductControllerTest {
         ).andExpectAll(
                 status().isCreated()
         ).andExpect(result -> {
-            WebResponse<IncomingProductVariantDetailResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            WebResponse<IncomingProductResponse.IncomingProductVariantDetail> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
 
             assertNull(response.getErrors());
@@ -4125,6 +4129,11 @@ class IncomingProductControllerTest {
             assertEquals(request.getPricePerUnit(), response.getData().getPricePerUnit());
             assertEquals(request.getQuantity(), response.getData().getQuantity());
             assertEquals(request.getPricePerUnit() * request.getQuantity(), response.getData().getTotalPrice());
+
+            IncomingProductDetail updatedProductDetail = incomingProductDetailRepository.findById(incomingProductDetail.getId()).orElse(null);
+            assertNotNull(updatedProductDetail);
+            assertEquals(updatedProductDetail.getTotalVariantPrice(), response.getData().getTotalPrice());
+            assertEquals(updatedProductDetail.getTotalVariantQuantity(), response.getData().getQuantity());
 
             ProductVariant productVariantUpdated = productVariantRepository.findById(response.getData().getVariant().getId()).orElse(null);
             assertNotNull(productVariantUpdated);
@@ -4148,7 +4157,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("incomingProductVariantDetailId type data is wrong.", response.getErrors());
+            assertEquals("Invalid number format for property 'incomingProductVariantDetailId'. Value 'abc' is not a valid number.", response.getErrors());
         });
     }
 
@@ -4167,7 +4176,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("IncomingProductVariantDetails is not found, please check the IncomingProductVariantDetails id again.", response.getErrors());
+            assertEquals("IncomingProductVariantDetail is not found, please check the IncomingProductVariantDetail id again.", response.getErrors());
         });
     }
 
@@ -4249,7 +4258,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("incomingProductDetailId type data is wrong.", response.getErrors());
+            assertEquals("Invalid number format for property 'incomingProductDetailId'. Value 'abc' is not a valid number.", response.getErrors());
         });
     }
 
@@ -4268,7 +4277,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("IncomingProductDetails is not found, please check the IncomingProductDetails id again.", response.getErrors());
+            assertEquals("IncomingProductDetail is not found, please check IncomingProductDetail id again.", response.getErrors());
 
 
         });
@@ -4407,7 +4416,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("incomingProductId type data is wrong.", response.getErrors());
+            assertEquals("Invalid number format for property 'incomingProductId'. Value 'abc' is not a valid number.", response.getErrors());
         });
     }
 

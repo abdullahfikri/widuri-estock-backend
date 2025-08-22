@@ -8,4 +8,5 @@ public interface RefreshTokenService {
     RefreshToken create(String username, String userAgent);
     Optional<RefreshToken> findByToken(String refreshToken);
     boolean isTokenExpired(RefreshToken refreshToken);
+    void delete(RefreshToken refreshToken);
 }

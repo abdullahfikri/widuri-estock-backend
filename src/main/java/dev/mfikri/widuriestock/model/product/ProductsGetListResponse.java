@@ -13,6 +13,6 @@ public class ProductsGetListResponse {
     private Integer id;
     private String name;
     private String description;
-    private Category category;
+    private CategoryResponse categoryResponse;
     private String imageLocation;
 }

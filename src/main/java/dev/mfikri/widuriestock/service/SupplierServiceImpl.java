@@ -2,9 +2,8 @@ package dev.mfikri.widuriestock.service;
 
 import dev.mfikri.widuriestock.entity.Address;
 import dev.mfikri.widuriestock.entity.Supplier;
-import dev.mfikri.widuriestock.model.address.AddressResponse;
 import dev.mfikri.widuriestock.model.supplier.SupplierCreateRequest;
-import dev.mfikri.widuriestock.model.supplier.SupplierGetListResponse;
+import dev.mfikri.widuriestock.model.supplier.SupplierSummaryResponse;
 import dev.mfikri.widuriestock.model.supplier.SupplierResponse;
 import dev.mfikri.widuriestock.model.supplier.SupplierUpdateRequest;
 import dev.mfikri.widuriestock.repository.AddressRepository;
@@ -17,48 +16,51 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 public class SupplierServiceImpl implements SupplierService {
     private final ValidationService validationService;
     private final SupplierRepository supplierRepository;
-    private final AddressRepository addressRepository;
+    private final AddressService addressService;
 
-    public SupplierServiceImpl(ValidationService validationService, SupplierRepository supplierRepository, AddressRepository addressRepository) {
+    public SupplierServiceImpl(ValidationService validationService, SupplierRepository supplierRepository, AddressService addressService) {
         this.validationService = validationService;
         this.supplierRepository = supplierRepository;
-        this.addressRepository = addressRepository;
+        this.addressService = addressService;
     }
 
     @Override
     @Transactional
     public SupplierResponse create(SupplierCreateRequest request) {
+        log.info("Processing request to create a new supplier.");
         validationService.validate(request);
 
-        // check name duplicate
-        boolean isSupplierNameExists = supplierRepository.existsBySupplierName(request.getSupplierName());
-        if (isSupplierNameExists) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Supplier name is already exists.");
-        }
+        Supplier supplier = buildSupplierFromRequest(request);
+        Address address = buildAddressFromRequest(request, supplier);
 
-        // check email duplicate
-        boolean isEmailExists = supplierRepository.existsByEmail(request.getEmail());
-        if (isEmailExists) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email is already exists.");
-        }
+        supplier.setAddress(address);
+        log.debug("Saving new supplier entity to the database.");
+        supplierRepository.save(supplier);
 
+        log.info("Successfully to create a new supplier. supplierId={}", supplier.getId());
+        return toSupplierResponse(supplier, address);
+    }
+
+    private Supplier buildSupplierFromRequest (SupplierCreateRequest request) {
+        log.debug("Building supplier from request. request={}", request);
         Supplier supplier = new Supplier();
         supplier.setSupplierName(request.getSupplierName());
         supplier.setPhone(request.getPhone());
         supplier.setEmail(request.getEmail());
         supplier.setInformation(request.getInformation());
-        supplierRepository.save(supplier);
+        return supplier;
+    }
 
+    private Address buildAddressFromRequest(SupplierCreateRequest request, Supplier supplier){
+        log.debug("Building address from requestAddress. address={}", request.getAddress());
         Address address = new Address();
-        AddressServiceImpl.setAddress(address,
+        addressService.setAddress(address,
                 request.getAddress().getStreet(),
                 request.getAddress().getVillage(),
                 request.getAddress().getDistrict(),
@@ -68,74 +70,60 @@ public class SupplierServiceImpl implements SupplierService {
                 request.getAddress().getPostalCode()
         );
         address.setSupplier(supplier);
-        addressRepository.save(address);
 
-
-        return SupplierResponse.builder()
-                .id(supplier.getId())
-                .supplierName(supplier.getSupplierName())
-                .phone(supplier.getPhone())
-                .email(supplier.getEmail())
-                .information(supplier.getInformation())
-                .address(AddressServiceImpl.toAddressResponse(address))
-                .build();
+        return address;
     }
 
     @Override
-    public Page<SupplierGetListResponse> getList(Integer page, Integer size) {
+    @Transactional(readOnly = true)
+    public Page<SupplierSummaryResponse> getList(Integer page, Integer size) {
+        log.info("Processing request to get a list of suppliers. page={}, size={}", page, size);
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.asc("supplierName")));
 
         Page<Supplier> supplierPage = supplierRepository.findAll(pageable);
 
-        List<SupplierGetListResponse> supplierListResponse = supplierPage.getContent().stream().map(supplier -> SupplierGetListResponse.builder()
-                .id(supplier.getId())
-                .supplierName(supplier.getSupplierName())
-                .phone(supplier.getPhone())
-                .email(supplier.getEmail())
-                .information(supplier.getInformation())
-                .build()).toList();
-
-        return new PageImpl<>(supplierListResponse, pageable, supplierPage.getTotalElements());
+        log.info("Successfully to get a list of suppliers. totalPage={}, totalItems={}", supplierPage.getTotalPages(), supplierPage.getTotalElements());
+        return supplierPage.map(this::toSupplierSummaryResponse);
     }
 
     @Override
     @Transactional(readOnly = true)
     public SupplierResponse get(Integer id) {
-        if (id == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Id cannot be null.");
-        }
-
+        log.info("Processing request to get a supplier. supplierId={}", id);
         Supplier supplier = findSupplierByIdOrThrows(id);
-        AddressResponse addressResponse = AddressServiceImpl.toAddressResponse(supplier.getAddress());
 
-        return SupplierResponse.builder()
-                .id(supplier.getId())
-                .supplierName(supplier.getSupplierName())
-                .phone(supplier.getPhone())
-                .email(supplier.getEmail())
-                .information(supplier.getInformation())
-                .address(addressResponse)
-                .build();
+        log.info("Successfully to get a supplier. supplierId={}", supplier.getId());
+        return toSupplierResponse(supplier, supplier.getAddress());
     }
 
     @Override
     @Transactional
     public SupplierResponse update(SupplierUpdateRequest request) {
+        log.info("Processing request to update a supplier. supplierId={}", request.getSupplierId());
         validationService.validate(request);
 
         Supplier supplier = findSupplierByIdOrThrows(request.getSupplierId());
+        Address address = supplier.getAddress();
 
-        Address address = addressRepository.findAddressByIdAndSupplier(request.getAddress().getId(), supplier)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Address is not found."));
+        buildUpdatedSupplier(request, supplier);
+        buildUpdatedAddress(request, address);
 
-        log.info(request.getSupplierName());
+        log.info("Successfully to update a supplier. supplierId={}", request.getSupplierId());
+        return toSupplierResponse(supplier, address);
+    }
+
+    private void buildUpdatedSupplier (SupplierUpdateRequest request, Supplier supplier) {
+        log.debug("Building updated supplier from request.");
         supplier.setSupplierName(request.getSupplierName());
         supplier.setPhone(request.getPhone());
         supplier.setEmail(request.getEmail());
         supplier.setInformation(request.getInformation());
-        supplierRepository.save(supplier);
+    }
 
-        AddressServiceImpl.setAddress(
+    private void buildUpdatedAddress(SupplierUpdateRequest request, Address address) {
+        log.debug("Building updated address from request.");
+
+        addressService.setAddress(
                 address,
                 request.getAddress().getStreet(),
                 request.getAddress().getVillage(),
@@ -146,32 +134,47 @@ public class SupplierServiceImpl implements SupplierService {
                 request.getAddress().getPostalCode()
         );
 
-        addressRepository.save(address);
+    }
 
 
+
+    @Override
+    @Transactional
+    public void delete(Integer id) {
+        log.info("Processing request to delete a supplier. supplierId={}", id);
+        Supplier supplier = findSupplierByIdOrThrows(id);
+        supplierRepository.delete(supplier);
+        log.info("Successfully to delete a supplier. supplierId={}", supplier.getId());
+    }
+
+    private Supplier findSupplierByIdOrThrows(Integer id) {
+        log.debug("Finding supplier by id. supplierId={}", id);
+        if (id == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Supplier Id cannot be null.");
+        }
+        return supplierRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Supplier is not found."));
+    }
+
+    private SupplierResponse toSupplierResponse(Supplier supplier, Address address) {
+        log.debug("Building supplier response from supplier.");
         return SupplierResponse.builder()
                 .id(supplier.getId())
                 .supplierName(supplier.getSupplierName())
                 .phone(supplier.getPhone())
                 .email(supplier.getEmail())
                 .information(supplier.getInformation())
-                .address(AddressServiceImpl.toAddressResponse(address))
+                .address(addressService.toAddressResponse(address))
                 .build();
     }
 
-    @Override
-    @Transactional
-    public void delete(Integer id) {
-        if (id == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Id cannot be null.");
-        }
-
-        Supplier supplier = findSupplierByIdOrThrows(id);
-        addressRepository.deleteBySupplier(supplier);
-        supplierRepository.delete(supplier);
-    }
-
-    private Supplier findSupplierByIdOrThrows(Integer id) {
-        return supplierRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Supplier is not found."));
+    private SupplierSummaryResponse toSupplierSummaryResponse(Supplier supplier) {
+        log.debug("Building supplier summary response from supplier.");
+        return SupplierSummaryResponse.builder()
+                .id(supplier.getId())
+                .supplierName(supplier.getSupplierName())
+                .phone(supplier.getPhone())
+                .email(supplier.getEmail())
+                .information(supplier.getInformation())
+                .build();
     }
 }

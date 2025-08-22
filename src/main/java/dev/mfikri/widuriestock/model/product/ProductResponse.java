@@ -1,6 +1,5 @@
 package dev.mfikri.widuriestock.model.product;
 
-import jakarta.persistence.Column;
 import lombok.*;
 
 
@@ -14,7 +13,7 @@ public class ProductResponse {
     private Integer id;
     private String name;
     private String description;
-    private Category category;
+    private CategoryResponse categoryResponse;
     private Boolean hasVariant;
     private Integer stock;
     private Integer price;
