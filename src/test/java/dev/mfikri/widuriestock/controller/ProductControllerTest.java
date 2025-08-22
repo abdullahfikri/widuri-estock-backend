@@ -764,7 +764,7 @@ class ProductControllerTest {
             });
             assertNull(response.getData());
             assertNotNull(response.getErrors());
-            assertEquals("productId type data is wrong.", response.getErrors());
+            assertEquals("Invalid number format for property 'productId'. Value 'abc' is not a valid number.", response.getErrors());
         });
     }
 
@@ -982,7 +982,7 @@ class ProductControllerTest {
             });
             assertNull(response.getData());
             assertNotNull(response.getErrors());
-            assertEquals("productId type data is wrong.", response.getErrors());
+            assertEquals("Invalid number format for property 'productId'. Value 'abc' is not a valid number.", response.getErrors());
         });
     }
 
@@ -1091,7 +1091,7 @@ class ProductControllerTest {
             });
             assertNull(response.getData());
             assertNotNull(response.getErrors());
-            assertEquals("productId type data is wrong.", response.getErrors());
+            assertEquals("Invalid number format for property 'productId'. Value 'abc' is not a valid number.", response.getErrors());
         });
     }
 
