@@ -12,7 +12,14 @@ services:
     depends_on:
       db:
         condition: service_healthy
-
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: '1024m'
+        reservations:
+          cpus: '0.75'
+          memory: '765m'
   db:
     image: mysql:8.4.6
     environment:
@@ -31,6 +38,13 @@ services:
       timeout: 5s
       retries: 5
       start_period: 60s
-
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 1024m
+        reservations:
+          cpus: '0.75'
+          memory: 765m
 volumes:
   db-data:
