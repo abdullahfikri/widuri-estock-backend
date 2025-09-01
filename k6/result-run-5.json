@@ -1,0 +1,157 @@
+{
+    "metrics": {
+        "http_req_waiting": {
+            "max": 4392.124399,
+            "p(90)": 2610.9671085,
+            "p(95)": 2982.33993025,
+            "avg": 1322.1962795389595,
+            "min": 1.723569,
+            "med": 1297.2031944999999
+        },
+        "vus_max": {
+            "value": 50,
+            "min": 50,
+            "max": 50
+        },
+        "iteration_duration": {
+            "avg": 3646.298580757488,
+            "min": 1057.095599,
+            "med": 3798.797525,
+            "max": 7297.968539,
+            "p(90)": 4806.3438366,
+            "p(95)": 5290.2911108
+        },
+        "http_req_duration{expected_response:true}": {
+            "med": 1297.3222194999998,
+            "max": 4392.432776,
+            "p(90)": 2611.1471855,
+            "p(95)": 2982.4439665,
+            "avg": 1322.4298475152216,
+            "min": 1.776439
+        },
+        "http_req_tls_handshaking": {
+            "avg": 0,
+            "min": 0,
+            "med": 0,
+            "max": 0,
+            "p(90)": 0,
+            "p(95)": 0
+        },
+        "data_sent": {
+            "count": 1129628,
+            "rate": 7021.005544770077
+        },
+        "http_req_failed": {
+            "passes": 0,
+            "fails": 3876,
+            "thresholds": {
+                "rate<0.01": false
+            },
+            "value": 0
+        },
+        "http_req_sending": {
+            "p(95)": 0.04755975,
+            "avg": 0.025426793343653328,
+            "min": 0.006635,
+            "med": 0.016822499999999997,
+            "max": 2.522925,
+            "p(90)": 0.035921499999999995
+        },
+        "http_req_blocked": {
+            "avg": 0.011121817337461284,
+            "min": 0.002083,
+            "med": 0.00545,
+            "max": 1.47472,
+            "p(90)": 0.011308499999999999,
+            "p(95)": 0.0157325
+        },
+        "http_req_receiving": {
+            "avg": 0.20814118292053702,
+            "min": 0.024477,
+            "med": 0.1088895,
+            "max": 6.825813,
+            "p(90)": 0.413967,
+            "p(95)": 0.6640995000000001
+        },
+        "vus": {
+            "max": 50,
+            "value": 4,
+            "min": 2
+        },
+        "data_received": {
+            "count": 4820075,
+            "rate": 29958.334337682518
+        },
+        "checks": {
+            "passes": 7752,
+            "fails": 0,
+            "thresholds": {
+                "rate>0.99": false
+            },
+            "value": 1
+        },
+        "http_reqs": {
+            "count": 3876,
+            "rate": 24.090601057630316
+        },
+        "http_req_connecting": {
+            "avg": 0.0025036898864809077,
+            "min": 0,
+            "med": 0,
+            "max": 1.418398,
+            "p(90)": 0,
+            "p(95)": 0
+        },
+        "iterations": {
+            "count": 1938,
+            "rate": 12.045300528815158
+        },
+        "http_req_duration": {
+            "p(95)": 2982.4439665,
+            "avg": 1322.4298475152216,
+            "min": 1.776439,
+            "med": 1297.3222194999998,
+            "max": 4392.432776,
+            "p(90)": 2611.1471855,
+            "thresholds": {
+                "p(95)<500": true
+            }
+        }
+    },
+    "root_group": {
+        "name": "",
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {},
+        "checks": {
+                "GET /products (list): status is 200": {
+                    "name": "GET /products (list): status is 200",
+                    "path": "::GET /products (list): status is 200",
+                    "id": "8f0bb84805b71e77e6e025aa080fa18c",
+                    "passes": 1938,
+                    "fails": 0
+                },
+                "GET /products (list): response has \"data\" array": {
+                    "id": "06ebc1230be4cdc1d53ea3190cd38004",
+                    "passes": 1938,
+                    "fails": 0,
+                    "name": "GET /products (list): response has \"data\" array",
+                    "path": "::GET /products (list): response has \"data\" array"
+                },
+                "GET /products/{productId} (detail}: status is 200": {
+                    "name": "GET /products/{productId} (detail}: status is 200",
+                    "path": "::GET /products/{productId} (detail}: status is 200",
+                    "id": "b9a3b80a57bd78b30fb225ea8f6a6808",
+                    "passes": 1938,
+                    "fails": 0
+                },
+                "GET /products/{productId} (detail}: response has correct id": {
+                    "path": "::GET /products/{productId} (detail}: response has correct id",
+                    "id": "987d91351d604037414a4639ee0347cb",
+                    "passes": 1938,
+                    "fails": 0,
+                    "name": "GET /products/{productId} (detail}: response has correct id"
+                }
+            }
+    }
+}
