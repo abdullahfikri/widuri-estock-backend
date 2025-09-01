@@ -775,7 +775,7 @@ class ProductControllerTest {
         Product product = new Product();
         product.setName("Product Test");
         product.setDescription("Product Description Test");
-        product.setHasVariant(false);
+        product.setHasVariant(true);
         product.setCategory(category);
         productRepository.save(product);
 
