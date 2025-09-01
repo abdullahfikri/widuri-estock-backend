@@ -1785,6 +1785,7 @@ class ProductControllerTest {
         List<Product> productList = new ArrayList<>();
         List<ProductVariant> variantList = new ArrayList<>();
         List<ProductVariantAttribute> variantAttributeList = new ArrayList<>();
+        List<ProductPhoto> productPhotoList = new ArrayList<>();
 
         for (int i = 0; i < size; i++) {
             Product product = new Product();
@@ -1813,6 +1814,13 @@ class ProductControllerTest {
                 productVariantAttribute.setAttributeKey("color");
                 productVariantAttribute.setAttributeValue("black");
                 variantAttributeList.add(productVariantAttribute);
+
+                ProductPhoto photo = new ProductPhoto();
+                photo.setId("PHOTO-TEST");
+                photo.setImageLocation("upload/product/product-product-test-0.png");
+                photo.setProduct(product);
+
+                productPhotoList.add(photo);
             }
 
             productList.add(product);
@@ -1822,9 +1830,10 @@ class ProductControllerTest {
         photo.setId("PHOTO-TEST");
         photo.setImageLocation("upload/product/product-product-test-0.png");
         photo.setProduct(productList.getFirst());
+        productPhotoList.add(photo);
 
         productRepository.saveAll(productList);
-        productPhotoRepository.save(photo);
+        productPhotoRepository.saveAll(productPhotoList);
         productVariantRepository.saveAll(variantList);
         productVariantAttributeRepository.saveAll(variantAttributeList);
     }
