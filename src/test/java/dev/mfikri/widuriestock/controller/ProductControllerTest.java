@@ -1837,4 +1837,9 @@ class ProductControllerTest {
         productVariantRepository.saveAll(variantList);
         productVariantAttributeRepository.saveAll(variantAttributeList);
     }
+
+    @Test
+    void creat10kProduct() {
+        createBulkProduct(10_000);
+    }
 }
