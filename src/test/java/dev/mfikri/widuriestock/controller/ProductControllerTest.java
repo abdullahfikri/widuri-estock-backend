@@ -27,6 +27,7 @@ import org.springframework.util.MultiValueMap;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -611,35 +612,7 @@ class ProductControllerTest {
 
     @Test
     void getListSuccessWithNotSendPageAndSize() throws Exception{
-        Category category = categoryRepository.findById(categoryId).orElse(null);
-        assertNotNull(category);
-        List<Product> productsSave = new ArrayList<>();
-        Product product0 = new Product();
-        product0.setName("Product 0");
-        product0.setDescription("Description 0");
-        product0.setPrice(100500);
-        product0.setStock(100);
-        product0.setHasVariant(false);
-        product0.setCategory(category);
-        productRepository.save(product0);
-
-        ProductPhoto photo = new ProductPhoto();
-        photo.setId("PHOTO-TEST");
-        photo.setImageLocation("upload/product/product-product-test-0.png");
-        photo.setProduct(product0);
-        productPhotoRepository.save(photo);
-
-        for (int i = 1; i < 10; i++) {
-            Product product = new Product();
-            product.setName("Product " + i);
-            product.setDescription("Description " + i);
-            product.setPrice(100500);
-            product.setStock(100 + i);
-            product.setHasVariant(false);
-            product.setCategory(category);
-            productsSave.add(product);
-        }
-        productRepository.saveAll(productsSave);
+        createBulkProduct(10);
 
         mockMvc.perform(
                 get("/api/products")
@@ -673,35 +646,7 @@ class ProductControllerTest {
 
     @Test
     void getListSuccessSendPageAndSize() throws Exception{
-        Category category = categoryRepository.findById(categoryId).orElse(null);
-        assertNotNull(category);
-        List<Product> productsSave = new ArrayList<>();
-        Product product0 = new Product();
-        product0.setName("Product 0");
-        product0.setDescription("Description 0");
-        product0.setPrice(100500);
-        product0.setStock(100);
-        product0.setHasVariant(false);
-        product0.setCategory(category);
-        productRepository.save(product0);
-
-        ProductPhoto photo = new ProductPhoto();
-        photo.setId("TEST-ID");
-        photo.setImageLocation("upload/product/product-product-test-0.png");
-        photo.setProduct(product0);
-        productPhotoRepository.save(photo);
-
-        for (int i = 1; i < 10; i++) {
-            Product product = new Product();
-            product.setName("Product " + i);
-            product.setDescription("Description " + i);
-            product.setPrice(100500);
-            product.setStock(100 + i);
-            product.setHasVariant(false);
-            product.setCategory(category);
-            productsSave.add(product);
-        }
-        productRepository.saveAll(productsSave);
+        createBulkProduct(10);
 
         mockMvc.perform(
                 get("/api/products")
@@ -764,7 +709,7 @@ class ProductControllerTest {
             });
             assertNull(response.getData());
             assertNotNull(response.getErrors());
-            assertEquals("productId type data is wrong.", response.getErrors());
+            assertEquals("Invalid number format for property 'productId'. Value 'abc' is not a valid number.", response.getErrors());
         });
     }
 
@@ -831,7 +776,7 @@ class ProductControllerTest {
         Product product = new Product();
         product.setName("Product Test");
         product.setDescription("Product Description Test");
-        product.setHasVariant(false);
+        product.setHasVariant(true);
         product.setCategory(category);
         productRepository.save(product);
 
@@ -982,7 +927,7 @@ class ProductControllerTest {
             });
             assertNull(response.getData());
             assertNotNull(response.getErrors());
-            assertEquals("productId type data is wrong.", response.getErrors());
+            assertEquals("Invalid number format for property 'productId'. Value 'abc' is not a valid number.", response.getErrors());
         });
     }
 
@@ -1091,7 +1036,7 @@ class ProductControllerTest {
             });
             assertNull(response.getData());
             assertNotNull(response.getErrors());
-            assertEquals("productId type data is wrong.", response.getErrors());
+            assertEquals("Invalid number format for property 'productId'. Value 'abc' is not a valid number.", response.getErrors());
         });
     }
 
@@ -1829,8 +1774,72 @@ class ProductControllerTest {
             ProductVariant productVariantRepo = productVariantRepository.findById(productVariant.getId()).orElse(null);
             assertNull(productVariantRepo);
             ProductVariantAttribute productVariantAttributeRepo = productVariantAttributeRepository.findById(productVariantAttribute.getId()).orElse(null);
-            assertNull(productVariantRepo);
+            assertNull(productVariantAttributeRepo);
 
         });
+    }
+
+    private void createBulkProduct(int size) {
+        Category category = categoryRepository.findById(categoryId).orElse(null);
+        assertNotNull(category);
+        List<Product> productList = new ArrayList<>();
+        List<ProductVariant> variantList = new ArrayList<>();
+        List<ProductVariantAttribute> variantAttributeList = new ArrayList<>();
+        List<ProductPhoto> productPhotoList = new ArrayList<>();
+
+        for (int i = 0; i < size; i++) {
+            Product product = new Product();
+            product.setName("Product " + i);
+            product.setDescription("Description " + i);
+            product.setPrice(100500);
+            product.setStock(100 + i);
+            product.setHasVariant(false);
+            product.setCategory(category);
+
+
+            Random random = new Random();
+            // random 1-10 then if its odds, we add product with variant
+            if (i != 0 && (random.nextInt(10) + 1) % 2 == 1) {
+                product.setHasVariant(true);
+
+                ProductVariant productVariant = new ProductVariant();
+                productVariant.setProduct(product);
+                productVariant.setSku("product-test-black");
+                productVariant.setPrice(100500);
+                productVariant.setStock(100);
+                variantList.add(productVariant);
+
+                ProductVariantAttribute productVariantAttribute = new ProductVariantAttribute();
+                productVariantAttribute.setProductVariant(productVariant);
+                productVariantAttribute.setAttributeKey("color");
+                productVariantAttribute.setAttributeValue("black");
+                variantAttributeList.add(productVariantAttribute);
+
+                ProductPhoto photo = new ProductPhoto();
+                photo.setId("PHOTO-TEST");
+                photo.setImageLocation("upload/product/product-product-test-0.png");
+                photo.setProduct(product);
+
+                productPhotoList.add(photo);
+            }
+
+            productList.add(product);
+        }
+
+        ProductPhoto photo = new ProductPhoto();
+        photo.setId("PHOTO-TEST");
+        photo.setImageLocation("upload/product/product-product-test-0.png");
+        photo.setProduct(productList.getFirst());
+        productPhotoList.add(photo);
+
+        productRepository.saveAll(productList);
+        productPhotoRepository.saveAll(productPhotoList);
+        productVariantRepository.saveAll(variantList);
+        productVariantAttributeRepository.saveAll(variantAttributeList);
+    }
+
+    @Test
+    void creat10kProduct() {
+        createBulkProduct(10_000);
     }
 }

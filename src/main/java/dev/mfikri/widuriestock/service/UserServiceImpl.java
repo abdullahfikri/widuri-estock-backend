@@ -42,6 +42,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserResponse create(UserCreateRequest request) {
+        log.info("Processing create user request, username={}", request.getUsername());
         validationService.validate(request);
 
         if (userRepository.existsById(request.getUsername())) {
@@ -50,6 +51,7 @@ public class UserServiceImpl implements UserService {
 
         User user = buildUser(request);
         if (request.getAddress() != null) {
+            log.debug("Building address. address={}", request.getAddress());
             AddressCreateRequest requestAddress = request.getAddress();
             Address address = new Address();
             addressService.setAddress(address,
@@ -65,11 +67,15 @@ public class UserServiceImpl implements UserService {
             user.setAddresses(Set.of(address));
         }
 
+        log.debug("Saving user to database.");
         User savedUser = userRepository.save(user);
+
+        log.info("Successfully created user, username={}", request.getUsername());
         return toUserResponse(savedUser);
     }
 
     private User buildUser(UserCreateRequest request) {
+        log.debug("Building new user, username={}", request.getUsername());
         User user = new User();
         user.setUsername(request.getUsername());
         user.setPassword("{bcrypt}" + BCrypt.hashpw(request.getPassword(), BCrypt.gensalt()));
@@ -86,6 +92,7 @@ public class UserServiceImpl implements UserService {
         user.setRole(request.getRole().toUpperCase());
 
         user.setDateIn(Instant.now());
+
         return user;
     }
 
@@ -94,23 +101,30 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public UserResponse get(String username) {
+        log.info("Processing to get a user data, username={}", username);
+
         User user = findUserByUsernameOrThrows(username);
+
+        log.info("Successfully get a user data");
         return toUserResponse(user);
     }
 
     @Override
     @Transactional
     public UserResponse update(UserUpdateRequest request, boolean isCurrentUser) {
+        log.info("Processing to update user data. username={}, isCurrentUser={}", request.getUsername(), isCurrentUser);
         validationService.validate(request);
 
         User user = findUserByUsernameOrThrows(request.getUsername());
 
         applyUpdatesToUser(request, user, isCurrentUser);
 
+        log.info("Successfully updated user data. username={}", request.getUsername());
         return toUserResponse(user);
     }
 
     private void applyUpdatesToUser(UserUpdateRequest request, User user, boolean isCurrentUser) {
+        log.debug("Applying updates to user. username={}", request.getUsername());
         Optional.ofNullable(request.getPassword())
                 .filter(pw -> !pw.isBlank())
                 .ifPresent( pw -> user.setPassword("{bcrypt}" + BCrypt.hashpw(request.getPassword(), BCrypt.gensalt())));
@@ -136,18 +150,23 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public Page<UserSearchResponse> searchUser(UserSearchFilterRequest filterRequest) {
+        log.info("Processing search user request. filterRequest={}", filterRequest);
         validationService.validate(filterRequest);
 
         Specification<User> specification = createSearchSpecification(filterRequest);
 
+        log.debug("Building paging specification.");
         Pageable pageable= PageRequest.of(filterRequest.getPage(), filterRequest.getSize());
 
+        log.debug("Finding users in database with specification.");
         Page<User> userPage = userRepository.findAll(specification, pageable);
 
+        log.info("Successfully searched users. count={}", userPage.getSize());
         return userPage.map(this::toUserSearchResponse);
     }
 
     private Specification<User> createSearchSpecification(UserSearchFilterRequest filterRequest) {
+        log.debug("Creating search specification. filterRequest={}", filterRequest);
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
 
@@ -178,6 +197,7 @@ public class UserServiceImpl implements UserService {
     }
 
     private User findUserByUsernameOrThrows(String username) {
+        log.debug("Finding user by username. username={}", username);
         if (username == null || username.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username must not blank.");
         }
@@ -185,6 +205,7 @@ public class UserServiceImpl implements UserService {
     }
 
     private UserResponse toUserResponse(User user) {
+        log.debug("Building user response, username={}", user.getUsername());
         Set<AddressResponse> addressResponses = new HashSet<>();
         if (user.getAddresses() != null) {
             addressResponses = user.getAddresses().stream().map(addressService::toAddressResponse).collect(Collectors.toSet());
@@ -203,6 +224,7 @@ public class UserServiceImpl implements UserService {
     }
 
     private UserSearchResponse toUserSearchResponse(User user) {
+        log.debug("Building user search response, username={}", user.getUsername());
         return UserSearchResponse.builder()
                 .username(user.getUsername())
                 .firstName(user.getFirstName())

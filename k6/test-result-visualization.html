@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K6 Performance Test Results</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles to enhance the visual appeal */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0a0e1a; /* A deep, dark blue */
+        }
+        .card {
+            background-color: rgba(23, 30, 54, 0.6); /* Semi-transparent card background */
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        .metric-value {
+            color: #82aaff; /* A vibrant blue for values */
+        }
+        .metric-label {
+            color: #a1a1aa; /* A soft gray for labels */
+        }
+        .header-gradient {
+            background: linear-gradient(90deg, #82aaff, #c792ea);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .divider {
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .status-success {
+            background-color: #4ade80; /* Green */
+        }
+        .status-fail {
+            background-color: #f87171; /* Red */
+        }
+    </style>
+</head>
+<body class="text-gray-200">
+
+<div class="container mx-auto p-4 sm:p-6 lg:p-8">
+    <!-- Header Section -->
+    <header class="text-center mb-12">
+        <h1 class="text-4xl md:text-5xl font-bold header-gradient">
+            K6 Performance Test Dashboard
+        </h1>
+        <p class="text-lg text-gray-400 mt-2">
+            A comparative view of recent performance test runs.
+        </p>
+    </header>
+
+    <!-- Container for the test result cards -->
+    <main id="results-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <!-- Test result cards will be dynamically inserted here by JavaScript -->
+    </main>
+
+</div>
+
+<script>
+    // --- TEST DATA FROM JSON FILES ---
+    // This data is parsed from the result-run-*.json files you provided.
+    // The 'thresholds.p95_lt_500_failed' flag is set based on the JSON data.
+    const testResults = [
+        {
+            name: "Run 3",
+            summary: "Results from result-run-3.json",
+            metrics: {
+                http_reqs: { count: 3872, rate: 24.08 },
+                http_req_duration: { avg: 1324.5, min: 1.76, max: 4501.94, p90: 2616.29, p95: 2983.52 },
+                vus: { value: 50 },
+                iterations: { count: 1936, rate: 12.04 }
+            },
+            thresholds: {
+                p95_lt_500_failed: true
+            }
+        },
+        {
+            name: "Run 4",
+            summary: "Results from result-run-4.json",
+            metrics: {
+                http_reqs: { count: 3722, rate: 23.20 },
+                http_req_duration: { avg: 1396.2, min: 1.72, max: 5105.10, p90: 2796.70, p95: 3181.35 },
+                vus: { value: 50 },
+                iterations: { count: 1861, rate: 11.60 }
+            },
+            thresholds: {
+                p95_lt_500_failed: true
+            }
+        },
+        {
+            name: "Run 5",
+            summary: "Results from result-run-5.json",
+            metrics: {
+                http_reqs: { count: 3876, rate: 24.09 },
+                http_req_duration: { avg: 1322.4, min: 1.77, max: 4392.43, p90: 2611.14, p95: 2982.44 },
+                vus: { value: 50 },
+                iterations: { count: 1938, rate: 12.04 }
+            },
+            thresholds: {
+                p95_lt_500_failed: true
+            }
+        }
+    ];
+
+    // --- RENDER LOGIC ---
+    // This function generates the HTML for each card and injects it into the page.
+    function renderResults() {
+        const container = document.getElementById('results-container');
+        if (!container) return;
+
+        let htmlContent = '';
+
+        testResults.forEach(result => {
+            const metrics = result.metrics;
+            // Correctly determine failure based on the http_req_duration threshold
+            const thresholdFailed = result.thresholds.p95_lt_500_failed;
+
+            // Tooltip text for metric definitions
+            const tooltips = {
+                vus: "Virtual Users: The maximum number of concurrent users simulated.",
+                iterations: "Iterations: The total number of times the script's main logic was executed.",
+                reqs: "HTTP Requests: The total number of requests made during the test.",
+                duration: "Request Duration: The time taken for a request to complete (in milliseconds).",
+                threshold: "Threshold Status: Indicates if the performance thresholds passed or failed."
+            };
+
+            htmlContent += `
+                    <div class="card rounded-2xl p-6 flex flex-col">
+                        <!-- Card Header -->
+                        <div class="mb-4">
+                            <h2 class="text-2xl font-bold text-white">${result.name}</h2>
+                            <p class="text-sm text-gray-400 mt-1">${result.summary}</p>
+                        </div>
+
+                        <div class="divider border-t my-2"></div>
+
+                        <!-- Core Metrics -->
+                        <div class="grid grid-cols-3 gap-4 text-center my-4">
+                            <div>
+                                <p class="metric-label text-sm" title="${tooltips.vus}">VUs</p>
+                                <p class="metric-value text-2xl font-semibold">${metrics.vus.value}</p>
+                            </div>
+                            <div>
+                                <p class="metric-label text-sm" title="${tooltips.iterations}">Iterations</p>
+                                <p class="metric-value text-2xl font-semibold">${metrics.iterations.count.toLocaleString()}</p>
+                            </div>
+                            <div>
+                                <p class="metric-label text-sm" title="${tooltips.reqs}">Requests</p>
+                                <p class="metric-value text-2xl font-semibold">${metrics.http_reqs.count.toLocaleString()}</p>
+                            </div>
+                        </div>
+
+                        <!-- Request Duration -->
+                        <div class="mt-auto">
+                            <h3 class="font-semibold text-white mb-3" title="${tooltips.duration}">Request Duration (ms)</h3>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between"><span class="metric-label">Avg</span> <span class="font-mono text-white">${metrics.http_req_duration.avg.toFixed(1)}</span></div>
+                                <div class="flex justify-between"><span class="metric-label">Min</span> <span class="font-mono text-white">${metrics.http_req_duration.min.toFixed(1)}</span></div>
+                                <div class="flex justify-between"><span class="metric-label">Max</span> <span class="font-mono text-white">${metrics.http_req_duration.max.toFixed(1)}</span></div>
+                                <div class="flex justify-between"><span class="metric-label">p(90)</span> <span class="font-mono text-white">${metrics.http_req_duration.p90.toFixed(1)}</span></div>
+                                <div class="flex justify-between"><span class="metric-label">p(95)</span> <span class="font-mono text-white">${metrics.http_req_duration.p95.toFixed(1)}</span></div>
+                            </div>
+                        </div>
+
+                        <div class="divider border-t my-4"></div>
+
+                        <!-- Threshold Status -->
+                        <div title="${tooltips.threshold}">
+                             <div class="flex items-center justify-between p-3 rounded-lg ${thresholdFailed ? 'bg-red-900/50' : 'bg-green-900/50'}">
+                                <div class="flex items-center">
+                                    <span class="status-dot ${thresholdFailed ? 'status-fail' : 'status-success'} mr-3"></span>
+                                    <span class="font-semibold">${thresholdFailed ? 'Threshold Failed' : 'Threshold Passed'}</span>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-mono font-semibold text-white">${metrics.http_req_duration.p95.toFixed(2)}ms</p>
+                                    <p class="text-xs ${thresholdFailed ? 'text-red-300' : 'text-green-300'}">(p95 < 500ms)</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+        });
+
+        container.innerHTML = htmlContent;
+    }
+
+    // Render the results when the page loads.
+    document.addEventListener('DOMContentLoaded', renderResults);
+</script>
+</body>
+</html>
