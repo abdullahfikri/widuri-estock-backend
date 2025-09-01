@@ -27,6 +27,7 @@ import org.springframework.util.MultiValueMap;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -1794,7 +1795,10 @@ class ProductControllerTest {
             product.setHasVariant(false);
             product.setCategory(category);
 
-            if (i % 2 == 1) {
+
+            Random random = new Random();
+            // random 1-10 then if its odds, we add product with variant
+            if (i != 0 && (random.nextInt(10) + 1) % 2 == 1) {
                 product.setHasVariant(true);
 
                 ProductVariant productVariant = new ProductVariant();
