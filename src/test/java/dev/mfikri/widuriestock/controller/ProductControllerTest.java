@@ -1827,7 +1827,6 @@ class ProductControllerTest {
         }
 
         ProductPhoto photo = new ProductPhoto();
-        photo.setId("PHOTO-TEST");
         photo.setImageLocation("upload/product/product-product-test-0.png");
         photo.setProduct(productList.getFirst());
         productPhotoList.add(photo);
