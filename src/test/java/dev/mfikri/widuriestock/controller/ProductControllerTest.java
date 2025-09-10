@@ -468,8 +468,12 @@ class ProductControllerTest {
             assertEquals(product.getPrice(), response.getData().getPrice());
             assertEquals(product.getCategory().getId(), response.getData().getCategoryResponse().getId());
             assertEquals(product.getCategory().getName(), response.getData().getCategoryResponse().getName());
-            assertEquals(product.getProductVariants().size(), response.getData().getVariants().size());
-            assertEquals(0,product.getProductPhotos().size());
+
+            List<ProductVariant> variantList = productVariantRepository.findByProduct(product);
+            assertEquals(variantList.size(), response.getData().getVariants().size());
+
+            List<ProductPhoto> productPhotoList = productPhotoRepository.findProductPhotoByProduct(product);
+            assertEquals(0,productPhotoList.size());
 
         });
     }
@@ -526,13 +530,15 @@ class ProductControllerTest {
             assertEquals(product.getCategory().getId(), response.getData().getCategoryResponse().getId());
             assertEquals(product.getCategory().getName(), response.getData().getCategoryResponse().getName());
             assertNull(response.getData().getPhotos());
-            assertEquals(product.getProductVariants().size(), response.getData().getVariants().size());
 
             ProductResponse.ProductVariant productVariant = response.getData().getVariants().getFirst();
-            assertEquals(product.getProductVariants().getFirst().getId(), productVariant.getId());
-            assertEquals(product.getProductVariants().getFirst().getSku(), productVariant.getSku());
-            assertEquals(product.getProductVariants().getFirst().getPrice(), productVariant.getPrice());
-            assertEquals(product.getProductVariants().getFirst().getStock(), productVariant.getStock());
+            List<ProductVariant> variantList = productVariantRepository.findByProduct(product);
+
+            assertEquals(variantList.size(), response.getData().getVariants().size());
+            assertEquals(variantList.getFirst().getId(), productVariant.getId());
+            assertEquals(variantList.getFirst().getSku(), productVariant.getSku());
+            assertEquals(variantList.getFirst().getPrice(), productVariant.getPrice());
+            assertEquals(variantList.getFirst().getStock(), productVariant.getStock());
         });
     }
 
@@ -584,11 +590,14 @@ class ProductControllerTest {
             assertEquals(product.getPrice(), response.getData().getPrice());
             assertEquals(product.getCategory().getId(), response.getData().getCategoryResponse().getId());
             assertEquals(product.getCategory().getName(), response.getData().getCategoryResponse().getName());
-            assertEquals(product.getProductPhotos().size(), response.getData().getPhotos().size());
-            assertNotNull(product.getProductPhotos().getFirst().getId());
-            assertEquals(product.getProductPhotos().getFirst().getImageLocation(), response.getData().getPhotos().getFirst().getImageLocation());
 
-            assertEquals(product.getProductVariants().size(), response.getData().getVariants().size());
+            List<ProductPhoto> productPhotoList = productPhotoRepository.findProductPhotoByProduct(product);
+            assertEquals(productPhotoList.size(), response.getData().getPhotos().size());
+            assertNotNull(productPhotoList.getFirst().getId());
+            assertEquals(productPhotoList.getFirst().getImageLocation(), response.getData().getPhotos().getFirst().getImageLocation());
+
+            List<ProductVariant> variantList = productVariantRepository.findByProduct(product);
+            assertEquals(variantList.size(), response.getData().getVariants().size());
         });
     }
 
@@ -1471,8 +1480,10 @@ class ProductControllerTest {
             assertEquals(productRepo.getCategory().getId(), response.getData().getCategoryResponse().getId());
             assertEquals(productRepo.getStock(), response.getData().getStock());
             assertEquals(productRepo.getPrice(), response.getData().getPrice());
-            assertEquals(productRepo.getProductPhotos().size(), response.getData().getPhotos().size());
-            assertEquals(productRepo.getProductVariants().size(), response.getData().getVariants().size());
+            List<ProductPhoto> productPhotoList = productPhotoRepository.findProductPhotoByProduct(productRepo);
+            assertEquals(productPhotoList.size(), response.getData().getPhotos().size());
+            List<ProductVariant> variantList = productVariantRepository.findByProduct(productRepo);
+            assertEquals(variantList.size(), response.getData().getVariants().size());
         });
     }
 

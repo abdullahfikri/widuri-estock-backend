@@ -11,11 +11,11 @@ import java.util.Optional;
 
 @Repository
 public interface ProductVariantRepository extends JpaRepository<ProductVariant, Integer> {
-    boolean existsBySkuAndProduct(String sku, Product product);
 
     void deleteAllByProduct(Product product);
 
     Optional<ProductVariant> findByIdAndProduct(Integer id, Product product);
 
-//    List<ProductVariant> findAllByIdAndProduct(Iterable<Integer> ids, Product product);
+    List<ProductVariant> findByProduct(Product product);
+
 }
