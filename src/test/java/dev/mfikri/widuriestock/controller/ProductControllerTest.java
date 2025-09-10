@@ -80,8 +80,10 @@ class ProductControllerTest {
         refreshTokenRepository.deleteAll();
         addressRepository.deleteAll();
         userRepository.deleteAll();
-        productPhotoRepository.deleteAll();
-        productRepository.deleteAll();
+        productPhotoRepository.deleteAllInBatch();
+        productVariantAttributeRepository.deleteAllInBatch();
+        productVariantRepository.deleteAllInBatch();
+        productRepository.deleteAllInBatch();
         categoryRepository.deleteAll();
 
         Category category = new Category();
