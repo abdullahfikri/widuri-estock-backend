@@ -165,7 +165,12 @@ ALTER TABLE products
 
 SELECT * FROM products;
 
-DELETE FROM products;
+SHOW INDEX FROM products;
+
+CREATE INDEX idx_products_category_id ON products (category_id);
+CREATE INDEX idx_product_photos_product_id ON product_photos (product_id);
+
+# DELETE FROM products;
 
 CREATE TABLE IF NOT EXISTS product_photos (
     id VARCHAR(255) NOT NULL,
