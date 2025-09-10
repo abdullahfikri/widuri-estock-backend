@@ -865,7 +865,6 @@ class ProductControllerTest {
         productVariantAttributeRepository.save(productVariantAttribute);
 
         ProductPhoto productPhoto = new ProductPhoto();
-        productPhoto.setId("PHOTO-TEST");
         productPhoto.setProduct(product);
         productPhoto.setImageLocation("/location/dummy/example.png");
         productPhotoRepository.save(productPhoto);
@@ -1368,7 +1367,6 @@ class ProductControllerTest {
         productVariantAttributeRepository.save(productVariantAttribute);
 
         ProductPhoto productPhoto = new ProductPhoto();
-        productPhoto.setId("image-example");
         productPhoto.setImageLocation("upload/product/product-test-image-example.png");
         productPhoto.setProduct(product);
         productPhotoRepository.save(productPhoto);
