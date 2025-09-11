@@ -262,7 +262,7 @@ class CategoryControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("categoryId type data is wrong.", response.getErrors());
+            assertEquals("Invalid number format for property 'categoryId'. Value 'abc' is not a valid number.", response.getErrors());
         });
     }
 
@@ -443,7 +443,7 @@ class CategoryControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            assertEquals("categoryId type data is wrong.", response.getErrors());
+            assertEquals("Invalid number format for property 'categoryId'. Value 'abc' is not a valid number.", response.getErrors());
         });
     }
 
