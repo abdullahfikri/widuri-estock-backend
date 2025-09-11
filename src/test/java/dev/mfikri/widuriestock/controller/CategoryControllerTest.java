@@ -496,13 +496,9 @@ class CategoryControllerTest {
     @Test
     void testOwner() throws Exception {
         //
-        User userOwner = new User();
-        userOwner.setUsername("owner");
-        userOwner.setPassword("{bcrypt}" + BCrypt.hashpw("owner_password", BCrypt.gensalt()));
-        userOwner.setFirstName("John Owner");
-        userOwner.setPhone("+6283213121");
-        userOwner.setRole("OWNER");
-        userRepository.save(userOwner);
+        User userOwner = userRepository.findById("owner").orElse(null);
+        assertNotNull(userOwner);
+
         String authorizationTokenOwner = "Bearer " + jwtUtil.generate(userOwner.getUsername(), jwtTtl);
 
 
