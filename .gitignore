@@ -32,5 +32,9 @@ build/
 /k6/node_modules
 ### VS Code ###
 .vscode/
+/upload/product/*
+!/upload/product/.gitkeep
 
+/upload/profile/*
+!/upload/profile/.gitkeep
 env_setup.sh

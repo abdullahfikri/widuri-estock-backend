@@ -203,9 +203,9 @@ public class ProductServiceImpl implements ProductService {
     @Transactional(readOnly = true)
     public Page<ProductsGetListResponse> getList(Integer page, Integer size) {
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.asc("name")));
+        Pageable pageable = PageRequest.of(page, size, Sort.by("name").ascending());
 
-        Page<ProductSummary> productsPage = productRepository.findBy(pageable);
+        Page<ProductSummary> productsPage = productRepository.findProductListView(pageable);
 
         List<ProductsGetListResponse> productsListResponse = productsPage.getContent().stream().map(productSummary -> {
             ProductsGetListResponse product = new ProductsGetListResponse();
@@ -213,15 +213,10 @@ public class ProductServiceImpl implements ProductService {
             product.setName(productSummary.getName());
             product.setDescription(productSummary.getDescription());
             product.setCategoryResponse(CategoryResponse.builder()
-                            .id(productSummary.getCategory().getId())
-                            .name(productSummary.getCategory().getName())
+                            .id(productSummary.getCategoryId())
+                            .name(productSummary.getCategoryName())
                     .build());
-            ProductPhoto productPhoto = productSummary.getProductPhotos();
-            if (productPhoto!=null) {
-                product.setImageLocation(productPhoto.getImageLocation());
-            } else {
-                product.setImageLocation(null);
-            }
+            product.setImageLocation(productSummary.getImageLocation());
 
             return product;
         }).toList();

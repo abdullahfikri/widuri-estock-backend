@@ -44,10 +44,10 @@ public class Product {
     @JoinColumn(name = "category_id", referencedColumnName = "id")
     private Category category;
 
-    @OneToMany(mappedBy = "product",  fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "product")
     private List<ProductPhoto> productPhotos;
 
-    @OneToMany(mappedBy = "product", cascade = CascadeType.REMOVE, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "product", cascade = CascadeType.REMOVE)
     private List<ProductVariant> productVariants;
 
     @OneToMany(mappedBy = "product")
