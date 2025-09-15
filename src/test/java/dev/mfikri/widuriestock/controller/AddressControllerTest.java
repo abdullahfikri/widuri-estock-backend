@@ -12,10 +12,8 @@ import dev.mfikri.widuriestock.model.address.AddressUpdateRequest;
 import dev.mfikri.widuriestock.repository.AddressRepository;
 import dev.mfikri.widuriestock.repository.RefreshTokenRepository;
 import dev.mfikri.widuriestock.repository.UserRepository;
-import dev.mfikri.widuriestock.util.BCrypt;
 import dev.mfikri.widuriestock.util.JwtUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,6 +52,9 @@ class AddressControllerTest {
     private ObjectMapper objectMapper;
 
     @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
     private JwtUtil jwtUtil;
     Integer jwtTtl = 300000;
 
@@ -67,7 +69,7 @@ class AddressControllerTest {
 
         User user = new User();
         user.setUsername("owner");
-        user.setPassword("{bcrypt}" + BCrypt.hashpw("owner123", BCrypt.gensalt()));
+        user.setPassword(passwordEncoder.encode("owner123"));
         user.setFirstName("owner");
         user.setPhone("+000000000");
         user.setRole("OWNER");
@@ -289,7 +291,7 @@ class AddressControllerTest {
     void getAddressFailedUserAndAddressNotMatch() throws Exception {
         User user = new User();
         user.setUsername("TESTINGUSER");
-        user.setPassword(BCrypt.hashpw("TESTINGPASSWORD", BCrypt.gensalt()));
+        user.setPassword(passwordEncoder.encode("TESTINGPASSWORD"));
         user.setFirstName("John Doe");
         user.setPhone("+6283213121");
         user.setRole(Role.ADMIN_WAREHOUSE.toString());
@@ -479,7 +481,8 @@ class AddressControllerTest {
     void updateAddressFailedUserAndAddressNotMatch() throws Exception {
         User user = new User();
         user.setUsername("TESTINGUSER");
-        user.setPassword(BCrypt.hashpw("TESTINGPASSWORD", BCrypt.gensalt()));
+
+        user.setPassword(passwordEncoder.encode("TESTINGPASSWORD"));
         user.setFirstName("John Doe");
         user.setPhone("+6283213121");
         user.setRole(Role.ADMIN_WAREHOUSE.toString());
@@ -637,7 +640,7 @@ class AddressControllerTest {
     void deleteAddressFailedUserAndAddressNotMatch() throws Exception {
         User user = new User();
         user.setUsername("TESTINGUSER");
-        user.setPassword("{bcrypt}" + BCrypt.hashpw("TESTINGPASSWORD", BCrypt.gensalt()));
+        user.setPassword(passwordEncoder.encode("TESTINGPASSWORD"));
         user.setFirstName("John Doe");
         user.setPhone("+6283213121");
         user.setRole(Role.ADMIN_WAREHOUSE.toString());
@@ -719,7 +722,8 @@ class AddressControllerTest {
     void testAdminWarehouse() throws Exception {
         User user = new User();
         user.setUsername("adminwhs");
-        user.setPassword("{bcrypt}" + BCrypt.hashpw("adminwhs_password", BCrypt.gensalt()));
+        //user.setPassword("{bcrypt}" + BCrypt.hashpw("adminwhs_password", BCrypt.gensalt()));
+        user.setPassword(passwordEncoder.encode("adminwhs_password"));
         user.setFirstName("John Doe");
         user.setPhone("+6283213121");
         user.setRole(Role.ADMIN_WAREHOUSE.toString());
@@ -905,7 +909,7 @@ class AddressControllerTest {
     void testAdminSeller() throws Exception {
         User user = new User();
         user.setUsername("adminslr");
-        user.setPassword("{bcrypt}" + BCrypt.hashpw("adminslr_password", BCrypt.gensalt()));
+        user.setPassword(passwordEncoder.encode("adminslr_password"));
         user.setFirstName("John Doe");
         user.setPhone("+6283213121");
         user.setRole(Role.ADMIN_SELLER.toString());

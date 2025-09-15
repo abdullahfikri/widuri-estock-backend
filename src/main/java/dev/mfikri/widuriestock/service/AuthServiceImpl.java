@@ -1,7 +1,6 @@
 package dev.mfikri.widuriestock.service;
 
 import dev.mfikri.widuriestock.entity.RefreshToken;
-import dev.mfikri.widuriestock.entity.User;
 import dev.mfikri.widuriestock.model.user.AuthTokenResponse;
 import dev.mfikri.widuriestock.model.user.AuthLoginRequest;
 import dev.mfikri.widuriestock.repository.RefreshTokenRepository;

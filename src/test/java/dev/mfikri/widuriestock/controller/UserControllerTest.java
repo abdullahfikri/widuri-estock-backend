@@ -12,7 +12,6 @@ import dev.mfikri.widuriestock.model.user.UserSearchResponse;
 import dev.mfikri.widuriestock.repository.AddressRepository;
 import dev.mfikri.widuriestock.repository.RefreshTokenRepository;
 import dev.mfikri.widuriestock.repository.UserRepository;
-import dev.mfikri.widuriestock.util.BCrypt;
 import dev.mfikri.widuriestock.util.JwtUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,6 +22,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.LinkedMultiValueMap;
@@ -54,6 +54,9 @@ class UserControllerTest {
     private ObjectMapper objectMapper;
 
     @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
     private JwtUtil jwtUtil;
     Integer jwtTtl = 300000;
 
@@ -67,7 +70,7 @@ class UserControllerTest {
 
         User user = new User();
         user.setUsername("owner");
-        user.setPassword("{bcrypt}" + BCrypt.hashpw("owner123", BCrypt.gensalt()));
+        user.setPassword(passwordEncoder.encode("owner123"));
         user.setFirstName("owner");
         user.setPhone("+000000000");
         user.setRole("OWNER");
@@ -505,7 +508,7 @@ class UserControllerTest {
     void updateSuccess() throws Exception {
         User user = new User();
         user.setUsername("adminwarehouse");
-        user.setPassword("{bcrypt}" + BCrypt.hashpw("adminwarehouse123", BCrypt.gensalt()));
+        user.setPassword(passwordEncoder.encode("adminwarehouse123"));
         user.setFirstName("adminwarehouse123");
         user.setPhone("6200312300");
         user.setEmail("john@doe.com");
@@ -553,7 +556,8 @@ class UserControllerTest {
 
             User userUpdated = userRepository.findById(user.getUsername()).orElse(null);
             assertNotNull(userUpdated);
-            assertTrue(BCrypt.checkpw("abcd1234", userUpdated.getPassword().replace("{bcrypt}", "")));
+//            assertTrue(BCrypt.checkpw("abcd1234", userUpdated.getPassword().replace("{bcrypt}", "")));
+            assertTrue(passwordEncoder.matches("abcd1234", userUpdated.getPassword()));
             assertEquals("johndo123@example.com", userUpdated.getEmail());
             assertEquals("John Update", userUpdated.getFirstName());
             assertEquals("Doe Update", userUpdated.getLastName());
@@ -674,7 +678,7 @@ class UserControllerTest {
     void updateUserCurrentSuccess() throws Exception {
         User user = new User();
         user.setUsername("adminwarehouse");
-        user.setPassword("{bcrypt}" + BCrypt.hashpw("admin_warehouse", BCrypt.gensalt()));
+        user.setPassword(passwordEncoder.encode("admin_warehouse"));
         user.setFirstName("adminwarehouse123");
         user.setPhone("6200312300");
         user.setEmail("john@doe.com");
@@ -725,7 +729,7 @@ class UserControllerTest {
 
             User userUpdated = userRepository.findById(user.getUsername()).orElse(null);
             assertNotNull(userUpdated);
-            assertTrue(BCrypt.checkpw("abcd1234", userUpdated.getPassword().replace("{bcrypt}", "")));
+            assertTrue(passwordEncoder.matches("abcd1234", userUpdated.getPassword()));
             assertEquals("johndo123@example.com", userUpdated.getEmail());
             assertEquals("John Update", userUpdated.getFirstName());
             assertEquals("Doe Update", userUpdated.getLastName());
@@ -995,7 +999,7 @@ class UserControllerTest {
     void testAdminWarehouse() throws Exception{
         User user = new User();
         user.setUsername("adminwhs");
-        user.setPassword("{bcrypt}" + BCrypt.hashpw("adminwhs_password", BCrypt.gensalt()));
+        user.setPassword(passwordEncoder.encode("adminwhs_password"));
         user.setFirstName("John Doe");
         user.setPhone("+6283213121");
         user.setRole(Role.ADMIN_WAREHOUSE.toString());
@@ -1121,7 +1125,7 @@ class UserControllerTest {
     void testAdminSeller() throws Exception{
         User user = new User();
         user.setUsername("adminslr");
-        user.setPassword("{bcrypt}" + BCrypt.hashpw("adminslr_password", BCrypt.gensalt()));
+        user.setPassword(passwordEncoder.encode("adminslr_password"));
         user.setFirstName("John Doe");
         user.setPhone("+6283213121");
         user.setRole(Role.ADMIN_SELLER.toString());

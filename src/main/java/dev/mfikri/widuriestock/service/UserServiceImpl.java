@@ -5,18 +5,16 @@ import dev.mfikri.widuriestock.entity.User;
 import dev.mfikri.widuriestock.model.address.AddressCreateRequest;
 import dev.mfikri.widuriestock.model.address.AddressResponse;
 import dev.mfikri.widuriestock.model.user.*;
-import dev.mfikri.widuriestock.repository.AddressRepository;
 import dev.mfikri.widuriestock.repository.UserRepository;
-import dev.mfikri.widuriestock.util.BCrypt;
 import dev.mfikri.widuriestock.util.ImageUtil;
 import jakarta.persistence.criteria.Predicate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -32,11 +30,13 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final ValidationService validationService;
     private final AddressService addressService;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserServiceImpl(UserRepository userRepository, ValidationService validationService, AddressService addressService) {
+    public UserServiceImpl(UserRepository userRepository, ValidationService validationService, AddressService addressService, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.validationService = validationService;
         this.addressService = addressService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -78,7 +78,7 @@ public class UserServiceImpl implements UserService {
         log.debug("Building new user, username={}", request.getUsername());
         User user = new User();
         user.setUsername(request.getUsername());
-        user.setPassword("{bcrypt}" + BCrypt.hashpw(request.getPassword(), BCrypt.gensalt()));
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
         user.setPhone(request.getPhone());
@@ -127,7 +127,7 @@ public class UserServiceImpl implements UserService {
         log.debug("Applying updates to user. username={}", request.getUsername());
         Optional.ofNullable(request.getPassword())
                 .filter(pw -> !pw.isBlank())
-                .ifPresent( pw -> user.setPassword("{bcrypt}" + BCrypt.hashpw(request.getPassword(), BCrypt.gensalt())));
+                .ifPresent( pw -> user.setPassword(passwordEncoder.encode(pw)));
 
         Optional.ofNullable(request.getFirstName()).ifPresent(user::setFirstName);
         Optional.ofNullable(request.getLastName()).ifPresent(user::setLastName);
@@ -234,5 +234,5 @@ public class UserServiceImpl implements UserService {
                 .photo(user.getPhoto())
                 .role(user.getRole())
                 .build();
-    };
+    }
 }
