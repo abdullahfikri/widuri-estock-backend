@@ -2,6 +2,7 @@ package dev.mfikri.widuriestock.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.mfikri.widuriestock.entity.Address;
 import dev.mfikri.widuriestock.entity.Role;
 import dev.mfikri.widuriestock.entity.Supplier;
 import dev.mfikri.widuriestock.entity.User;
@@ -50,6 +51,10 @@ class IncomingProductControllerTest {
 
     @Autowired
     private SupplierRepository supplierRepository;
+
+    @Autowired
+    private AddressRepository addressRepository;
+
 
     @Autowired
     private CategoryRepository categoryRepository;
@@ -107,7 +112,19 @@ class IncomingProductControllerTest {
         supplier.setPhone("62811111");
         supplier.setEmail("john@abc.com");
         supplier.setInformation("Supplier fishing tools");
+
+        Address addressSupplier = new Address();
+        addressSupplier.setStreet("JLN Diponegoro");
+        addressSupplier.setVillage("Kel. Air Baru");
+        addressSupplier.setDistrict("Kec. Pantai Indah");
+        addressSupplier.setCity("Meikarta");
+        addressSupplier.setProvince("Jakarta");
+        addressSupplier.setCountry("Indonesia");
+        addressSupplier.setPostalCode("123123");
+        addressSupplier.setSupplier(supplier);
+        supplier.setAddress(addressSupplier);
         supplierRepository.save(supplier);
+        addressRepository.save(addressSupplier);
         supplierId = supplier.getId();
 
         Category category = new Category();
