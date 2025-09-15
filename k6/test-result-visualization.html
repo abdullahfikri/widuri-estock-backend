@@ -3,208 +3,302 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>K6 Performance Test Results</title>
-    <!-- Tailwind CSS for styling -->
+    <title>Performance Tuning Analysis Report</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts: Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* Custom styles to enhance the visual appeal */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #0a0e1a; /* A deep, dark blue */
+            background-color: #f3f4f6;
         }
-        .card {
-            background-color: rgba(23, 30, 54, 0.6); /* Semi-transparent card background */
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        .chart-container {
+            position: relative;
+            margin: auto;
+            height: 400px;
+            width: 100%;
         }
-        .card:hover {
+        .metric-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .metric-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
-        .metric-value {
-            color: #82aaff; /* A vibrant blue for values */
-        }
-        .metric-label {
-            color: #a1a1aa; /* A soft gray for labels */
-        }
-        .header-gradient {
-            background: linear-gradient(90deg, #82aaff, #c792ea);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .divider {
-            border-color: rgba(255, 255, 255, 0.1);
-        }
-        .status-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            display: inline-block;
-        }
-        .status-success {
-            background-color: #4ade80; /* Green */
-        }
-        .status-fail {
-            background-color: #f87171; /* Red */
+        pre code {
+            background-color: #1f2937; /* gray-800 */
+            color: #d1d5db; /* gray-300 */
+            border-radius: 0.5rem;
+            padding: 1rem;
+            display: block;
+            overflow-x: auto;
+            font-family: 'Courier New', Courier, monospace;
         }
     </style>
 </head>
-<body class="text-gray-200">
-
-<div class="container mx-auto p-4 sm:p-6 lg:p-8">
-    <!-- Header Section -->
-    <header class="text-center mb-12">
-        <h1 class="text-4xl md:text-5xl font-bold header-gradient">
-            K6 Performance Test Dashboard
-        </h1>
-        <p class="text-lg text-gray-400 mt-2">
-            A comparative view of recent performance test runs.
-        </p>
+<body class="p-4 md:p-8">
+<div class="max-w-7xl mx-auto">
+    <header class="mb-8 text-center">
+        <h1 class="text-4xl font-bold text-gray-800">Performance Tuning Analysis Report</h1>
+        <p class="text-gray-500 mt-2 text-lg">Comparing Baseline vs. After SQL Tuning & Refactoring</p>
     </header>
 
-    <!-- Container for the test result cards -->
-    <main id="results-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        <!-- Test result cards will be dynamically inserted here by JavaScript -->
-    </main>
+    <!-- Test Context Section -->
+    <div class="mb-8 p-6 bg-white rounded-xl shadow-md">
+        <h2 class="text-2xl font-semibold text-gray-700 mb-4 border-b pb-2">Test Context</h2>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Environment & Data -->
+            <div>
+                <h3 class="text-xl font-semibold text-gray-700 mb-3">Environment & Data</h3>
+                <ul class="space-y-3 text-gray-600">
+                    <li class="flex items-start">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0 h-6 w-6 text-blue-500 mr-3"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+                        <div>
+                            <span class="font-semibold">Application Server:</span><br>
+                            1 CPU, 1 GiB Memory
+                        </div>
+                    </li>
+                    <li class="flex items-start">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0 h-6 w-6 text-blue-500 mr-3"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+                        <div>
+                            <span class="font-semibold">Database Server:</span><br>
+                            1.5 CPU, 1 GiB Memory
+                        </div>
+                    </li>
+                    <li class="flex items-start">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0 h-6 w-6 text-blue-500 mr-3"><path d="M17 18a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2"></path><rect x="3" y="4" width="18" height="18" rx="2"></rect><circle cx="12" cy="10" r="2"></circle><line x1="12" y1="2" x2="12" y2="4"></line><line x1="12" y1="14" x2="12" y2="22"></line></svg>
+                        <div>
+                            <span class="font-semibold">Test Dataset:</span><br>
+                            10,000 products with a 50:50 ratio of variants to non-variants.
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            <!-- k6 Scenario -->
+            <div>
+                <h3 class="text-xl font-semibold text-gray-700 mb-3">Testing Scenario (k6)</h3>
+                <p class="text-gray-600 mb-3">A simulated user journey involving browsing product lists and viewing product details.</p>
+                <pre><code>// Load Stages
+stages: [
+    {duration: '30s', target: 50}, // ramp up
+    {duration: '2m', target: 50},  // steady load
+    {duration: '10s', target: 0},   // ramp down
+],
 
+// User sees the product list
+http.get(`.../products?page=${randomPage}&size=10`);
+
+// User sees a specific product detail
+http.get(`.../products/${productId}`);
+
+// User thinks for a moment
+sleep(1);
+</code></pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Improvement Metrics -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white p-6 rounded-xl shadow-md metric-card">
+            <h3 class="text-lg font-semibold text-gray-500 mb-2">Avg. Response Time</h3>
+            <p id="avg-resp-time-after" class="text-3xl font-bold text-gray-800">-- ms</p>
+            <div class="flex justify-between items-baseline mt-2">
+                <span id="avg-resp-time-baseline" class="text-gray-500">Baseline: -- ms</span>
+                <span id="avg-resp-time-improvement" class="text-lg font-semibold rounded-full px-3 py-1">--%</span>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-md metric-card">
+            <h3 class="text-lg font-semibold text-gray-500 mb-2">P95 Response Time</h3>
+            <p id="p95-resp-time-after" class="text-3xl font-bold text-gray-800">-- ms</p>
+            <div class="flex justify-between items-baseline mt-2">
+                <span id="p95-resp-time-baseline" class="text-gray-500">Baseline: -- ms</span>
+                <span id="p95-resp-time-improvement" class="text-lg font-semibold rounded-full px-3 py-1">--%</span>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-md metric-card">
+            <h3 class="text-lg font-semibold text-gray-500 mb-2">Requests Per Second</h3>
+            <p id="reqs-per-sec-after" class="text-3xl font-bold text-gray-800">--/sec</p>
+            <div class="flex justify-between items-baseline mt-2">
+                <span id="reqs-per-sec-baseline" class="text-gray-500">Baseline: --/sec</span>
+                <span id="reqs-per-sec-improvement" class="text-lg font-semibold rounded-full px-3 py-1">--%</span>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-md metric-card">
+            <h3 class="text-lg font-semibold text-gray-500 mb-2">Database CPU Usage</h3>
+            <p id="db-cpu-after" class="text-3xl font-bold text-gray-800">--%</p>
+            <div class="flex justify-between items-baseline mt-2">
+                <span id="db-cpu-baseline" class="text-gray-500">Baseline: --%</span>
+                <span id="db-cpu-improvement" class="text-lg font-semibold rounded-full px-3 py-1">--%</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Comparison Table -->
+    <div class="bg-white p-6 rounded-xl shadow-md mb-8">
+        <h2 class="text-xl font-semibold text-gray-700 mb-4">Detailed Performance & Resource Comparison</h2>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead>
+                <tr class="bg-gray-50 border-b">
+                    <th class="p-4 font-semibold">Metric</th>
+                    <th class="p-4 font-semibold">Baseline (Average)</th>
+                    <th class="p-4 font-semibold">After Tuning (Average)</th>
+                    <th class="p-4 font-semibold">% Improvement</th>
+                </tr>
+                </thead>
+                <tbody id="comparison-table-body" class="divide-y"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Charts Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="bg-white p-6 rounded-xl shadow-md">
+            <h3 class="text-lg font-semibold text-gray-700 mb-4 text-center">Response Time (ms)</h3>
+            <div class="chart-container">
+                <canvas id="responseTimeChart"></canvas>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-md">
+            <h3 class="text-lg font-semibold text-gray-700 mb-4 text-center">Throughput (per second)</h3>
+            <div class="chart-container">
+                <canvas id="throughputChart"></canvas>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-md">
+            <h3 class="text-lg font-semibold text-gray-700 mb-4 text-center">Peak CPU Usage (%)</h3>
+            <div class="chart-container">
+                <canvas id="cpuUsageChart"></canvas>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-md">
+            <h3 class="text-lg font-semibold text-gray-700 mb-4 text-center">Peak Memory Usage (MiB)</h3>
+            <div class="chart-container">
+                <canvas id="memoryUsageChart"></canvas>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
-    // --- TEST DATA FROM JSON FILES ---
-    // This data is parsed from the result-run-*.json files you provided.
-    // The 'thresholds.p95_lt_500_failed' flag is set based on the JSON data.
-    const testResults = [
-        {
-            name: "Run 3",
-            summary: "Results from result-run-3.json",
-            metrics: {
-                http_reqs: { count: 3872, rate: 24.08 },
-                http_req_duration: { avg: 1324.5, min: 1.76, max: 4501.94, p90: 2616.29, p95: 2983.52 },
-                vus: { value: 50 },
-                iterations: { count: 1936, rate: 12.04 }
-            },
-            thresholds: {
-                p95_lt_500_failed: true
-            }
-        },
-        {
-            name: "Run 4",
-            summary: "Results from result-run-4.json",
-            metrics: {
-                http_reqs: { count: 3722, rate: 23.20 },
-                http_req_duration: { avg: 1396.2, min: 1.72, max: 5105.10, p90: 2796.70, p95: 3181.35 },
-                vus: { value: 50 },
-                iterations: { count: 1861, rate: 11.60 }
-            },
-            thresholds: {
-                p95_lt_500_failed: true
-            }
-        },
-        {
-            name: "Run 5",
-            summary: "Results from result-run-5.json",
-            metrics: {
-                http_reqs: { count: 3876, rate: 24.09 },
-                http_req_duration: { avg: 1322.4, min: 1.77, max: 4392.43, p90: 2611.14, p95: 2982.44 },
-                vus: { value: 50 },
-                iterations: { count: 1938, rate: 12.04 }
-            },
-            thresholds: {
-                p95_lt_500_failed: true
-            }
-        }
+    // --- DATA ---
+    const baselineData = [
+        {"metrics": {"http_req_duration": {"avg": 1324.5023194031542, "p(95)": 2983.52121115}, "http_reqs": {"rate": 24.086831187321106}, "iterations": {"rate": 12.043415593660553}, "checks": {"passes": 7744}}},
+        {"metrics": {"http_req_duration": {"avg": 1396.2427631585126, "p(95)": 3181.3541671999997}, "http_reqs": {"rate": 23.207001148756515}, "iterations": {"rate": 11.603500574378257}, "checks": {"passes": 7444}}},
+        {"metrics": {"http_req_duration": {"avg": 1322.4298475152216, "p(95)": 2982.4439665}, "http_reqs": {"rate": 24.090601057630316}, "iterations": {"rate": 12.045300528815158}, "checks": {"passes": 7752}}}
     ];
+    const afterTuningData = [
+        {"metrics": {"http_req_duration": {"avg": 10.611300386745132, "p(95)": 37.615806}, "http_reqs": {"rate": 85.67587625437682}, "iterations": {"rate": 42.83482513117597}, "checks": {"passes": 27521}}},
+        {"metrics": {"http_req_duration": {"avg": 10.658312863771894, "p(95)": 35.69307619999993}, "http_reqs": {"rate": 85.8793291353069}, "iterations": {"rate": 42.936541455822216}, "checks": {"passes": 27497}}},
+        {"metrics": {"http_req_duration": {"avg": 14.286165127810754, "p(95)": 71.0853096}, "http_reqs": {"rate": 85.09699514175722}, "iterations": {"rate": 42.54538114975718}, "checks": {"passes": 27305}}}
+    ];
+    const resourceUsageData = {
+        baseline: { appCpu: 12, appMem: 291, dbCpu: 155, dbMem: 507.5 },
+        after: { appCpu: 31, appMem: 293.5, dbCpu: 38, dbMem: 493.3 }
+    };
 
-    // --- RENDER LOGIC ---
-    // This function generates the HTML for each card and injects it into the page.
-    function renderResults() {
-        const container = document.getElementById('results-container');
-        if (!container) return;
+    // --- UTILITY FUNCTIONS ---
+    const calculateAverageMetrics = (dataArray) => {
+        const total = dataArray.reduce((acc, current) => {
+            acc.avgDuration += current.metrics.http_req_duration.avg;
+            acc.p95Duration += current.metrics.http_req_duration['p(95)'];
+            acc.reqsRate += current.metrics.http_reqs.rate;
+            acc.iterationsRate += current.metrics.iterations.rate;
+            acc.checksPasses += current.metrics.checks.passes;
+            return acc;
+        }, { avgDuration: 0, p95Duration: 0, reqsRate: 0, iterationsRate: 0, checksPasses: 0 });
 
-        let htmlContent = '';
+        const count = dataArray.length;
+        return {
+            avgDuration: total.avgDuration / count,
+            p95Duration: total.p95Duration / count,
+            reqsRate: total.reqsRate / count,
+            iterationsRate: total.iterationsRate / count,
+            checksPasses: total.checksPasses
+        };
+    };
 
-        testResults.forEach(result => {
-            const metrics = result.metrics;
-            // Correctly determine failure based on the http_req_duration threshold
-            const thresholdFailed = result.thresholds.p95_lt_500_failed;
+    const calculateImprovement = (baseline, after) => {
+        if (baseline === 0) return 0;
+        return ((baseline - after) / baseline) * 100;
+    };
 
-            // Tooltip text for metric definitions
-            const tooltips = {
-                vus: "Virtual Users: The maximum number of concurrent users simulated.",
-                iterations: "Iterations: The total number of times the script's main logic was executed.",
-                reqs: "HTTP Requests: The total number of requests made during the test.",
-                duration: "Request Duration: The time taken for a request to complete (in milliseconds).",
-                threshold: "Threshold Status: Indicates if the performance thresholds passed or failed."
-            };
+    const calculateThroughputImprovement = (baseline, after) => {
+        if (baseline === 0) return 0;
+        return ((after - baseline) / baseline) * 100;
+    };
 
-            htmlContent += `
-                    <div class="card rounded-2xl p-6 flex flex-col">
-                        <!-- Card Header -->
-                        <div class="mb-4">
-                            <h2 class="text-2xl font-bold text-white">${result.name}</h2>
-                            <p class="text-sm text-gray-400 mt-1">${result.summary}</p>
-                        </div>
+    const formatImprovement = (value, isHigherBetter = false, isResource = false) => {
+        let isPositive = isHigherBetter ? value > 0 : value < 0;
+        if(isResource) isPositive = value > 0;
 
-                        <div class="divider border-t my-2"></div>
+        const colorClass = isPositive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
+        const sign = value > 0 && !isResource ? '+' : '';
+        const resourceSign = value > 0 ? '-' : '+';
+        const finalSign = isResource ? resourceSign : sign;
+        return `<span class="${colorClass} font-semibold rounded-full px-2 py-1">${finalSign}${Math.abs(value).toFixed(2)}%</span>`;
+    };
 
-                        <!-- Core Metrics -->
-                        <div class="grid grid-cols-3 gap-4 text-center my-4">
-                            <div>
-                                <p class="metric-label text-sm" title="${tooltips.vus}">VUs</p>
-                                <p class="metric-value text-2xl font-semibold">${metrics.vus.value}</p>
-                            </div>
-                            <div>
-                                <p class="metric-label text-sm" title="${tooltips.iterations}">Iterations</p>
-                                <p class="metric-value text-2xl font-semibold">${metrics.iterations.count.toLocaleString()}</p>
-                            </div>
-                            <div>
-                                <p class="metric-label text-sm" title="${tooltips.reqs}">Requests</p>
-                                <p class="metric-value text-2xl font-semibold">${metrics.http_reqs.count.toLocaleString()}</p>
-                            </div>
-                        </div>
+    document.addEventListener('DOMContentLoaded', () => {
+        const baselineAvg = calculateAverageMetrics(baselineData);
+        const tunedAvg = calculateAverageMetrics(afterTuningData);
 
-                        <!-- Request Duration -->
-                        <div class="mt-auto">
-                            <h3 class="font-semibold text-white mb-3" title="${tooltips.duration}">Request Duration (ms)</h3>
-                            <div class="space-y-2 text-sm">
-                                <div class="flex justify-between"><span class="metric-label">Avg</span> <span class="font-mono text-white">${metrics.http_req_duration.avg.toFixed(1)}</span></div>
-                                <div class="flex justify-between"><span class="metric-label">Min</span> <span class="font-mono text-white">${metrics.http_req_duration.min.toFixed(1)}</span></div>
-                                <div class="flex justify-between"><span class="metric-label">Max</span> <span class="font-mono text-white">${metrics.http_req_duration.max.toFixed(1)}</span></div>
-                                <div class="flex justify-between"><span class="metric-label">p(90)</span> <span class="font-mono text-white">${metrics.http_req_duration.p90.toFixed(1)}</span></div>
-                                <div class="flex justify-between"><span class="metric-label">p(95)</span> <span class="font-mono text-white">${metrics.http_req_duration.p95.toFixed(1)}</span></div>
-                            </div>
-                        </div>
+        // --- Populate Key Metric Cards ---
+        const avgRespImpr = calculateImprovement(baselineAvg.avgDuration, tunedAvg.avgDuration);
+        document.getElementById('avg-resp-time-after').textContent = `${tunedAvg.avgDuration.toFixed(2)} ms`;
+        document.getElementById('avg-resp-time-baseline').textContent = `Baseline: ${baselineAvg.avgDuration.toFixed(2)} ms`;
+        document.getElementById('avg-resp-time-improvement').innerHTML = formatImprovement(avgRespImpr, false, true);
 
-                        <div class="divider border-t my-4"></div>
+        const p95RespImpr = calculateImprovement(baselineAvg.p95Duration, tunedAvg.p95Duration);
+        document.getElementById('p95-resp-time-after').textContent = `${tunedAvg.p95Duration.toFixed(2)} ms`;
+        document.getElementById('p95-resp-time-baseline').textContent = `Baseline: ${baselineAvg.p95Duration.toFixed(2)} ms`;
+        document.getElementById('p95-resp-time-improvement').innerHTML = formatImprovement(p95RespImpr, false, true);
 
-                        <!-- Threshold Status -->
-                        <div title="${tooltips.threshold}">
-                             <div class="flex items-center justify-between p-3 rounded-lg ${thresholdFailed ? 'bg-red-900/50' : 'bg-green-900/50'}">
-                                <div class="flex items-center">
-                                    <span class="status-dot ${thresholdFailed ? 'status-fail' : 'status-success'} mr-3"></span>
-                                    <span class="font-semibold">${thresholdFailed ? 'Threshold Failed' : 'Threshold Passed'}</span>
-                                </div>
-                                <div class="text-right">
-                                    <p class="font-mono font-semibold text-white">${metrics.http_req_duration.p95.toFixed(2)}ms</p>
-                                    <p class="text-xs ${thresholdFailed ? 'text-red-300' : 'text-green-300'}">(p95 < 500ms)</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
+        const reqsPerSecImpr = calculateThroughputImprovement(baselineAvg.reqsRate, tunedAvg.reqsRate);
+        document.getElementById('reqs-per-sec-after').textContent = `${tunedAvg.reqsRate.toFixed(2)}/sec`;
+        document.getElementById('reqs-per-sec-baseline').textContent = `Baseline: ${baselineAvg.reqsRate.toFixed(2)}/sec`;
+        document.getElementById('reqs-per-sec-improvement').innerHTML = formatImprovement(reqsPerSecImpr, true);
+
+        const dbCpuImpr = calculateImprovement(resourceUsageData.baseline.dbCpu, resourceUsageData.after.dbCpu);
+        document.getElementById('db-cpu-after').textContent = `${resourceUsageData.after.dbCpu}%`;
+        document.getElementById('db-cpu-baseline').textContent = `Baseline: ${resourceUsageData.baseline.dbCpu}%`;
+        document.getElementById('db-cpu-improvement').innerHTML = formatImprovement(dbCpuImpr, false, true);
+
+        // --- Populate Detailed Table ---
+        const tableBody = document.getElementById('comparison-table-body');
+        const tableData = [
+            { metric: 'Avg. Request Duration (ms)', baseline: baselineAvg.avgDuration.toFixed(2), tuned: tunedAvg.avgDuration.toFixed(2), improvement: formatImprovement(calculateImprovement(baselineAvg.avgDuration, tunedAvg.avgDuration), false, true) },
+            { metric: 'P95 Request Duration (ms)', baseline: baselineAvg.p95Duration.toFixed(2), tuned: tunedAvg.p95Duration.toFixed(2), improvement: formatImprovement(calculateImprovement(baselineAvg.p95Duration, tunedAvg.p95Duration), false, true) },
+            { metric: 'Requests per Second', baseline: baselineAvg.reqsRate.toFixed(2), tuned: tunedAvg.reqsRate.toFixed(2), improvement: formatImprovement(calculateThroughputImprovement(baselineAvg.reqsRate, tunedAvg.reqsRate), true) },
+            { metric: 'Iterations per Second', baseline: baselineAvg.iterationsRate.toFixed(2), tuned: tunedAvg.iterationsRate.toFixed(2), improvement: formatImprovement(calculateThroughputImprovement(baselineAvg.iterationsRate, tunedAvg.iterationsRate), true) },
+            { metric: 'App Server Peak CPU (%)', baseline: `${resourceUsageData.baseline.appCpu}%`, tuned: `${resourceUsageData.after.appCpu}%`, improvement: formatImprovement(calculateImprovement(resourceUsageData.baseline.appCpu, resourceUsageData.after.appCpu), false, true) },
+            { metric: 'DB Server Peak CPU (%)', baseline: `${resourceUsageData.baseline.dbCpu}%`, tuned: `${resourceUsageData.after.dbCpu}%`, improvement: formatImprovement(calculateImprovement(resourceUsageData.baseline.dbCpu, resourceUsageData.after.dbCpu), false, true) },
+            { metric: 'App Server Peak Memory (MiB)', baseline: `${resourceUsageData.baseline.appMem} MiB`, tuned: `${resourceUsageData.after.appMem} MiB`, improvement: formatImprovement(calculateImprovement(resourceUsageData.baseline.appMem, resourceUsageData.after.appMem), false, true) },
+            { metric: 'DB Server Peak Memory (MiB)', baseline: `${resourceUsageData.baseline.dbMem} MiB`, tuned: `${resourceUsageData.after.dbMem} MiB`, improvement: formatImprovement(calculateImprovement(resourceUsageData.baseline.dbMem, resourceUsageData.after.dbMem), false, true) },
+            { metric: 'Total Checks Passed', baseline: baselineAvg.checksPasses.toLocaleString(), tuned: tunedAvg.checksPasses.toLocaleString(), improvement: formatImprovement(calculateThroughputImprovement(baselineAvg.checksPasses, tunedAvg.checksPasses), true) }
+        ];
+
+        tableData.forEach(data => {
+            const row = document.createElement('tr');
+            row.innerHTML = `<td class="p-4 font-medium text-gray-700">${data.metric}</td><td class="p-4">${data.baseline}</td><td class="p-4">${data.tuned}</td><td class="p-4">${data.improvement}</td>`;
+            tableBody.appendChild(row);
         });
 
-        container.innerHTML = htmlContent;
-    }
+        // --- Create Charts ---
+        const createBarChart = (ctx, labels, datasets, yLabel) => {
+            new Chart(ctx, { type: 'bar', data: { labels, datasets }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, title: { display: true, text: yLabel } } } } });
+        };
 
-    // Render the results when the page loads.
-    document.addEventListener('DOMContentLoaded', renderResults);
+        const baselineColor = 'rgba(239, 68, 68, 0.7)';
+        const tunedColor = 'rgba(16, 185, 129, 0.7)';
+
+        createBarChart(document.getElementById('responseTimeChart').getContext('2d'), ['Avg. Duration', 'P95 Duration'], [{ label: 'Baseline', data: [baselineAvg.avgDuration, baselineAvg.p95Duration], backgroundColor: baselineColor }, { label: 'After Tuning', data: [tunedAvg.avgDuration, tunedAvg.p95Duration], backgroundColor: tunedColor }], 'Milliseconds (ms)');
+        createBarChart(document.getElementById('throughputChart').getContext('2d'), ['Requests/sec', 'Iterations/sec'], [{ label: 'Baseline', data: [baselineAvg.reqsRate, baselineAvg.iterationsRate], backgroundColor: baselineColor }, { label: 'After Tuning', data: [tunedAvg.reqsRate, tunedAvg.iterationsRate], backgroundColor: tunedColor }], 'Rate (per second)');
+        createBarChart(document.getElementById('cpuUsageChart').getContext('2d'), ['App Server', 'DB Server'], [{ label: 'Baseline', data: [resourceUsageData.baseline.appCpu, resourceUsageData.baseline.dbCpu], backgroundColor: baselineColor }, { label: 'After Tuning', data: [resourceUsageData.after.appCpu, resourceUsageData.after.dbCpu], backgroundColor: tunedColor }], 'Peak CPU Usage (%)');
+        createBarChart(document.getElementById('memoryUsageChart').getContext('2d'), ['App Server', 'DB Server'], [{ label: 'Baseline', data: [resourceUsageData.baseline.appMem, resourceUsageData.baseline.dbMem], backgroundColor: baselineColor }, { label: 'After Tuning', data: [resourceUsageData.after.appMem, resourceUsageData.after.dbMem], backgroundColor: tunedColor }], 'Peak Memory Usage (MiB)');
+    });
 </script>
 </body>
 </html>
+

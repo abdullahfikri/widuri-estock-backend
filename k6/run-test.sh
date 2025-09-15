@@ -19,7 +19,7 @@ do
   echo "================================================="
 
   # Jalankan K6 dan simpan output detail ke file JSON yang diberi nama unik
-  k6 run "$K6_SCRIPT" --summary-export "result-run-$i.json"
+  k6 run "$K6_SCRIPT" --summary-export "result-run-after-sql-tuning$i.json"
 
   echo "Putaran ke-$i selesai. Hasil disimpan ke result-run-$i.json"
 
