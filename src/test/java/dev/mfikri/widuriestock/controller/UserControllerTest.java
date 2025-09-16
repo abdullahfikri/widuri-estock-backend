@@ -68,15 +68,38 @@ class UserControllerTest {
         addressRepository.deleteAll();
         userRepository.deleteAll();
 
-        User user = new User();
-        user.setUsername("owner");
-        user.setPassword(passwordEncoder.encode("owner123"));
-        user.setFirstName("owner");
-        user.setPhone("+000000000");
-        user.setRole("OWNER");
-        userRepository.save(user);
+        createTestOwnerUser();
+    }
 
-        authorizationToken = "Bearer " + jwtUtil.generate(user.getUsername(), jwtTtl);
+    private void createTestOwnerUser() {
+        User ownerUser = new User();
+        ownerUser.setUsername("owner"); // Use a unique username
+        ownerUser.setPassword(passwordEncoder.encode("owner123"));
+        ownerUser.setFirstName("owner");
+        ownerUser.setPhone("+000000000");
+        ownerUser.setRole("OWNER");
+        userRepository.save(ownerUser);
+
+        authorizationToken = "Bearer " + jwtUtil.generate(ownerUser.getUsername(), jwtTtl);
+    }
+
+    @Test
+    void createFailedInvalidAccessToken() throws Exception{
+        mockMvc.perform(
+                multipart("/api/users")
+                        .file(new MockMultipartFile("photo", "tan-malaka.png", "image/png", getClass().getResourceAsStream("/images/tan-malaka.png")))
+                        .header("Authorization", "Bearer 123Invalid")
+                        .contentType(MediaType.MULTIPART_FORM_DATA_VALUE)
+        ).andExpectAll(
+                status().isUnauthorized()
+        ).andDo(result -> {
+            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull(response.getData());
+            assertNotNull(response.getErrors());
+            assertEquals("Invalid Access Token", response.getErrors());
+        });
     }
 
     @Test
