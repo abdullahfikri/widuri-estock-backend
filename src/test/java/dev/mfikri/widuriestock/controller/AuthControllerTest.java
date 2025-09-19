@@ -10,16 +10,14 @@ import dev.mfikri.widuriestock.model.user.AuthLoginRequest;
 import dev.mfikri.widuriestock.model.WebResponse;
 import dev.mfikri.widuriestock.repository.RefreshTokenRepository;
 import dev.mfikri.widuriestock.repository.UserRepository;
-import dev.mfikri.widuriestock.util.BCrypt;
-import dev.mfikri.widuriestock.util.JwtUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
@@ -45,6 +43,9 @@ class AuthControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
 
     @BeforeEach
     void setUp() {
@@ -53,7 +54,7 @@ class AuthControllerTest {
 
         User user = new User();
         user.setUsername("owner");
-        user.setPassword("{bcrypt}" + BCrypt.hashpw("owner123", BCrypt.gensalt()));
+        user.setPassword(passwordEncoder.encode("owner123"));
         user.setFirstName("owner");
         user.setPhone("+000000000");
         user.setRole("OWNER");
@@ -111,7 +112,8 @@ class AuthControllerTest {
 
         // password wrong
         request.setUsername("owner");
-        request.setPassword("wrongpassword");
+//        request.setPassword("wrongpassword");
+        request.setPassword(passwordEncoder.encode("wrongpassword"));
 
         mockMvc.perform(
                 post("/api/auth/login")

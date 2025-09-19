@@ -10,7 +10,6 @@ import dev.mfikri.widuriestock.model.product.ProductCreateRequest;
 import dev.mfikri.widuriestock.model.product.ProductResponse;
 import dev.mfikri.widuriestock.model.product.ProductsGetListResponse;
 import dev.mfikri.widuriestock.repository.*;
-import dev.mfikri.widuriestock.util.BCrypt;
 import dev.mfikri.widuriestock.util.JwtUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +20,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -69,6 +69,9 @@ class ProductControllerTest {
     private CategoryRepository categoryRepository;
 
     @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
     private JwtUtil jwtUtil;
     Integer jwtTtl = 300000;
 
@@ -94,7 +97,7 @@ class ProductControllerTest {
 
         User user = new User();
         user.setUsername("admin_warehouse");
-        user.setPassword("{bcrypt}" + BCrypt.hashpw("admin_warehouse_password", BCrypt.gensalt()));
+        user.setPassword(passwordEncoder.encode("admin_warehouse_password"));
         user.setFirstName("John Doe");
         user.setPhone("+6283213121");
         user.setRole(Role.ADMIN_WAREHOUSE.name());
@@ -104,7 +107,7 @@ class ProductControllerTest {
 
         User user2 = new User();
         user2.setUsername("owner");
-        user2.setPassword("{bcrypt}" + BCrypt.hashpw("owner123", BCrypt.gensalt()));
+        user2.setPassword(passwordEncoder.encode("owner123"));
         user2.setFirstName("owner");
         user2.setPhone("+000000000");
         user2.setRole("OWNER");
