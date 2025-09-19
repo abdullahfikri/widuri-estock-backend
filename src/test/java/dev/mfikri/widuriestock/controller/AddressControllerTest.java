@@ -429,7 +429,7 @@ class AddressControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            log.info(response.getErrors());
+
         });
     }
 

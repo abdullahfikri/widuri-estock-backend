@@ -211,7 +211,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            log.info(response.getErrors());
+
         });
     }
 
@@ -248,7 +248,7 @@ class IncomingProductControllerTest {
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
             assertEquals("Supplier is not found. Please check Supplier Id again.", response.getErrors());
-            log.info(response.getErrors());
+
         });
     }
 
@@ -285,7 +285,7 @@ class IncomingProductControllerTest {
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
             assertEquals("incomingProductDetails 'pricePerUnit', and 'quantity' properties must not null when 'hasVariant' is false.", response.getErrors());
-            log.info(response.getErrors());
+
         });
 
         incomingProductDetailsRequest.setPricePerUnit(100123);
@@ -316,7 +316,7 @@ class IncomingProductControllerTest {
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
             assertEquals("incomingProductDetails 'IncomingProductVariantDetails' properties must not send when 'hasVariant' is false.", response.getErrors());
-            log.info(response.getErrors());
+
         });
     }
 
@@ -353,7 +353,7 @@ class IncomingProductControllerTest {
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
             assertEquals("incomingProductDetails 'pricePerUnit', and 'quantity' properties must not send when 'hasVariant' is true.", response.getErrors());
-            log.info(response.getErrors());
+
         });
 
         incomingProductDetailsRequest.setPricePerUnit(null);
@@ -375,7 +375,7 @@ class IncomingProductControllerTest {
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
             assertEquals("incomingProductDetails 'IncomingProductVariantDetails' properties must not null when 'hasVariant' is true.", response.getErrors());
-            log.info(response.getErrors());
+
         });
     }
 
@@ -418,7 +418,7 @@ class IncomingProductControllerTest {
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
             assertEquals("Product id 0 is duplicate.", response.getErrors());
-            log.info(response.getErrors());
+
         });
 
     }
@@ -462,7 +462,7 @@ class IncomingProductControllerTest {
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
             assertEquals("Some products are not found. Please check product IDs again.", response.getErrors());
-            log.info(response.getErrors());
+
         });
     }
 
@@ -507,7 +507,7 @@ class IncomingProductControllerTest {
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
             assertEquals("Product id: " + productWithoutVariant.getId() + " hasVariant is false, please check hasVariant again.", response.getErrors());
-            log.info(response.getErrors());
+
         });
     }
 
@@ -1758,7 +1758,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            log.info(response.getErrors());
+
         });
     }
 
@@ -3349,7 +3349,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            log.info(response.getErrors());
+
         });
     }
 
@@ -3921,7 +3921,7 @@ class IncomingProductControllerTest {
             assertNull(response.getData());
             assertNull(response.getPaging());
             assertNotNull(response.getErrors());
-            log.info(response.getErrors());
+
         });
     }
 

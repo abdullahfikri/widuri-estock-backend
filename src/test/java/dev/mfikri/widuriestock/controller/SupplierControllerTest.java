@@ -123,7 +123,7 @@ class SupplierControllerTest {
 
             assertNull(response.getData());
             assertNotNull(response.getErrors());
-            log.info(response.getErrors());
+            log.info(response.getErrors().toString());
         });
     }
 
@@ -588,7 +588,7 @@ class SupplierControllerTest {
 
             assertNull(response.getData());
             assertNotNull(response.getErrors());
-            log.info(response.getErrors());
+            log.info(response.getErrors().toString());
         });
     }
 

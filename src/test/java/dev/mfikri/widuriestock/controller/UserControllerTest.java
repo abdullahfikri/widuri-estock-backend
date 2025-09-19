@@ -138,7 +138,7 @@ class UserControllerTest {
 
             assertNull(response.getData());
             assertNotNull(response.getErrors());
-            log.info(response.getErrors());
+            log.info(response.getErrors().toString());
         });
     }
 
@@ -174,7 +174,7 @@ class UserControllerTest {
 
             assertNull(response.getData());
             assertNotNull(response.getErrors());
-            log.info(response.getErrors());
+            log.info(response.getErrors().toString());
         });
     }
 
@@ -212,7 +212,7 @@ class UserControllerTest {
 
             assertNull(response.getData());
             assertNotNull(response.getErrors());
-            log.info(response.getErrors());
+            log.info(response.getErrors().toString());
             assertEquals("Image photo is not valid", response.getErrors());
         });
     }
@@ -502,7 +502,7 @@ class UserControllerTest {
             });
             assertNull(response.getData());
             assertNotNull(response.getErrors());
-            log.info(response.getErrors());
+            log.info(response.getErrors().toString());
         });
     }
 
@@ -673,7 +673,7 @@ class UserControllerTest {
             });
             assertNull(response.getData());
             assertNotNull(response.getErrors());
-            log.info(response.getErrors());
+            log.info(response.getErrors().toString());
         });
     }
 

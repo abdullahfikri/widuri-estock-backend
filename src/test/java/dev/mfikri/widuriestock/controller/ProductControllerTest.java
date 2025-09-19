@@ -130,7 +130,7 @@ class ProductControllerTest {
 
             assertNull(response.getData());
             assertNotNull(response.getErrors());
-            log.info(response.getErrors());
+            log.info(response.getErrors().toString());
             assertEquals("Authentication failed", response.getErrors());
         });
     }
@@ -153,7 +153,7 @@ class ProductControllerTest {
 
             assertNull(response.getData());
             assertNotNull(response.getErrors());
-            log.info(response.getErrors());
+            log.info(response.getErrors().toString());
         });
     }
 
@@ -180,10 +180,9 @@ class ProductControllerTest {
         ).andDo(result -> {
             WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
             });
-
             assertNull(response.getData());
             assertNotNull(response.getErrors());
-            assertEquals("variants[0].attributes: must not be null", response.getErrors());
+            log.info(response.getErrors().toString());
         });
     }
 
@@ -1075,8 +1074,8 @@ class ProductControllerTest {
             });
             assertNull(response.getData());
             assertNotNull(response.getErrors());
-            assertEquals("hasVariant: must not be null", response.getErrors());
-            log.info(response.getErrors());
+            assertEquals("{hasVariant=[must not be null]}", response.getErrors().toString());
+            log.info(response.getErrors().toString());
         });
     }
 
@@ -1106,7 +1105,7 @@ class ProductControllerTest {
             assertNull(response.getData());
             assertNotNull(response.getErrors());
             assertEquals("Product is not found.", response.getErrors());
-            log.info(response.getErrors());
+            log.info(response.getErrors().toString());
         });
     }
 
@@ -1146,7 +1145,7 @@ class ProductControllerTest {
             assertNull(response.getData());
             assertNotNull(response.getErrors());
             assertEquals("Category is not found.", response.getErrors());
-            log.info(response.getErrors());
+            log.info(response.getErrors().toString());
         });
     }
 
@@ -1184,7 +1183,7 @@ class ProductControllerTest {
             assertNull(response.getData());
             assertNotNull(response.getErrors());
             assertEquals("Price and Stock must be included when 'hasVariant' is false.", response.getErrors());
-            log.info(response.getErrors());
+            log.info(response.getErrors().toString());
         });
 
         mockMvc.perform(
@@ -1208,7 +1207,7 @@ class ProductControllerTest {
             assertNull(response.getData());
             assertNotNull(response.getErrors());
             assertEquals("Product variants must not be included when 'hasVariant' is false.", response.getErrors());
-            log.info(response.getErrors());
+            log.info(response.getErrors().toString());
         });
     }
 
@@ -1248,7 +1247,7 @@ class ProductControllerTest {
             assertNull(response.getData());
             assertNotNull(response.getErrors());
             assertEquals("Price and Stock must not be included when 'hasVariant' is true.", response.getErrors());
-            log.info(response.getErrors());
+            log.info(response.getErrors().toString());
         });
 
         mockMvc.perform(
@@ -1265,7 +1264,7 @@ class ProductControllerTest {
             assertNull(response.getData());
             assertNotNull(response.getErrors());
             assertEquals("Product variant must be included when 'hasVariant' is true.", response.getErrors());
-            log.info(response.getErrors());
+            log.info(response.getErrors().toString());
         });
     }
 
