@@ -23,6 +23,10 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.file.AccessDeniedException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -30,13 +34,22 @@ import java.util.stream.Collectors;
 public class ErrorController {
 
     @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<WebResponse<String>> constraintViolationException (ConstraintViolationException exception) {
+    public ResponseEntity<WebResponse<Object>> constraintViolationException (ConstraintViolationException exception) {
+
         log.warn("Constrain violation error: {}", exception.getMessage(), exception);
+
+        Map<String, List<String>> errors = new HashMap<>();
+        exception.getConstraintViolations().forEach(violation -> {
+            String propertyPath = violation.getPropertyPath().toString();
+
+            String fieldName = propertyPath.substring(propertyPath.lastIndexOf('.') + 1);
+            errors.computeIfAbsent(fieldName, k -> new ArrayList<>()).add(violation.getMessage());
+        });
 
         return ResponseEntity.badRequest()
                 .body(WebResponse.
-                        <String>builder()
-                        .errors(exception.getMessage())
+                        builder()
+                        .errors(errors)
                         .build());
     }
 
